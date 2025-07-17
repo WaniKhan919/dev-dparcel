@@ -162,7 +162,7 @@ const HeroSection = () => {
             </label>
           </div>
 
-          <button type="submit" className="bg-[#00b3ff] hover:bg-[#009fe3] text-white w-full py-2 rounded font-semibold">
+          <button type="submit" className="bg-buttonColor hover:bg-[#009fe3] text-white w-full py-2 rounded font-semibold">
             Request delivery
           </button>
         </form>

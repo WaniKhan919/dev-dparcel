@@ -31,7 +31,7 @@ const Header = () => {
 
         {/* Desktop Right-side */}
         <div className="hidden lg:flex items-center space-x-4 text-sm font-medium">
-          <button className="text-blue-800 hover:text-blue-900">En ▾</button>
+          {/* <button className="text-blue-800 hover:text-blue-900">En ▾</button> */}
           <a href="#" className="text-blue-800 underline hover:text-blue-900">Log in</a>
           <a href="#" className="bg-blue-500 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-600">Create an Account</a>
           <a href="#" className="bg-blue-900 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-950">Contact Sales</a>
