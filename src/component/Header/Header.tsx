@@ -8,8 +8,8 @@ const Header = () => {
       <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center space-x-2">
-          <img src="/logo.svg" alt="Stuart" className="h-7 w-auto" />
-          <span className="text-blue-600 text-2xl font-bold">stuart<span className="text-cyan-400">.</span></span>
+          <img src="https://deliveringparcel.com/images/dp.svg" alt=" Delivering Parcel" className="h-7 w-auto" />
+          <span className="text-blue-600 text-2xl font-bold"> Delivering Parcel<span className="text-cyan-400">.</span></span>
         </div>
 
         {/* Desktop Nav */}

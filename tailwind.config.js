@@ -8,6 +8,9 @@ module.exports = {
       fontFamily: {
         inter: ['Inter', 'sans-serif'],
       },
+       colors: {
+        'buttonColor': '#00249c',
+      },
     },
   },
   plugins: [],

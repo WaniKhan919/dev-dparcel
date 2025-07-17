@@ -1,4 +1,5 @@
 import React from 'react';
+import LogoCarousel from './LogoCarousel';
 
 const TrustedSolutionsSection = () => {
   return (
@@ -8,16 +9,8 @@ const TrustedSolutionsSection = () => {
       <h2 className="text-xl md:text-2xl font-semibold mb-6 text-[#002b9a]">
         Over 25,000 Clients Trust Stuart
       </h2>
-      <div className="flex flex-wrap justify-center gap-6 mb-12">
-        {/* Replace src with actual logos */}
-        {['papajohns', 'coop', 'hermes', 'tesco', 'pasta', 'fc'].map((logo, index) => (
-          <img
-            key={index}
-            src={`/logos/${logo}.png`}
-            alt={`${logo} logo`}
-            className="h-8 md:h-10 object-contain"
-          />
-        ))}
+      <div className="flex flex-wrap justify-center gap-6 mb-12 ">
+        <LogoCarousel/>
       </div>
 
       {/* Delivery Solutions */}
@@ -32,7 +25,7 @@ const TrustedSolutionsSection = () => {
             Our dashboard lets businesses easily manage deliveries with intuitive tracking, scheduling, and real-time updates.
           </p>
           <div className="flex gap-2 justify-center">
-            <button className="bg-blue-600 text-white px-4 py-1 rounded text-sm">Sign up</button>
+            <button className="bg-buttonColor text-white px-4 hover:bg-blue-500 py-1 rounded text-sm"  >Sign up</button>
             <button className="text-blue-600 underline text-sm">See Features</button>
           </div>
         </div>
@@ -45,7 +38,7 @@ const TrustedSolutionsSection = () => {
             Recommended for businesses who want to integrate with our existing partner platforms, offering streamlined growth.
           </p>
           <div className="flex gap-2 justify-center">
-            <button className="bg-blue-600 text-white px-4 py-1 rounded text-sm">Contact Us</button>
+            <button className="bg-buttonColor text-white hover:bg-blue-500 px-4 py-1 rounded text-sm">Contact Us</button>
             <button className="text-blue-600 underline text-sm">See Integrations</button>
           </div>
         </div>
@@ -58,7 +51,7 @@ const TrustedSolutionsSection = () => {
             For businesses that require a fully customizable delivery solution via powerful API integration.
           </p>
           <div className="flex gap-2 justify-center">
-            <button className="bg-blue-600 text-white px-4 py-1 rounded text-sm">Contact Us</button>
+            <button className="bg-buttonColor hover:bg-blue-500 text-white px-4 py-1 rounded text-sm">Contact Us</button>
             <button className="text-blue-600 underline text-sm">See the Docs</button>
           </div>
         </div>
