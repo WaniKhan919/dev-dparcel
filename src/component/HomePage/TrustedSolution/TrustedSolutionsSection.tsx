@@ -4,14 +4,8 @@ import LogoCarousel from './LogoCarousel';
 const TrustedSolutionsSection = () => {
   return (
     <div className="bg-white text-center py-12 px-4">
-      
-      {/* Trusted by Clients */}
-      <h2 className="text-xl md:text-2xl font-semibold mb-6 text-[#002b9a]">
-        Over 25,000 Clients Trust Stuart
-      </h2>
-      <div className="flex flex-wrap justify-center gap-6 mb-12 ">
-        <LogoCarousel/>
-      </div>
+   
+     
 
       {/* Delivery Solutions */}
       <h3 className="text-2xl font-bold text-[#002b9a] mb-8">Delivery Solutions</h3>

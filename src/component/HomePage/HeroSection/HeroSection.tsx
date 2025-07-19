@@ -1,171 +1,94 @@
-import React, { useState } from 'react';
-import { ChevronDownIcon } from '@heroicons/react/24/solid';
-
-
-
-const packageSizes = [
-  {
-    id: 'extra-small',
-    label: 'Extra-small',
-    description: 'Fits in an envelope',
-    size: '10 x 8 x 10 cm',
-    weight: 'Up to 3 kg',
-    icon: '👤',
-  },
-  {
-    id: 'small',
-    label: 'Small',
-    description: 'Fits in a shoe box',
-    size: '40 x 20 x 15 cm',
-    weight: 'Up to 6 kg',
-    icon: '🧍',
-  },
-  {
-    id: 'medium',
-    label: 'Medium',
-    description: 'Fits in a backpack',
-    size: '50 x 30 x 30 cm',
-    weight: 'Up to 12 kg',
-    icon: '🎒',
-  },
-  {
-    id: 'large',
-    label: 'Large',
-    description: 'Fits in a large suitcase',
-    size: '90 x 65 x 50 cm',
-    weight: 'Up to 40 kg',
-    icon: '🧳',
-  },
-  {
-    id: 'extra-large',
-    label: 'Extra-large',
-    description: 'Fits in a large wardrobe',
-    size: '100 x 90 x 50 cm',
-    weight: 'Up to 70 kg',
-    icon: '🚪',
-  },
-];
-
-type PackageSize = {
-  id: string;
-  label: string;
-  description: string;
-  size: string;
-  weight: string;
-  icon: string;
-};
+import React from 'react';
 
 const HeroSection = () => {
-
-  const [selected, setSelected] = useState<PackageSize | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-
-
   return (
-    <div className="bg-[#002b9a] text-white min-h-screen flex flex-col md:flex-row items-center justify-center px-6 py-12">
+    <div className="w-full flex flex-col justify-center items-center bg-gradient-to-b from-[#2f7cf4] to-[#6ea8fd] py-10 px-4">
 
-      {/* Left Content */}
-      <div className="md:w-1/2 mb-10 md:mb-0">
-        <h1 className="font-inter text-4xl md:text-5xl font-bold mb-4">
-          Fast & Cost-Effective <br /> Last-Mile Delivery
-        </h1>
-        <p className="text-lg mb-6">
-          We help businesses get orders to customers with as fast as 30-minute or
-          scheduled deliveries, multiple transport options, real-time tracking, and
-          prices from £5.50
-        </p>
-        <div className="flex gap-4 flex-wrap">
-          <button className="bg-[#00b3ff] hover:bg-[#009fe3] text-white font-semibold py-2 px-4 rounded">
-            Create an Account
-          </button>
-          <button className="text-white underline hover:text-blue-300">
-            Contact Sales
-          </button>
+      <h1 className="text-3xl md:text-5xl font-bold text-white text-center mb-8">
+        Save on worldwide shipping with<br />Eurosender
+      </h1>
+
+      <div className="bg-white rounded-md shadow-md w-full max-w-6xl grid grid-cols-12 overflow-hidden">
+        {/* Pick-up */}
+        <div className="col-span-2 border-r px-4 py-3">
+          <label className="block text-base font-medium text-black mb-1">Pick-up</label>
+          <input
+            type="text"
+            placeholder="Search country"
+            className="w-full text-sm placeholder-gray-400 focus:outline-none"
+          />
+        </div>
+
+        {/* Delivery */}
+        <div className="col-span-2 border-r px-4 py-3 bg-[#f3f6fb]">
+          <label className="block text-base font-medium text-black mb-1">Delivery</label>
+          <input
+            type="text"
+            placeholder="Search country"
+            className="w-full text-sm bg-[#f3f6fb] placeholder-gray-400 focus:outline-none"
+          />
+        </div>
+
+        {/* Service */}
+        <div className="col-span-2 border-r px-4 py-3 relative">
+          <label className="block text-base font-medium text-black mb-1">Service</label>
+          <select className="w-full text-sm placeholder-gray-400 focus:outline-none">
+            <option>Select a service</option>
+          </select>
+        </div>
+
+        {/* Ordering As */}
+        <div className="col-span-3 border-r px-4 py-3">
+          <label className="block text-base font-medium text-black mb-1">Ordering as</label>
+          <div className="flex items-center space-x-3 text-sm">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="ordering"
+                defaultChecked
+                className="mr-1 text-blue-600 focus:ring-0"
+              />
+              <span className="text-blue-600 text-base font-medium">Individual</span>
+            </label>
+            <label className="flex items-center">
+              <input type="radio" name="ordering" className="mr-1 text-blue-600 focus:ring-0" />
+              <span className="text-gray-700 text-base">Business</span>
+              <span className="ml-1 text-gray-400 text-xs">ℹ️</span>
+            </label>
+          </div>
+        </div>
+
+        {/* CTA Button */}
+        <div className="col-span-3 bg-[#0070f3] text-white flex justify-center items-center text-base font-medium cursor-pointer px-4 py-2 hover:opacity-90 transition duration-200">
+          Prices from €2.99 🔍
         </div>
       </div>
 
-      {/* Right Form */}
-      <div className="bg-white text-black p-6 rounded-lg shadow-lg w-full md:w-1/2 max-w-md">
-        <h2 className="text-lg font-semibold mb-4">Request a delivery now</h2>
 
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium">Pick-up address</label>
-            <select className="w-full border border-gray-300 rounded px-3 py-2 mt-1">
-              <option>Select pick-up</option>
-            </select>
-          </div>
+   {/* Badges */}
 
-          <div>
-            <label className="block text-sm font-medium">Drop-off address</label>
-            <select className="w-full border border-gray-300 rounded px-3 py-2 mt-1">
-              <option>Select drop-off</option>
-            </select>
-          </div>
-
-          <div className="relative">
-            <label className="block text-sm font-medium">Package size</label>
-            <div
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-full border border-gray-300 rounded px-3 py-2 mt-1 cursor-pointer flex justify-between items-center"
-            >
-              <span>{selected ? selected.label : 'Select size'}</span>
-              <ChevronDownIcon className="w-5 h-5 text-gray-500" />
-            </div>
-
-            {dropdownOpen && (
-              <div className="absolute z-10 mt-2 w-full bg-white border border-gray-300 rounded shadow-lg">
-                {packageSizes.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      setSelected(item);
-                      setDropdownOpen(false);
-                    }}
-                    className="flex items-center justify-between p-3 hover:bg-gray-100 cursor-pointer"
-                  >
-                    <div className="flex items-start space-x-2">
-                      <div className="text-2xl">{item.icon}</div>
-                      <div>
-                        <div className="font-medium">{item.label}</div>
-                        <div className="text-sm text-gray-600">{item.description}</div>
-                        <div className="text-xs text-gray-400">{item.size}</div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-700">{item.weight}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-
-          <div>
-            <label className="block text-sm font-medium">Email</label>
-            <input
-              type="email"
-              className="w-full border border-gray-300 rounded px-3 py-2 mt-1"
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div className="text-sm text-gray-600">
-            <p><span className="font-medium">Estimated pick-up:</span> To be calculated</p>
-            <p><span className="font-medium">Total:</span> To be calculated</p>
-          </div>
-
-          <div className="flex items-center">
-            <input type="checkbox" id="terms" className="mr-2" />
-            <label htmlFor="terms" className="text-sm">
-              I agree with the <a href="#" className="underline text-blue-600">terms of use</a> and the <a href="#" className="underline text-blue-600">privacy policy</a>
-            </label>
-          </div>
-
-          <button type="submit" className="bg-buttonColor hover:bg-[#009fe3] text-white w-full py-2 rounded font-semibold">
-            Request delivery
-          </button>
-        </form>
+      <div className="flex flex-wrap justify-center gap-4 mt-10">
+        <span className="bg-[#1D73FF] px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+          <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414L9 14.414l7.121-7.121a1 1 0 000-1.414z" />
+          </svg>
+          <span className='text-white text-base font-semibold'>Easy ordering</span>
+        </span>
+        <span className="bg-[#1D73FF] px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+          <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414L9 14.414l7.121-7.121a1 1 0 000-1.414z" />
+          </svg>
+          <span className='text-white text-base font-semibold'>Trusted carriers</span>
+        </span>
+        <span className="bg-[#1D73FF] px-4 py-2 rounded-full text-sm flex items-center space-x-2">
+          <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414L9 14.414l7.121-7.121a1 1 0 000-1.414z" />
+          </svg>
+          <span className='text-white text-base font-semibold'>Secure payment</span>
+        </span>
       </div>
     </div>
   );
