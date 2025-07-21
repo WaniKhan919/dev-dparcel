@@ -1,36 +1,62 @@
-import React from 'react';
+import React, { useState } from 'react';
+import countries from '../../../utils/data/countries.json'; // adjust path if needed
+
 
 const HeroSection = () => {
+
+  const [selected, setSelected] = useState('');
+  const [deliveryCountry, setDeliveryCountry] = useState("");
+
+
   return (
-    <div className="w-full flex flex-col justify-center items-center bg-gradient-to-b from-[#2f7cf4] to-[#6ea8fd] py-10 px-4">
+    <div className="w-full flex flex-col justify-center items-center bg-gradient-to-b from-[#2f7cf4] to-[#6ea8fd] py-10 px-0 pb-24">
 
       <h1 className="text-3xl md:text-5xl font-bold text-white text-center mb-8">
         Save on worldwide shipping with<br />Eurosender
       </h1>
-
-      <div className="bg-white rounded-md shadow-md w-full max-w-6xl grid grid-cols-12 overflow-hidden">
+      <div className="mx-4 bg-white rounded-md shadow-md w-full max-w-6xl grid grid-cols-1 md:grid-cols-12 overflow-hidden">
         {/* Pick-up */}
-        <div className="col-span-2 border-r px-4 py-3">
+        <div className="border-b md:border-b-0 md:border-r px-4 py-3 col-span-1 md:col-span-2">
           <label className="block text-base font-medium text-black mb-1">Pick-up</label>
-          <input
-            type="text"
-            placeholder="Search country"
-            className="w-full text-sm placeholder-gray-400 focus:outline-none"
-          />
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className={`w-full text-sm focus:outline-none bg-white rounded px-3 py-2 ${selected === '' ? 'text-gray-400' : 'text-black'
+              }`}
+          >
+            <option value="" disabled hidden>
+              Select a country
+            </option>
+            {countries.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Delivery */}
-        <div className="col-span-2 border-r px-4 py-3 bg-[#f3f6fb]">
+        <div className=" border-b md:border-b-0 md:border-r px-4 py-3 col-span-1 md:col-span-2">
           <label className="block text-base font-medium text-black mb-1">Delivery</label>
-          <input
-            type="text"
-            placeholder="Search country"
-            className="w-full text-sm bg-[#f3f6fb] placeholder-gray-400 focus:outline-none"
-          />
+          <select
+            value={deliveryCountry}
+            onChange={(e) => setDeliveryCountry(e.target.value)}
+            className={`w-full text-sm focus:outline-none bg-white rounded px-3 py-2 ${selected === '' ? 'text-gray-400' : 'text-black'
+              }`}
+          >
+            <option value="" disabled hidden>
+              Select a country
+            </option>
+            {countries.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Service */}
-        <div className="col-span-2 border-r px-4 py-3 relative">
+        <div className="border-b md:border-b-0 md:border-r px-4 py-3 relative col-span-1 md:col-span-2">
           <label className="block text-base font-medium text-black mb-1">Service</label>
           <select className="w-full text-sm placeholder-gray-400 focus:outline-none">
             <option>Select a service</option>
@@ -38,7 +64,7 @@ const HeroSection = () => {
         </div>
 
         {/* Ordering As */}
-        <div className="col-span-3 border-r px-4 py-3">
+        <div className="border-b md:border-b-0 md:border-r px-4 py-3 col-span-1 md:col-span-3">
           <label className="block text-base font-medium text-black mb-1">Ordering as</label>
           <div className="flex items-center space-x-3 text-sm">
             <label className="flex items-center">
@@ -59,13 +85,14 @@ const HeroSection = () => {
         </div>
 
         {/* CTA Button */}
-        <div className="col-span-3 bg-[#0070f3] text-white flex justify-center items-center text-base font-medium cursor-pointer px-4 py-2 hover:opacity-90 transition duration-200">
+        <div className="bg-[#0070f3] text-white flex justify-center items-center text-base font-medium cursor-pointer px-4 py-4 md:py-2 hover:opacity-90 transition duration-200 col-span-1 md:col-span-3">
           Prices from €2.99 🔍
         </div>
       </div>
 
 
-   {/* Badges */}
+
+      {/* Badges */}
 
       <div className="flex flex-wrap justify-center gap-4 mt-10">
         <span className="bg-[#1D73FF] px-4 py-2 rounded-full text-sm flex items-center space-x-2">
