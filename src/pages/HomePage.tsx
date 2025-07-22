@@ -9,6 +9,7 @@ import BusinessBenefitsSection from '../component/HomePage/BusinessBenefit/Busin
 import CustomerTestimonials from '../component/HomePage/Testimonials/Testimonials';
 import CarrierCards from '../component/HomePage/ClientTrust/CarrierCards';
 import GetBestRate from '../component/HomePage/BestRate/BestRate';
+import SubFooter from '../component/Footer/SubFooter';
 
 const HomePage = () => {
   return (
@@ -22,6 +23,7 @@ const HomePage = () => {
       <BusinessBenefitsSection/>
       <CustomerTestimonials/>
       <GetBestRate/>
+      <SubFooter/>
       <Footer/>
     </>
   );

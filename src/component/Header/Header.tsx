@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
 
-const Header = () => {
+
+
+interface HeaderProps {
+  backgroundColor?: string; // optional
+  textcolor?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ backgroundColor = '#ffffff', textcolor = '#00000' }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm z-50 relative">
-      <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-between">
-        
+    <header style={{ backgroundColor }} className="bg-[backgroundColor]  z-50 relative">
+      <div className="w-full px-6 py-4 flex items-center justify-between">
+
+
         {/* Logo */}
         <div className="flex items-center space-x-2">
-          <img src="https://www.eurosender.com/favicon-32x32.png" alt="Eurosender" className="h-6 w-6" />
-          <span className="text-[#1c1c1c] text-xl font-semibold">eurosender</span>
+          <a href='/' target='_blank'className='flex gap-2 items-center'>
+          <img src="/images/dp.svg" alt="DeliveringParcel" className="h-6 w-6" />
+          
+          <span style={{ color: textcolor }} className="text-[#1c1c1c] text-xl font-semibold">Delivering Parcel</span>
+          </a>
         </div>
 
         {/* Desktop Nav */}
@@ -18,13 +29,13 @@ const Header = () => {
           {/* Services */}
           <div className="relative group">
             <button className="hover:text-[#007aff] flex items-center space-x-1">
-              <span>Services</span>
-              <svg className="w-3 h-3 mt-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 7.5l4.5 4.5 4.5-4.5H5.5z"/></svg>
+              <span style={{ color: textcolor }}>Services</span>
+              <svg className="w-3 h-3 mt-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 7.5l4.5 4.5 4.5-4.5H5.5z" /></svg>
             </button>
             <div className="absolute left-0 top-full mt-2 w-[500px] bg-white border shadow-md hidden group-hover:flex p-4 z-50 space-x-8 text-sm">
               {/* Top Services */}
               <div>
-                <div className="text-xs text-gray-500 font-semibold mb-2">TOP SERVICES</div>
+                <div  className="text-xs text-gray-500 font-semibold mb-2">TOP SERVICES</div>
                 <ul className="space-y-2">
                   <li className="flex items-center space-x-2 hover:underline cursor-pointer">
                     <span>📄 Document</span>
@@ -55,19 +66,19 @@ const Header = () => {
             </div>
           </div>
 
-          <div className="hover:text-[#007aff] cursor-pointer">Features</div>
-          <div className="hover:text-[#007aff] cursor-pointer">Resources</div>
-          <div className="hover:text-[#007aff] cursor-pointer">Enterprise</div>
+          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer">Features</div>
+          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer">Resources</div>
+          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer">Enterprise</div>
         </nav>
 
         {/* Desktop Right Side */}
         <div className="hidden lg:flex items-center space-x-4 text-sm font-medium">
           <button className="hover:text-[#007aff] text-[#1c1c1c] flex items-center space-x-1">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 9.25h-1.5v-1.5h1.5v1.5zm0-3h-1.5v-3h1.5v3z"/></svg>
-            <span>EN</span>
+            <svg style={{ color: textcolor }} className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 9.25h-1.5v-1.5h1.5v1.5zm0-3h-1.5v-3h1.5v3z" /></svg>
+            <span style={{ color: textcolor }}>EN</span>
           </button>
-          <a href="#" className="text-[#1c1c1c] hover:underline">Log in</a>
-          <a href="#" className="bg-[#ff5c1c] text-white px-4 py-2 rounded hover:bg-[#e74c10] transition">Create account</a>
+          <a href="#" style={{ color: textcolor }} className="text-[#1c1c1c] hover:underline">Log in</a>
+          <a href="#" style={{ color: textcolor }} className="bg-[#ff5c1c] text-white px-4 py-2 rounded hover:bg-[#e74c10] transition">Create account</a>
         </div>
 
         {/* Mobile Toggle */}
@@ -75,10 +86,10 @@ const Header = () => {
           <button onClick={() => setMenuOpen(!menuOpen)} className="text-gray-800 focus:outline-none">
             {menuOpen ? (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2}
-                   viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             ) : (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2}
-                   viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
             )}
           </button>
         </div>

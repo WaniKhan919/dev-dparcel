@@ -29,7 +29,9 @@ export default function Footer() {
           <h3 className="font-semibold mb-3">Company</h3>
           <ul className="space-y-2">
             <li>Home</li>
+            <a href='/aboutus' target='_blank' className='text-none'>
             <li>About us</li>
+            </a>
             <li>Privacy Policy</li>
           </ul>
         </div>
