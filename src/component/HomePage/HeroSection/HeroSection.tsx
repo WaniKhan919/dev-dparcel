@@ -66,7 +66,7 @@ const HeroSection = () => {
         {/* Ordering As */}
         <div className="border-b md:border-b-0 md:border-r px-4 py-3 col-span-1 md:col-span-3">
           <label className="block text-base font-medium text-black mb-1">Ordering as</label>
-          <div className="flex items-center space-x-3 text-sm">
+          <div className="flex items-center space-x-2 text-sm">
             <label className="flex items-center">
               <input
                 type="radio"
