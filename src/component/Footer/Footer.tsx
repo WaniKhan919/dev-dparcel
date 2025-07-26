@@ -30,7 +30,7 @@ export default function Footer() {
           <ul className="space-y-2">
             <li>Home</li>
             <li>
-              <a href="/aboutus" target="_blank" className="text-none no-underline">
+              <a href="/aboutus"  className="text-none no-underline">
                 About us
               </a>
             </li>
@@ -53,7 +53,11 @@ export default function Footer() {
           <h3 className="font-semibold mb-3">Support</h3>
           <ul className="space-y-2">
             <li>Help centre</li>
-            <li>Contact us</li>
+            <li>
+              <a href="/contact"  className="text-none no-underline">
+                Contact us
+              </a>
+            </li>
             <li>Tracking</li>
             <li>Resource centre</li>
           </ul>
