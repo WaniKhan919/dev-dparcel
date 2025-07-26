@@ -2,11 +2,11 @@ import React, { Component } from 'react'
 import LogoCarousel from '../TrustedSolution/LogoCarousel'
 
 const carriers = [
-  { src: 'images/carrier/DPD.svg', alt: 'dpd' },
-  { src: 'images/carrier/GLS.svg', alt: 'gls' },
-  { src: 'images/carrier/DHL.svg', alt: 'dhl' },
-  { src: 'images/carrier/UPS.svg', alt: 'ups' },
-  { src: 'images/carrier/KN.svg', alt: 'kn' },
+  { src: 'images/carrier/DPD.svg', alt: 'dpd', height: 'full', width: 'full' },
+  { src: 'images/carrier/GLS.svg', alt: 'gls', height: 'full', width: 'full' },
+  { src: 'images/carrier/DHL.svg', alt: 'dhl', height: 'full', width: 'full' },
+  { src: 'images/carrier/UPS.svg', alt: 'ups', height: 'full', width: 'full' },
+  { src: 'images/carrier/KN.svg', alt: 'kn', width: 16, height: 12 },
 ];
 
 export default class ClientTrust extends Component {
@@ -16,12 +16,12 @@ export default class ClientTrust extends Component {
     return (
       <>
         <div className="flex justify-center w-full absolute z-10" style={{ marginTop: -40 }}>
-          <div className="flex w-full max-w-[400px] justify-between px-2">
+          <div className="flex w-full max-w-[500px] justify-between px-2 ">
             {carriers.map((carrier, index) => (
               <div
                 key={index}
                 className="
-          bg-white shadow-md rounded-[16px]
+          bg-white overflow-hidden shadow-md rounded-[16px]
           w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] 
           flex items-center justify-center 
           transition-transform hover:scale-105
@@ -30,7 +30,7 @@ export default class ClientTrust extends Component {
                 <img
                   src={carrier.src}
                   alt={carrier.alt}
-                  className="max-h-full max-w-full object-contain"
+                  className={`max-h-${carrier.height} max-w-${carrier.width} object-contain`}
                 />
               </div>
             ))}

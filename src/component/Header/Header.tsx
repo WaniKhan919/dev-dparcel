@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ backgroundColor = '#ffffff', textcolor 
             <svg style={{ color: textcolor }} className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 9.25h-1.5v-1.5h1.5v1.5zm0-3h-1.5v-3h1.5v3z" /></svg>
             <span style={{ color: textcolor }}>EN</span>
           </button>
-          <a href="#" style={{ color: textcolor }} className="text-[#1c1c1c] hover:underline">Log in</a>
+          <a href="/login" style={{ color: textcolor }} className="text-[#1c1c1c] hover:underline">Log in</a>
           <a href="#" style={{ color: textcolor }} className="bg-[#ff5c1c] text-white px-4 py-2 rounded hover:bg-[#e74c10] transition">Create account</a>
         </div>
 
