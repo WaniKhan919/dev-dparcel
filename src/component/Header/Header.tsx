@@ -1,4 +1,12 @@
 import React, { useState } from 'react';
+import { CiGlobe } from "react-icons/ci";
+import { FaUserCircle } from "react-icons/fa";
+import { TfiHeadphoneAlt } from "react-icons/tfi";
+import { IoMdInformationCircleOutline } from "react-icons/io";
+
+
+
+
 
 
 
@@ -11,8 +19,9 @@ const Header: React.FC<HeaderProps> = ({ backgroundColor = '#ffffff', textcolor 
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header style={{ backgroundColor }} className="bg-[backgroundColor]  z-50 relative">
+    <header style={{ backgroundColor }} className="bg-[backgroundColor]  z-50 sticky top-0">
       <div className="w-full px-6 py-4 flex items-center justify-between">
+        <div className='flex gap-10'>
 
 
         {/* Logo */}
@@ -20,7 +29,7 @@ const Header: React.FC<HeaderProps> = ({ backgroundColor = '#ffffff', textcolor 
           <a href='/' target='_blank'className='flex gap-2 items-center'>
           <img src="/images/dp.svg" alt="DeliveringParcel" className="h-6 w-6" />
           
-          <span style={{ color: textcolor }} className="text-[#1c1c1c] text-xl font-semibold">Delivering Parcel</span>
+          <span style={{ color: textcolor }} className="text-[#1c1c1c] text-base font-semibold">Delivering Parcel</span>
           </a>
         </div>
 
@@ -29,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ backgroundColor = '#ffffff', textcolor 
           {/* Services */}
           <div className="relative group">
             <button className="hover:text-[#007aff] flex items-center space-x-1">
-              <span style={{ color: textcolor }}>Services</span>
+              <span className='text-base' style={{ color: textcolor }}>Services</span>
               <svg className="w-3 h-3 mt-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 7.5l4.5 4.5 4.5-4.5H5.5z" /></svg>
             </button>
             <div className="absolute left-0 top-full mt-2 w-[500px] bg-white border shadow-md hidden group-hover:flex p-4 z-50 space-x-8 text-sm">
@@ -66,19 +75,36 @@ const Header: React.FC<HeaderProps> = ({ backgroundColor = '#ffffff', textcolor 
             </div>
           </div>
 
-          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer">Features</div>
-          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer">Resources</div>
-          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer">Enterprise</div>
+          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer text-base">Features</div>
+          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer text-base">Resources</div>
+          <div style={{ color: textcolor }} className="hover:text-[#007aff] cursor-pointer text-base">Enterprise</div>
         </nav>
+        </div>
 
         {/* Desktop Right Side */}
         <div className="hidden lg:flex items-center space-x-4 text-sm font-medium">
+          
+          <a href="/login" style={{ color: textcolor }} className="text-[#1c1c1c] hover:underline flex items-center gap-2">
+          <FaUserCircle size={25}/>
+
+          Log in
+          </a>
+          <a href="/login" style={{ color: textcolor }} className="bg-[#ff5c1c] text-white px-4 py-2 rounded hover:bg-[#e74c10] transition">Create account</a>
+
+<a href="/contact">
+          <TfiHeadphoneAlt style={{ color: textcolor }} size={25}/>
+          </a>
+          <IoMdInformationCircleOutline style={{ color: textcolor }} size={25} />
+
           <button className="hover:text-[#007aff] text-[#1c1c1c] flex items-center space-x-1">
-            <svg style={{ color: textcolor }} className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 9.25h-1.5v-1.5h1.5v1.5zm0-3h-1.5v-3h1.5v3z" /></svg>
+           <CiGlobe style={{ color: textcolor }}  size={25}/>
+
             <span style={{ color: textcolor }}>EN</span>
+
           </button>
-          <a href="/login" style={{ color: textcolor }} className="text-[#1c1c1c] hover:underline">Log in</a>
-          <a href="#" style={{ color: textcolor }} className="bg-[#ff5c1c] text-white px-4 py-2 rounded hover:bg-[#e74c10] transition">Create account</a>
+
+          
+
         </div>
 
         {/* Mobile Toggle */}
