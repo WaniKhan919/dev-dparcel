@@ -21,19 +21,16 @@ export default function AuthLayout({
                 <img
                   width={231}
                   height={48}
-                  src="/images/logo/auth-logo.svg"
+                  src="/images/logo/dparcel-logo.svg"
                   alt="Logo"
                 />
               </Link>
-              <p className="text-center text-gray-400 dark:text-white/60">
-                Free and Open-Source Tailwind CSS Admin Dashboard Template
-              </p>
             </div>
           </div>
         </div>
-        <div className="fixed z-50 hidden bottom-6 right-6 sm:block">
+        {/* <div className="fixed z-50 hidden bottom-6 right-6 sm:block">
           <ThemeTogglerTwo />
-        </div>
+        </div> */}
       </div>
     </div>
   );
