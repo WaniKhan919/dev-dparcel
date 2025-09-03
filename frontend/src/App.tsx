@@ -33,9 +33,9 @@ export default function App() {
           {/* Dashboard Layout */}
           <Route 
             element={
-              <PrivateRoute>
+              // <PrivateRoute>
                 <AppLayout />
-              </PrivateRoute>
+              // </PrivateRoute>
             }
           >
             <Route index path="/" element={<Home />} />
