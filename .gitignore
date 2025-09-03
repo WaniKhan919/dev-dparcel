@@ -1,5 +1,8 @@
-# Logs
-logs
+# -------------------------
+# Global ignores
+# -------------------------
+.DS_Store
+Thumbs.db
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,18 +10,50 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node
 node_modules
 dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# IDE / Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# -------------------------
+# Laravel (backend)
+# -------------------------
+/backend/vendor/
+/backend/node_modules/
+/backend/public/storage
+/backend/storage/*.key
+/backend/.env
+/backend/.env.backup
+/backend/.env.local
+/backend/.phpunit.result.cache
+/backend/homestead.yaml
+/backend/Homestead.json
+/backend/.vagrant
+
+# -------------------------
+# React (frontend - Vite)
+# -------------------------
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.development
+/frontend/.env.production
+/frontend/.env.test
+
+# -------------------------
+# OS files
+# -------------------------
+ehthumbs.db
+Icon?
