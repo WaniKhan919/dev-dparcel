@@ -15,11 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('phone')->nullable();
             // account status
-            $table->enum('status', ['active','inactive'])->default('inactive'); // signup users start as inactive until verified
+            $table->enum('status', ['active','inactive'])->default('inactive'); 
 
             // verification fields
             $table->string('verification_code')->nullable();

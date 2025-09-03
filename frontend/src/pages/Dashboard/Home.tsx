@@ -6,7 +6,7 @@ export default function Home() {
     <>
       <PageMeta
         title="Dashboard"
-        description="This is React.js Ecommerce Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        description="International Package and mail Forwarding Services"
       />
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         <div className="col-span-12">

@@ -6,8 +6,8 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="React.js SignIn Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js SignIn Tables Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="International Package and mail Forwarding Services"
+        description="Shop Online from USA UK Spain France Germany Australia Japan and ship to any address Worldwide. Shop from famous stores like Amazon eBay Walmart Apple Gucci Hermes etc and ship anywhere. Get the Best Shipping Services with best package Forwarding Company worldwide."
       />
       <AuthLayout>
         <SignInForm />
