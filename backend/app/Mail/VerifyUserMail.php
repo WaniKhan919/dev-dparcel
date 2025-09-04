@@ -40,14 +40,14 @@ class VerifyUserMail extends Mailable
      */
     public function content(): Content
     {
-        return $this->subject('Verify Your Account')
-                    ->view('emails.verify-account')
-                    ->with([
-                        'name' => $this->name,
-                        'code' => $this->code,
-                    ]);
+        return new Content(
+            view: 'emails.verify-account',
+            with: [
+                'name' => $this->name,
+                'code' => $this->code,
+            ],
+        );
     }
-
     /**
      * Get the attachments for the message.
      *

@@ -36,7 +36,7 @@
         </tr>
         <tr>
             <td style="background:#f3f4f6; text-align:center; padding:15px; font-size:12px; color:#777;">
-                &copy; {{ date('Y') }} Our App. All rights reserved.
+                &copy; {{ date('Y') }} Delevering Parcel. All rights reserved.
             </td>
         </tr>
     </table>

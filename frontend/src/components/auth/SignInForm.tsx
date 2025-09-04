@@ -1,14 +1,83 @@
+import * as yup from "yup";
 import { useState } from "react";
-import { Link } from "react-router";
+import toast from "react-hot-toast";
+import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
+import { ApiHelper } from "../../utils/ApiHelper";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+
+const schema = yup.object().shape({
+  email: yup.string().email("Enter a valid email").required("Email is required"),
+  password: yup.string().required("Password is required"),
+});
+
+
+type FormData = {
+  email: string;
+  password: string;
+};
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: yupResolver(schema),
+  });
+
+  const onSubmit = async (data: FormData) => {
+    setLoading(true);
+    try {
+      const res = await ApiHelper("POST", "/login", data);
+
+      if (res.status === 200) {
+        localStorage.setItem("access_token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+
+        // Success toast 🎉
+        toast.success(res.data.message || "Login successful!", {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+          icon: "🎉",
+        });
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
+      } else {
+        toast.error(res.data.message || "Login failed ❌");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Login failed!", {
+        duration: 3000,
+        position: "top-right",
+        style: {
+          background: "#f44336",
+          color: "#fff",
+          fontWeight: "bold",
+        },
+        icon: "⚠️",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
@@ -83,35 +152,46 @@ export default function SignInForm() {
                 </span>
               </div>
             </div>
-            <form>
+            <form onSubmit={handleSubmit(onSubmit)}>
               <div className="space-y-6">
+                {/* Email */}
                 <div>
-                  <Label>
-                    Email <span className="text-error-500">*</span>{" "}
-                  </Label>
-                  <Input placeholder="info@gmail.com" />
+                  <Label>Email <span className="text-error-500">*</span></Label>
+                  <Input
+                    placeholder="info@gmail.com"
+                    {...register("email")}
+                  />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm">{errors.email.message}</p>
+                  )}
                 </div>
+
+                {/* Password */}
                 <div>
-                  <Label>
-                    Password <span className="text-error-500">*</span>{" "}
-                  </Label>
+                  <Label>Password <span className="text-error-500">*</span></Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      {...register("password")}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                     >
                       {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                        <EyeIcon className="fill-gray-500 size-5" />
                       ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                        <EyeCloseIcon className="fill-gray-500 size-5" />
                       )}
                     </span>
                   </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm">{errors.password.message}</p>
+                  )}
                 </div>
+
+                {/* Remember me + Forgot password */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
@@ -126,9 +206,11 @@ export default function SignInForm() {
                     Forgot password?
                   </Link>
                 </div>
+
+                {/* Submit Button */}
                 <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
+                  <Button type="submit" className="w-full" size="sm" disabled={isSubmitting}>
+                    {isSubmitting ? "Signing in..." : "Sign in"}
                   </Button>
                 </div>
               </div>
@@ -136,15 +218,25 @@ export default function SignInForm() {
 
             <div className="mt-5">
               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                Don&apos;t have an account? {""}
+                Don&apos;t have an account?{" "}
                 <Link
                   to="/signup"
+                  state={{ role: "shipper" }}
                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
                 >
-                  Sign Up
+                  Sign Up as Shipper
+                </Link>
+                {" "}or{" "}
+                <Link
+                  to="/signup"
+                  state={{ role: "shopper" }}
+                  className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                >
+                  Sign Up as Shopper
                 </Link>
               </p>
             </div>
+
           </div>
         </div>
       </div>

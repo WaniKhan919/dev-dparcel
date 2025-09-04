@@ -19,6 +19,8 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import PrivateRoute from "./context/PrivateRoute";
+import { Toaster } from "react-hot-toast";
+import VerifyOtp from "./pages/AuthPages/VerifyOtp";
 
 export default function App() {
   return (
@@ -29,6 +31,7 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/verify" element={<VerifyOtp />} />
 
           {/* Dashboard Layout */}
           <Route 
@@ -68,6 +71,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
+      <Toaster position="top-right" reverseOrder={false} />
     </>
   );
 }

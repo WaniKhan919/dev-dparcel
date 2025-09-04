@@ -11,6 +11,8 @@ use App\Mail\ResetPasswordMail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -61,7 +63,6 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Login successfully',
                 'user'    => [
-                    'id'     => $user->id,
                     'name'   => $user->name,
                     'email'  => $user->email,
                     'roles'  => $user->roles->pluck('name'),
@@ -100,7 +101,7 @@ class AuthController extends Controller
                 'status'   => 'inactive', // until verified
                 'is_verified' => false,
                 'verification_code' => $verificationCode,
-                'verification_code_expires_at' => now()->addMinutes(15),
+                'verification_code_expires_at' => now()->addMinutes(15)->toDateTimeString(),
             ]);
 
             // find role
@@ -129,11 +130,11 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email' => 'required|email',
+                'user_id' => 'required',
                 'code'  => 'required',
             ]);
 
-            $user = User::where('email', $request->email)->first();
+            $user = User::where('id', $request->user_id)->first();
 
             if (! $user) {
                 return response()->json(['error' => 'User not found.'], 404);
@@ -146,10 +147,12 @@ class AuthController extends Controller
             if ($user->verification_code != $request->code) {
                 return response()->json(['error' => 'Invalid verification code.'], 400);
             }
+$expiresAt = Carbon\Carbon::parse($user->verification_code_expires_at);
 
-            if (Carbon::now()->gt($user->verification_expires_at)) {
-                return response()->json(['error' => 'Verification code expired.'], 400);
-            }
+if (now()->gt($expiresAt)) {
+    return response()->json(['error' => 'Verification code expired.'], 400);
+}
+
 
             $user->update([
                 'is_verified'       => true,

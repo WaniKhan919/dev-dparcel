@@ -5,9 +5,97 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 
-export default function SignUpForm() {
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import toast from "react-hot-toast";
+import { ApiHelper } from "../../utils/ApiHelper";
+
+interface SignUpFormProps {
+  role: string;
+}
+
+// Validation schema using yup
+const schema = yup.object({
+  name: yup.string().trim().required("Name is required"),
+  email: yup.string().trim().email("Enter a valid email").required("Email is required"),
+  password: yup.string().min(8, "Password must be at least 8 characters").required("Password is required"),
+  terms: yup.boolean().oneOf([true], "You must accept the terms").required(),
+}).required();
+
+type FormValues = {
+  name: string;
+  email: string;
+  password: string;
+  terms: boolean;
+};
+
+export default function SignUpForm({ role }: SignUpFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      terms: false,
+    }
+  });
+
+  // Submit handler
+  const onSubmit = async (data: FormValues) => {
+    try {
+      const payload = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        password_confirmation: data.password,
+        role: role
+      };
+
+      const toastId = toast.loading("Signing up...");
+
+      const res: any = await ApiHelper("POST", "/signup", payload);
+
+      if (res?.status === 201) {
+        toast.success(res.data.message || "Registered successfully", {
+          duration: 3000,
+          position: "top-right",
+          // style: {
+          //   background: "#4caf50",
+          //   color: "#fff",
+          //   fontWeight: "bold",
+          // },
+          icon: "🎉",
+        });
+
+        if (res.data?.user_id) {
+          localStorage.setItem("verification_user_id", String(res.data.user_id));
+        }
+
+        setTimeout(() => {
+          window.location.href = "/verify";
+        }, 1000);
+      } else {
+        toast.error(res?.data?.message || "Signup failed", { id: toastId });
+      }
+    } catch (err: any) {
+      if (err?.response?.data?.errors) {
+        const messages = Object.values(err.response.data.errors).flat().join(" ");
+        toast.error(messages);
+      } else {
+        toast.error(err?.response?.data?.message || err?.message || "Signup failed");
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
@@ -82,32 +170,24 @@ export default function SignUpForm() {
                 </span>
               </div>
             </div>
-            <form>
+
+            {/* FORM START */}
+            <form onSubmit={handleSubmit(onSubmit)}>
               <div className="space-y-5">
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
                   {/* <!-- First Name --> */}
                   <div className="sm:col-span-1">
-                    <Label>
-                      First Name<span className="text-error-500">*</span>
+                     <Label>Name<span className="text-error-500">*</span>
                     </Label>
                     <Input
                       type="text"
-                      id="fname"
-                      name="fname"
-                      placeholder="Enter your first name"
+                      id="name"
+                      placeholder="Enter your name"
+                      {...register("name")}
                     />
-                  </div>
-                  {/* <!-- Last Name --> */}
-                  <div className="sm:col-span-1">
-                    <Label>
-                      Last Name<span className="text-error-500">*</span>
-                    </Label>
-                    <Input
-                      type="text"
-                      id="lname"
-                      name="lname"
-                      placeholder="Enter your last name"
-                    />
+                    {errors.name && (
+                      <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+                    )}
                   </div>
                 </div>
                 {/* <!-- Email --> */}
@@ -118,9 +198,12 @@ export default function SignUpForm() {
                   <Input
                     type="email"
                     id="email"
-                    name="email"
                     placeholder="Enter your email"
+                    {...register("email")}
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                  )}
                 </div>
                 {/* <!-- Password --> */}
                 <div>
@@ -131,6 +214,7 @@ export default function SignUpForm() {
                     <Input
                       placeholder="Enter your password"
                       type={showPassword ? "text" : "password"}
+                      {...register("password")}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -143,13 +227,25 @@ export default function SignUpForm() {
                       )}
                     </span>
                   </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                  )}
                 </div>
                 {/* <!-- Checkbox --> */}
                 <div className="flex items-center gap-3">
-                  <Checkbox
-                    className="w-5 h-5"
-                    checked={isChecked}
-                    onChange={setIsChecked}
+                  <Controller
+                    control={control}
+                    name="terms"
+                    render={({ field }) => (
+                      <Checkbox
+                        className="w-5 h-5"
+                        checked={field.value}
+                        onChange={(val: boolean) => {
+                          field.onChange(val);
+                          setIsChecked(val); // keep local state in sync with controller
+                        }}
+                      />
+                    )}
                   />
                   <p className="inline-block font-normal text-gray-500 dark:text-gray-400">
                     By creating an account means you agree to the{" "}
@@ -162,14 +258,20 @@ export default function SignUpForm() {
                     </span>
                   </p>
                 </div>
+                {errors.terms && <p className="text-red-500 text-sm mt-1">{errors.terms.message}</p>}
                 {/* <!-- Button --> */}
                 <div>
-                  <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600">
-                    Sign Up
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Signing Up..." : "Sign Up"}
                   </button>
                 </div>
               </div>
             </form>
+            {/* FORM END */}
 
             <div className="mt-5">
               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">

@@ -1,6 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\RolePermissionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 
@@ -20,8 +21,8 @@ Route::post('/roles/{role}/permissions', [RolePermissionController::class, 'assi
 Route::delete('/roles/{role}/permissions/{permission}', [RolePermissionController::class, 'revoke']);
 
 //Verfiy account
-Route::post('/verify', [SignupController::class, 'verify']);
-Route::post('/resend-code', [SignupController::class, 'resendCode']);
+Route::post('/verify', [AuthController::class, 'verify']);
+Route::post('/resend-code', [AuthController::class, 'resendCode']);
 
 //Forgot password
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);

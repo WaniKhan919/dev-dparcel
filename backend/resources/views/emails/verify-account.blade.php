@@ -9,7 +9,7 @@
     <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
         <tr>
             <td style="background:#4f46e5; padding:20px; text-align:center; color:#fff; font-size:20px; font-weight:bold;">
-                Welcome to Our Platform
+                Welcome to Delevering Parcel Platform
             </td>
         </tr>
         <tr>
@@ -27,7 +27,7 @@
         </tr>
         <tr>
             <td style="background:#f3f4f6; text-align:center; padding:15px; font-size:12px; color:#777;">
-                &copy; {{ date('Y') }} Our App. All rights reserved.
+                &copy; {{ date('Y') }} Delevering Parcel. All rights reserved.
             </td>
         </tr>
     </table>
