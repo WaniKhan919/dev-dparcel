@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Permission;
 use Exception;
+use Illuminate\Support\Str;
 
 class PermissionController extends Controller
 {
@@ -13,25 +14,48 @@ class PermissionController extends Controller
     public function index()
     {
         try {
-            return response()->json(Permission::all());
+            $permissions = Permission::get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Permission fetched successfully',
+                'data' => $permissions, //RoleResource::collection($roles)
+            ], 200);
+
         } catch (Exception $e) {
-            return response()->json(['message' => 'Failed to fetch permissions', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch permissions',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
     /** Create a new permission */
     public function store(Request $request)
     {
-        try {
+         try {
             $validated = $request->validate([
-                'name'   => 'required|string|unique:permissions,name',
+                'name' => 'required|string|unique:permissions,name',
             ]);
+
+            // Generate code (slug version of name)
+            $validated['code'] = Str::snake(Str::lower($validated['name']));
 
             $permission = Permission::create($validated);
 
-            return response()->json(['message' => 'Permission created successfully', 'permission' => $permission], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Permission added successfully',
+                // 'data'    => $permission
+            ], 200);
+
         } catch (Exception $e) {
-            return response()->json(['message' => 'Failed to create permission', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add permission',
+                'error'   => $e->getMessage()
+            ], 500);
         }
     }
 

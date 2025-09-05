@@ -147,11 +147,12 @@ class AuthController extends Controller
             if ($user->verification_code != $request->code) {
                 return response()->json(['error' => 'Invalid verification code.'], 400);
             }
-$expiresAt = Carbon\Carbon::parse($user->verification_code_expires_at);
+            $now = now();
+            $expiresAt = Carbon::parse($user->verification_code_expires_at);
 
-if (now()->gt($expiresAt)) {
-    return response()->json(['error' => 'Verification code expired.'], 400);
-}
+            if ($now > $otpTime) {
+                return response()->json(['error' => 'Verification code expired.'], 400);
+            }
 
 
             $user->update([

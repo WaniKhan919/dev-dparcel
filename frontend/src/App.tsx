@@ -21,6 +21,8 @@ import Home from "./pages/Dashboard/Home";
 import PrivateRoute from "./context/PrivateRoute";
 import { Toaster } from "react-hot-toast";
 import VerifyOtp from "./pages/AuthPages/VerifyOtp";
+import Roles from "./pages/Roles/Roles";
+import Permissions from "./pages/Permissions/Permissions";
 
 export default function App() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
             }
           >
             <Route index path="/" element={<Home />} />
+            <Route index path="/roles" element={<Roles />} />
+            <Route index path="/permissions" element={<Permissions />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

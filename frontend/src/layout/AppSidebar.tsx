@@ -10,7 +10,8 @@ import {
   TableIcon,
   UserCircleIcon,
   PlusIcon,
-  LockIcon
+  LockIcon,
+  UserIcon
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
@@ -26,6 +27,14 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/",
+  },
+  {
+    icon: <UserIcon />,
+    name: "Role & Permission",
+    subItems: [
+      { name: "Roles",  path: "/roles" },
+      { name: "Permissions", path: "/permissions" },
+    ],
   },
   {
     icon: <PlusIcon />,
@@ -211,8 +220,8 @@ const AppSidebar: React.FC = () => {
                       to={subItem.path}
                       className={`menu-dropdown-item ${
                         isActive(subItem.path)
-                          ? "menu-dropdown-item-active"
-                          : "menu-dropdown-item-inactive"
+                          ? "bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))] text-white"
+                          : "text-white hover:bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))]"
                       }`}
                     >
                       {subItem.name}
