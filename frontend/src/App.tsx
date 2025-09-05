@@ -47,18 +47,15 @@ export default function App() {
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
 
-            {/* Others Page */}
+            {/* Others Page
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 
-            {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
 
-            {/* Tables */}
             <Route path="/basic-tables" element={<BasicTables />} />
 
-            {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/avatars" element={<Avatars />} />
             <Route path="/badge" element={<Badges />} />
@@ -66,16 +63,15 @@ export default function App() {
             <Route path="/images" element={<Images />} />
             <Route path="/videos" element={<Videos />} />
 
-            {/* Charts */}
             <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+            <Route path="/bar-chart" element={<BarChart />} /> */}
           </Route>
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-right" reverseOrder={false}  />
     </>
   );
 }

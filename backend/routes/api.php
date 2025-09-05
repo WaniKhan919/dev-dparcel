@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Permissions (Admin only)
     Route::get('/permissions', [PermissionController::class, 'index']);
     Route::post('/permissions', [PermissionController::class, 'store']);
+    Route::get('/permission/{id}', [PermissionController::class, 'show']);
     Route::put('/permissions/{permission}', [PermissionController::class, 'update']);
     Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy']);
 

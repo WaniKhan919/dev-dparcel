@@ -150,7 +150,7 @@ class AuthController extends Controller
             $now = now();
             $expiresAt = Carbon::parse($user->verification_code_expires_at);
 
-            if ($now > $otpTime) {
+            if ($now > $expiresAt) {
                 return response()->json(['error' => 'Verification code expired.'], 400);
             }
 
@@ -162,7 +162,10 @@ class AuthController extends Controller
                 'verification_expires_at' => null,
             ]);
 
-            return response()->json(['message' => 'Account verified successfully.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Account verified successfully.',
+            ], 200);
 
         } catch (Exception $e) {
             return response()->json([

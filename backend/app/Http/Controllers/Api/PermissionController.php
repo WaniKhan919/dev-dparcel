@@ -30,11 +30,11 @@ class PermissionController extends Controller
             ], 500);
         }
     }
-
+    
     /** Create a new permission */
     public function store(Request $request)
     {
-         try {
+        try {
             $validated = $request->validate([
                 'name' => 'required|string|unique:permissions,name',
             ]);
@@ -58,6 +58,32 @@ class PermissionController extends Controller
             ], 500);
         }
     }
+    //Get Single Permission
+    public function show($id)
+    {
+        try {
+            $permission = Permission::find($id);
+
+            if (!$permission) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Permission not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $permission,
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch permission',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /** Update a permission */
     public function update(Request $request, Permission $permission)
@@ -66,10 +92,14 @@ class PermissionController extends Controller
             $validated = $request->validate([
                 'name'   => 'required|string|unique:permissions,name,' . $permission->id,
             ]);
-
+            
+            $validated['code'] = Str::snake(Str::lower($validated['name']));
             $permission->update($validated);
 
-            return response()->json(['message' => 'Permission updated successfully', 'permission' => $permission]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Permission updated successfully',
+            ], 200);
         } catch (Exception $e) {
             return response()->json(['message' => 'Failed to update permission', 'error' => $e->getMessage()], 500);
         }

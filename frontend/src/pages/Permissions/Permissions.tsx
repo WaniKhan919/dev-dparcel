@@ -1,6 +1,5 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
-import Badge from "../../components/ui/badge/Badge";
 import { PencilIcon, TrashBinIcon } from "../../icons";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
@@ -18,6 +17,7 @@ import { ApiHelper } from "../../utils/ApiHelper";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchPermission } from "../../slices/permissionSlice";
+import EditPermissionModal from "./EditPermissionModal";
 
 const schema = yup.object().shape({
     name: yup.string().required("Permission title is required"),
@@ -44,6 +44,8 @@ export default function Permissions() {
 
     const { isOpen, openModal, closeModal } = useModal();
     const [loading, setLoading] = useState(false);
+    const [editModal, setEditModal] = useState(false);
+    const [permissionId, setPermissionId] = useState(0);
 
     const {
         register,
@@ -62,11 +64,9 @@ export default function Permissions() {
     const onSubmit = async (data: FormData) => {
         setLoading(true);
         try {
-            // API call to save permission
             const res = await ApiHelper("POST", "/permissions", data);
 
             if (res.status === 200) {
-                onClose()
                 dispatch(fetchPermission());
 
                 toast.success(res.data.message || "Permission added!");
@@ -83,6 +83,29 @@ export default function Permissions() {
         }
     };
 
+    const editPermission = (id:number) => {
+        setPermissionId(id)
+        setEditModal(true)
+    }
+
+    const deletePermission = async (id: number) => {
+        if (!window.confirm("Are you sure you want to delete this permission?")) return;
+
+        try {
+            const res = await ApiHelper("DELETE", `/permissions/${id}`);
+            if (res.status === 200) {
+            toast.success(res.data.message || "Permission deleted!");
+            dispatch(fetchPermission()); // refresh your table
+            } else {
+            toast.error(res.data.message || "Failed to delete ❌");
+            }
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "Something went wrong!");
+        }
+    };
+
+
+
     const columns = [
         {
             key: "name",
@@ -95,11 +118,18 @@ export default function Permissions() {
             header: "Actions",
             render: (row: Permission) => (
                 <div className="flex gap-3">
-                    <button className="text-blue-500 hover:text-blue-700">
-                        <PencilIcon />
+                    <button
+                        onClick={() => editPermission(row.id)}
+                        className="p-2 border border-blue-300 rounded-full text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition"
+                    >
+                        <PencilIcon className="w-5 h-5" />
                     </button>
-                    <button className="text-red-500 hover:text-red-700">
-                        <TrashBinIcon />
+
+                    <button
+                        onClick={() => deletePermission(row.id)}
+                        className="p-2 border border-red-300 rounded-full text-red-500 hover:bg-red-50 hover:text-red-700 transition"
+                        >
+                        <TrashBinIcon className="w-5 h-5" />
                     </button>
                 </div>
             ),
@@ -110,6 +140,14 @@ export default function Permissions() {
         <>
             <PageMeta title="Delivering Parcel | Permissions" description="" />
             <PageBreadcrumb pageTitle="Permissions" />
+            {
+                editModal &&
+                    <EditPermissionModal
+                        isOpen={editModal}
+                        onClose={() => setEditModal(false)}
+                        permissionId={permissionId}
+                    />
+            }
             <div className="space-y-6">
                 <ComponentCard
                     title="Permissions"

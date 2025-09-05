@@ -44,7 +44,7 @@ export default function VerifyOtpForm() {
       const toastId = toast.loading("Verifying...");
       const res: any = await ApiHelper("POST", "/verify", payload);
 
-      if (res?.status === 201) {
+      if (res?.status === 200) {
         toast.success(res.data?.message || "Account verified successfully", { id: toastId });
         setTimeout(() => navigate("/"), 1000);
       } else {
