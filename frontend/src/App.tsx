@@ -46,6 +46,7 @@ export default function App() {
             <Route index path="/" element={<Home />} />
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
+            <Route path="/profile" element={<UserProfiles />} />
 
             {/* Others Page
             <Route path="/profile" element={<UserProfiles />} />

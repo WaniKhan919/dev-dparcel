@@ -34,7 +34,7 @@ type NavItem = {
   permissions?: string[];
 };
 
-// ✅ Example: restrict items by roles or permissions
+// restrict items by roles or permissions
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
@@ -156,8 +156,7 @@ const AppSidebar: React.FC = () => {
     });
   };
 
-  // ✅ Filter items before rendering based on roles & permissions
-  // ✅ Filter main items
+  //  Filter items before rendering based on roles & permissions
   const filterNavItems = (items: NavItem[]): NavItem[] => {
     return items
       .filter((item) => {
