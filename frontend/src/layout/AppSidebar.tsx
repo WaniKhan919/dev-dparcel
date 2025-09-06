@@ -87,11 +87,6 @@ const navItems: NavItem[] = [
     path: "/blank",
     roles: ["shopper"], // 🔹 only shoppers can see
   },
-  {
-    name: "Profile",
-    icon: <UserCircleIcon />,
-    path: "/blank",
-  },
 ];
 
 const AppSidebar: React.FC = () => {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\RoleController;
@@ -32,4 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Role Permission assignment
     Route::post('/roles/{role}/permissions', [RolePermissionController::class, 'assign']);
     Route::delete('/roles/{role}/permissions/{permission}', [RolePermissionController::class, 'revoke']);
+
+    // User Pofile
+    Route::put('/update-profile', [UserController::class, 'updateProfile']);
+    Route::put('/update-password', [UserController::class, 'updatePassword']);
 });

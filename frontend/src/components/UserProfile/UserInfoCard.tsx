@@ -1,175 +1,276 @@
-import { useModal } from "../../hooks/useModal";
-import { Modal } from "../ui/modal";
-import Button from "../ui/button/Button";
-import Input from "../form/input/InputField";
+import * as yup from "yup";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import Label from "../form/Label";
+import Input from "../form/input/InputField";
+import Button from "../ui/button/Button";
+import { ApiHelper } from "../../utils/ApiHelper";
+import { decryptLocalStorage } from "../../utils/DparcelHelper"; // assuming you have decrypt util
 
-export default function UserInfoCard() {
-  const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+// Profile Schema
+const profileSchema = yup.object().shape({
+  name: yup.string().required("Name is required"),
+  email: yup.string().required("Email is required"),
+  phone: yup.string().required("Phone is required"),
+});
+
+// Password Schema
+const passwordSchema = yup.object().shape({
+  old_password: yup.string().required("Old password is required"),
+  new_password: yup
+    .string()
+    .min(8, "New password must be at least 8 characters")
+    .required("New password is required"),
+  new_password_confirmation: yup
+    .string()
+    .oneOf([yup.ref("new_password")], "Passwords must match")
+    .required("Confirm password is required"),
+});
+
+type ProfileFormData = {
+  name: string;
+  email: string;
+  phone: string;
+};
+
+type PasswordFormData = {
+  old_password: string;
+  new_password: string;
+  new_password_confirmation: string;
+};
+
+export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState<"profile" | "password">("profile");
+
+  // get user from localStorage
+  const user = decryptLocalStorage("user") || {};
+
+  // Profile Form Hook
+  const {
+    register: registerProfile,
+    handleSubmit: handleProfileSubmit,
+    formState: { errors: profileErrors, isSubmitting: profileSubmitting },
+  } = useForm<ProfileFormData>({
+    resolver: yupResolver(profileSchema),
+    defaultValues: {
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+    },
+  });
+
+  // Password Form Hook
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors, isSubmitting: passwordSubmitting },
+  } = useForm<PasswordFormData>({
+    resolver: yupResolver(passwordSchema),
+  });
+
+  // Handle Profile Update
+  const onUpdateProfile = async (data: ProfileFormData) => {
+    try {
+      const res = await ApiHelper("PUT", "/update-profile", data);
+      if (res.status === 200) {
+        toast.success(res.data.message || "Profile updated successfully", {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+          icon: "🎉",
+        });
+      } else {
+        toast.success(res.data.message ||"Profile update failed ❌", {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#af4c4cff",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+          icon: "🎉",
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Profile update failed!");
+    }
   };
+
+  // Handle Password Update
+  const onUpdatePassword = async (data: PasswordFormData) => {
+    try {
+      const res = await ApiHelper("PUT", "/update-password", data);
+      if (res.status === 200) {
+        toast.success(res.data.message || "Password updated successfully", {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+          icon: "🎉",
+        });
+      } else {
+        toast.success(res.data.message || "Password update failed ❌", {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#af4c4cff",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+          icon: "🎉",
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Password update failed!");
+    }
+  };
+
   return (
-    <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
-            Personal Information
-          </h4>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Name
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Musharof
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Email address
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                randomuser@pimjo.com
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Phone
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                +09 363 398 46
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Bio
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Team Manager
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={openModal}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
-        >
-          <svg
-            className="fill-current"
-            width="18"
-            height="18"
-            viewBox="0 0 18 18"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z"
-              fill=""
-            />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* LEFT COLUMN - Info Card */}
+      <div className="p-6 border border-gray-200 rounded-2xl dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 flex flex-col items-center text-center">
+        {/* Profile Icon */}
+        <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           </svg>
-          Edit
-        </button>
-      </div>
 
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
-        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-          <div className="px-2 pr-14">
-            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Personal Information
-            </h4>
-            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
+        </div>
+        <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-6">
+          Personal Information
+        </h4>
+        <div className="space-y-5 w-full text-left">
+          <div>
+            <p className="mb-1 text-xs text-gray-500">Name</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              {user.name || "N/A"}
             </p>
           </div>
-          <form className="flex flex-col">
-            <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
-              <div>
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Social Links
-                </h5>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div>
-                    <Label>Facebook</Label>
-                    <Input
-                      type="text"
-                      value="https://www.facebook.com/PimjoHQ"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>X.com</Label>
-                    <Input type="text" value="https://x.com/PimjoHQ" />
-                  </div>
-
-                  <div>
-                    <Label>Linkedin</Label>
-                    <Input
-                      type="text"
-                      value="https://www.linkedin.com/company/pimjo"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Instagram</Label>
-                    <Input type="text" value="https://instagram.com/PimjoHQ" />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-7">
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Personal Information
-                </h5>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Phone</Label>
-                    <Input type="text" value="+09 363 398 46" />
-                  </div>
-
-                  <div className="col-span-2">
-                    <Label>Bio</Label>
-                    <Input type="text" value="Team Manager" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal}>
-                Close
-              </Button>
-              <Button size="sm" onClick={handleSave}>
-                Save Changes
-              </Button>
-            </div>
-          </form>
+          <div>
+            <p className="mb-1 text-xs text-gray-500">Email</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              {user.email || "N/A"}
+            </p>
+          </div>
+          <div>
+            <p className="mb-1 text-xs text-gray-500">Phone</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              {user.phone || "N/A"}
+            </p>
+          </div>
         </div>
-      </Modal>
+      </div>
+
+      {/* RIGHT COLUMN - Update Tabs */}
+      <div className="p-6 border border-gray-200 rounded-2xl dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+          <button
+            onClick={() => setActiveTab("profile")}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === "profile"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Update Profile
+          </button>
+          <button
+            onClick={() => setActiveTab("password")}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === "password"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Change Password
+          </button>
+        </div>
+
+        {/* Profile Form */}
+        {activeTab === "profile" && (
+          <form onSubmit={handleProfileSubmit(onUpdateProfile)} className="space-y-5">
+            <div>
+              <Label>Name</Label>
+              <Input placeholder="Enter your name" {...registerProfile("name")} />
+              {profileErrors.name && (
+                <p className="text-red-500 text-sm">{profileErrors.name.message}</p>
+              )}
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input placeholder="Enter email" {...registerProfile("email")} />
+              {profileErrors.email && (
+                <p className="text-red-500 text-sm">{profileErrors.email.message}</p>
+              )}
+            </div>
+            <div>
+              <Label>Phone</Label>
+              <Input placeholder="Enter phone" {...registerProfile("phone")} />
+            </div>
+            <Button type="submit" disabled={profileSubmitting}>
+              {profileSubmitting ? "Updating..." : "Update Profile"}
+            </Button>
+          </form>
+        )}
+
+        {/* Password Form */}
+        {activeTab === "password" && (
+          <form onSubmit={handlePasswordSubmit(onUpdatePassword)} className="space-y-5">
+            <div>
+              <Label>Old Password</Label>
+              <Input
+                type="password"
+                placeholder="Enter old password"
+                {...registerPassword("old_password")}
+              />
+              {passwordErrors.old_password && (
+                <p className="text-red-500 text-sm">
+                  {passwordErrors.old_password.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>New Password</Label>
+              <Input
+                type="password"
+                placeholder="Enter new password"
+                {...registerPassword("new_password")}
+              />
+              {passwordErrors.new_password && (
+                <p className="text-red-500 text-sm">
+                  {passwordErrors.new_password.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>Confirm Password</Label>
+              <Input
+                type="password"
+                placeholder="Confirm new password"
+                {...registerPassword("new_password_confirmation")}
+              />
+              {passwordErrors.new_password_confirmation && (
+                <p className="text-red-500 text-sm">
+                  {passwordErrors.new_password_confirmation.message}
+                </p>
+              )}
+            </div>
+            <Button type="submit" disabled={passwordSubmitting}>
+              {passwordSubmitting ? "Updating..." : "Update Password"}
+            </Button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
