@@ -1,37 +1,53 @@
-// 👉 Format currency
-export const formatCurrency = (amount: number, currency = "USD"): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(amount);
+import CryptoJS from "crypto-js";
+
+const SECRET_KEY = import.meta.env.VITE_SECRET_KEY ;
+
+// Encrypt and store
+export function encryptLocalStorage(key: string, data: any) {
+  const encrypted = CryptoJS.AES.encrypt(
+    JSON.stringify(data),
+    SECRET_KEY
+  ).toString();
+  localStorage.setItem(key, encrypted);
+}
+
+// Decrypt and retrieve
+export function decryptLocalStorage(key: string) {
+  const encrypted = localStorage.getItem(key);
+  if (!encrypted) return null;
+
+  try {
+    const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    return JSON.parse(decrypted);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Remove item
+export const removeLocalStorage = (key: string): void => {
+  localStorage.removeItem(key);
 };
 
-// 👉 Capitalize first letter
-export const capitalize = (text: string): string => {
-  if (!text) return "";
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
+//get user
+export function getUser() {
+  return decryptLocalStorage("user") || {};
+}
 
-// 👉 Format date using Intl (or dayjs if you prefer)
-export const formatDate = (date: Date | string, locale = "en-US"): string => {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(d);
-};
+//get permission for storage
+export function getPermissions() {
+  return decryptLocalStorage("permissions") || [];
+}
 
-// 👉 Check if two dates are equal (ignoring time)
-export const isSameDate = (d1: Date, d2: Date): boolean => {
-  return (
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate()
-  );
-};
+//get specific permission
+export function userHasPermission(permission:string) {
+  const permissions = getPermissions();
+  return permissions.includes(permission);
+}
 
-// 👉 Generate random ID
-export const generateId = (prefix = "id"): string => {
-  return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
-};
+// Check if user has a specific role
+export function userHasRole(role: string) {
+  const user = decryptLocalStorage("user") || {};
+  return user?.roles?.includes(role) || false;
+}

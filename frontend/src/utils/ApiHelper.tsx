@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from "axios";
+import { decryptLocalStorage } from "./DparcelHelper";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -17,7 +18,7 @@ export const ApiHelper = async <T = any>(
   isFile: boolean = false
 ): Promise<ApiResponse<T>> => {
   try {
-    const token = localStorage.getItem("access_token");
+    const token = decryptLocalStorage("access_token");
 
     const config: AxiosRequestConfig = {
       method,

@@ -67,6 +67,10 @@ class AuthController extends Controller
                     'email'  => $user->email,
                     'roles'  => $user->roles->pluck('name'),
                 ],
+                'permissions' => $user->roles
+                        ->flatMap(fn($role) => $role->permissions->pluck('name'))
+                        ->unique()
+                        ->values(),
                 'token'   => $onlyToken,
             ]);
 

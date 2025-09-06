@@ -7,6 +7,7 @@ import * as yup from "yup";
 import toast from "react-hot-toast";
 import { ApiHelper } from "../../utils/ApiHelper";
 import OtpInput from "../form/input/OtpInput";
+import { decryptLocalStorage } from "../../utils/DparcelHelper";
 
 // ✅ stronger validation: exactly 6 digits
 const schema = yup
@@ -38,7 +39,7 @@ export default function VerifyOtpForm() {
     try {
       const payload = {
         code: data.code,
-        user_id: localStorage.getItem("verification_user_id"),
+        user_id: decryptLocalStorage("verification_user_id"),
       };
 
       const toastId = toast.loading("Verifying...");

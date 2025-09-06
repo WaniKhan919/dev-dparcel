@@ -10,6 +10,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import toast from "react-hot-toast";
 import { ApiHelper } from "../../utils/ApiHelper";
+import { encryptLocalStorage } from "../../utils/DparcelHelper";
 
 interface SignUpFormProps {
   role: string;
@@ -77,7 +78,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
         });
 
         if (res.data?.user_id) {
-          localStorage.setItem("verification_user_id", String(res.data.user_id));
+          encryptLocalStorage("verification_user_id", String(res.data.user_id));
         }
 
         setTimeout(() => {

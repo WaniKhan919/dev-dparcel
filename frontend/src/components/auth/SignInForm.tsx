@@ -10,6 +10,7 @@ import Button from "../ui/button/Button";
 import { ApiHelper } from "../../utils/ApiHelper";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { encryptLocalStorage } from "../../utils/DparcelHelper";
 
 const schema = yup.object().shape({
   email: yup.string().email("Enter a valid email").required("Email is required"),
@@ -42,8 +43,10 @@ export default function SignInForm() {
       const res = await ApiHelper("POST", "/login", data);
 
       if (res.status === 200) {
-        localStorage.setItem("access_token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        // Instead of localStorage.setItem
+        encryptLocalStorage("access_token", res.data.token);
+        encryptLocalStorage("user", res.data.user);
+        encryptLocalStorage("permissions", res.data.permissions);
 
         // Success toast 🎉
         toast.success(res.data.message || "Login successful!", {

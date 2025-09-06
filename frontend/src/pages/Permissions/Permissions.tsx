@@ -67,10 +67,9 @@ export default function Permissions() {
             const res = await ApiHelper("POST", "/permissions", data);
 
             if (res.status === 200) {
-                dispatch(fetchPermission());
-
-                toast.success(res.data.message || "Permission added!");
                 onClose();
+                toast.success(res.data.message || "Permission added!");
+                dispatch(fetchPermission());
             } else {
                 toast.error(res.data.message || "Failed to add permission ❌");
             }
@@ -95,7 +94,7 @@ export default function Permissions() {
             const res = await ApiHelper("DELETE", `/permissions/${id}`);
             if (res.status === 200) {
             toast.success(res.data.message || "Permission deleted!");
-            dispatch(fetchPermission()); // refresh your table
+            dispatch(fetchPermission());
             } else {
             toast.error(res.data.message || "Failed to delete ❌");
             }
@@ -103,8 +102,6 @@ export default function Permissions() {
             toast.error(err.response?.data?.message || "Something went wrong!");
         }
     };
-
-
 
     const columns = [
         {
