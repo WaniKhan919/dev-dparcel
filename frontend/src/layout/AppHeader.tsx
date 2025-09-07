@@ -128,7 +128,7 @@ const AppHeader: React.FC = () => {
               <span>Create an order</span>
             </button>
             {/* <!-- Dark Mode Toggler --> */}
-            <SettingsDropdown />
+            {/* <SettingsDropdown /> */}
             {/* <!-- Notification Menu Area --> */}
           </div>
           {/* <!-- User Area --> */}

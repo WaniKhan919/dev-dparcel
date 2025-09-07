@@ -85,14 +85,14 @@ export default function SignUpForm({ role }: SignUpFormProps) {
           window.location.href = "/verify";
         }, 1000);
       } else {
-        toast.error(res?.data?.message || "Signup failed", { id: toastId });
+        toast.error(res?.data?.error || res?.data?.message || "Signup failed", { id: toastId });
       }
     } catch (err: any) {
       if (err?.response?.data?.errors) {
         const messages = Object.values(err.response.data.errors).flat().join(" ");
         toast.error(messages);
       } else {
-        toast.error(err?.response?.data?.message || err?.message || "Signup failed");
+        toast.error(err?.response?.data?.error || err?.message || "Signup failed");
       }
     }
   };
