@@ -59,9 +59,21 @@ const navItems: NavItem[] = [
   },
   {
     icon: <PlusIcon />,
-    name: "New order",
-    path: "/calendar",
-    permissions: ["create_order"], // 🔹 only if permission granted
+    name: "Products",
+    path: "/products",
+    // permissions: ["create_order"], // 🔹 only if permission granted
+  },
+  {
+    icon: <PlusIcon />,
+    name: "Products",
+    path: "/products",
+    // permissions: ["create_order"], // 🔹 only if permission granted
+  },
+  {
+    icon: <PlusIcon />,
+    name: "Request",
+    path: "/request",
+    // permissions: ["create_order"], // 🔹 only if permission granted
   },
   {
     icon: <LockIcon />,

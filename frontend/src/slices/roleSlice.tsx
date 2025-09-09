@@ -19,7 +19,7 @@ const initialState: RoleState = {
   error: null,
 };
 
-// ✅ Only GET API here
+// Only GET API here
 export const fetchRoles = createAsyncThunk<Role[], void, { rejectValue: string }>(
   "roles/fetchRoles",
   async (_, { rejectWithValue }) => {

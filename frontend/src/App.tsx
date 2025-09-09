@@ -23,6 +23,7 @@ import { Toaster } from "react-hot-toast";
 import VerifyOtp from "./pages/AuthPages/VerifyOtp";
 import Roles from "./pages/Roles/Roles";
 import Permissions from "./pages/Permissions/Permissions";
+import Products from "./pages/Products/Products";
 
 export default function App() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
             <Route path="/profile" element={<UserProfiles />} />
+            <Route path="/products" element={<Products />} />
 
             {/* Others Page
             <Route path="/profile" element={<UserProfiles />} />

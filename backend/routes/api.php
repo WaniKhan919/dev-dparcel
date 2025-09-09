@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RolePermissionController;
 
 // Public routes
@@ -37,4 +38,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Pofile
     Route::put('/update-profile', [UserController::class, 'updateProfile']);
     Route::put('/update-password', [UserController::class, 'updatePassword']);
+
+    //  Product Routes Shopper
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::get('/products/{id}', [ProductController::class, 'show']);
+    Route::put('/products/{permission}', [ProductController::class, 'update']);
+    Route::delete('/products/{permission}', [ProductController::class, 'destroy']);
+
 });
