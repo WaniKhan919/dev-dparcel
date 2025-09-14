@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchPermission } from "../../slices/permissionSlice";
 import EditPermissionModal from "./EditPermissionModal";
+import AssignPermissionDrawer from "../../utils/PermissionDrawer/AssignPermissionDrawer";
 
 const schema = yup.object().shape({
     name: yup.string().required("Permission title is required"),
@@ -46,6 +47,8 @@ export default function Permissions() {
     const [loading, setLoading] = useState(false);
     const [editModal, setEditModal] = useState(false);
     const [permissionId, setPermissionId] = useState(0);
+    const [assignDrawer, setAssignDrawer] = useState(false);
+
 
     const {
         register,
@@ -82,7 +85,7 @@ export default function Permissions() {
         }
     };
 
-    const editPermission = (id:number) => {
+    const editPermission = (id: number) => {
         setPermissionId(id)
         setEditModal(true)
     }
@@ -93,10 +96,10 @@ export default function Permissions() {
         try {
             const res = await ApiHelper("DELETE", `/permissions/${id}`);
             if (res.status === 200) {
-            toast.success(res.data.message || "Permission deleted!");
-            dispatch(fetchPermission());
+                toast.success(res.data.message || "Permission deleted!");
+                dispatch(fetchPermission());
             } else {
-            toast.error(res.data.message || "Failed to delete ❌");
+                toast.error(res.data.message || "Failed to delete ❌");
             }
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Something went wrong!");
@@ -125,7 +128,7 @@ export default function Permissions() {
                     <button
                         onClick={() => deletePermission(row.id)}
                         className="p-2 border border-red-300 rounded-full text-red-500 hover:bg-red-50 hover:text-red-700 transition"
-                        >
+                    >
                         <TrashBinIcon className="w-5 h-5" />
                     </button>
                 </div>
@@ -139,11 +142,11 @@ export default function Permissions() {
             <PageBreadcrumb pageTitle="Permissions" />
             {
                 editModal &&
-                    <EditPermissionModal
-                        isOpen={editModal}
-                        onClose={() => setEditModal(false)}
-                        permissionId={permissionId}
-                    />
+                <EditPermissionModal
+                    isOpen={editModal}
+                    onClose={() => setEditModal(false)}
+                    permissionId={permissionId}
+                />
             }
             <div className="space-y-6">
                 <ComponentCard
@@ -157,7 +160,7 @@ export default function Permissions() {
                                 + Add Permission
                             </button>
                             <button
-                                // onClick={openModal}
+                              onClick={() => setAssignDrawer(true)}
                                 className="px-4 py-2 rounded-lg bg-white text-blue-600 text-sm font-medium hover:bg-blue-700 hover:text-white transition border  border-blue-500"
                             >
                                 Assign Permission
@@ -166,6 +169,10 @@ export default function Permissions() {
                     }
                 >
                     <DParcelTable columns={columns} data={permissions} />
+                    <AssignPermissionDrawer
+                        isOpen={assignDrawer}
+                        onClose={() => setAssignDrawer(false)}
+                    />
                 </ComponentCard>
 
                 {/* Modal */}
