@@ -40,8 +40,9 @@ class ProductController extends Controller
     {
         DB::beginTransaction();
         try {
+            
+            $userId = Auth::id();
             $validated = $request->validate([
-                'user_id'     => 'required|exists:users,id',
                 'title'       => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'product_url' => 'required|string|unique:products,product_url',
@@ -50,6 +51,7 @@ class ProductController extends Controller
                 'weight'      => 'nullable|numeric|min:0',
             ]);
 
+            $validated['user_id'] = $userId;
             $product = Product::create($validated);
 
             DB::commit();
@@ -58,7 +60,7 @@ class ProductController extends Controller
                 'success' => true,
                 'message' => 'Product added successfully',
                 'data'    => $product
-            ], 201);
+            ], 200);
 
         } catch (Exception $e) {
             DB::rollBack();

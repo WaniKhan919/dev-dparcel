@@ -64,9 +64,6 @@ export default function Products() {
         dispatch(fetchProduct());
     }, [dispatch]);
 
-    useEffect(() => {
-    }, [dispatch]);
-
     const { isOpen, openModal, closeModal } = useModal();
     const [loading, setLoading] = useState(false);
 
@@ -195,64 +192,115 @@ export default function Products() {
 
                 {/* Modal */}
                 <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
-                    <div className="relative w-full max-w-[700px] rounded-3xl bg-white p-6 dark:bg-gray-900">
-                        <h4 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">
-                            Add Product
-                        </h4>
+  <div className="relative w-full max-w-[700px] rounded-3xl bg-white p-6 dark:bg-gray-900">
+    <h4 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">
+      Add Product
+    </h4>
 
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                            {/* Title */}
-                            <div>
-                                <Label>Product Title <span className="text-error-500">*</span></Label>
-                                <Input type="text" placeholder="Enter product title" {...register("title")} />
-                                {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
-                            </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Title */}
+      <div>
+        <Label>
+          Product Title <span className="text-error-500">*</span>
+        </Label>
+        <Input
+          type="text"
+          placeholder="Enter product title"
+          {...register("title")}
+        />
+        {errors.title && (
+          <p className="text-red-500 text-sm">{errors.title.message}</p>
+        )}
+      </div>
 
-                            {/* Description */}
-                            <div>
-                                <Label>Description</Label>
-                                <Input type="text" placeholder="Enter description" {...register("description")} />
-                                {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
-                            </div>
+      {/* Description */}
+      <div>
+        <Label>Description <span className="text-error-500">*</span></Label>
+        <Input
+          type="text"
+          placeholder="Enter description"
+          {...register("description")}
+        />
+        {errors.description && (
+          <p className="text-red-500 text-sm">{errors.description.message}</p>
+        )}
+      </div>
 
-                            {/* Product URL */}
-                            <div>
-                                <Label>Product URL <span className="text-error-500">*</span></Label>
-                                <Input type="text" placeholder="Enter product URL" {...register("product_url")} />
-                                {errors.product_url && <p className="text-red-500 text-sm">{errors.product_url.message}</p>}
-                            </div>
+      {/* Product URL */}
+      <div>
+        <Label>
+          Product URL <span className="text-error-500">*</span>
+        </Label>
+        <Input
+          type="text"
+          placeholder="Enter product URL"
+          {...register("product_url")}
+        />
+        {errors.product_url && (
+          <p className="text-red-500 text-sm">{errors.product_url.message}</p>
+        )}
+      </div>
 
-                            {/* Quantity */}
-                            <div>
-                                <Label>Quantity <span className="text-error-500">*</span></Label>
-                                <Input type="number" placeholder="Enter quantity" {...register("quantity")} />
-                                {errors.quantity && <p className="text-red-500 text-sm">{errors.quantity.message}</p>}
-                            </div>
+      {/* Quantity, Price, Weight in one row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <Label>
+            Quantity <span className="text-error-500">*</span>
+          </Label>
+          <Input
+            type="number"
+            placeholder="Enter quantity"
+            {...register("quantity")}
+          />
+          {errors.quantity && (
+            <p className="text-red-500 text-sm">{errors.quantity.message}</p>
+          )}
+        </div>
 
-                            {/* Price */}
-                            <div>
-                                <Label>Price <span className="text-error-500">*</span></Label>
-                                <Input type="number" step="0.01" placeholder="Enter price" {...register("price")} />
-                                {errors.price && <p className="text-red-500 text-sm">{errors.price.message}</p>}
-                            </div>
+        <div>
+          <Label>
+            Price <span className="text-error-500">*</span>
+          </Label>
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="Enter price"
+            {...register("price")}
+          />
+          {errors.price && (
+            <p className="text-red-500 text-sm">{errors.price.message}</p>
+          )}
+        </div>
 
-                            {/* Weight */}
-                            <div>
-                                <Label>Weight (optional)</Label>
-                                <Input type="number" step="0.01" placeholder="Enter weight" {...register("weight")} />
-                                {errors.weight && <p className="text-red-500 text-sm">{errors.weight.message}</p>}
-                            </div>
+        <div>
+          <Label>
+            Weight <span className="text-error-500">*</span>
+          </Label>
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="Enter weight"
+            {...register("weight")}
+          />
+          {errors.weight && (
+            <p className="text-red-500 text-sm">{errors.weight.message}</p>
+          )}
+        </div>
+      </div>
 
-                            {/* Buttons */}
-                            <div className="flex justify-end gap-3">
-                                <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
-                                <Button type="submit" size="sm" disabled={isSubmitting || loading}>
-                                    {loading ? "Saving..." : "Save Changes"}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </Modal>
+      {/* Buttons */}
+      <div className="flex justify-end gap-3">
+        <Button size="sm" variant="outline" onClick={onClose}>
+          Close
+        </Button>
+        <Button type="submit" size="sm" disabled={isSubmitting || loading}>
+          {loading ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+    </form>
+  </div>
+</Modal>
+
 
             </div>
         </>
