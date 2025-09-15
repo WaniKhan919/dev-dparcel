@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
@@ -45,5 +46,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products/{id}', [ProductController::class, 'show']);
     Route::put('/products/{permission}', [ProductController::class, 'update']);
     Route::delete('/products/{permission}', [ProductController::class, 'destroy']);
-
+    
+    Route::post('/order/store', [OrderController::class, 'store']);
 });

@@ -21,7 +21,10 @@ import { fetchProduct } from "../../slices/productSlice";
 const schema = yup.object().shape({
   title: yup.string().required("Product title is required"),
   description: yup.string().required("Description is required"),
-  product_url: yup.string().required("Product URL is required"),
+  product_url: yup
+    .string()
+    .required("Product URL is required")
+    .url("Enter a valid URL (e.g. https://example.com)"),
   quantity: yup
     .number()
     .typeError("Quantity must be a number")
@@ -35,16 +38,18 @@ const schema = yup.object().shape({
   weight: yup
     .number()
     .typeError("Weight must be a number")
-    .required("Weight is required")   // 👈 required now
+    .required("Weight is required")
     .min(0, "Weight cannot be negative"),
 });
 
-
 interface Product {
   id: number;
-  name: string;
-  status: string;
-  created_at: string;
+  title: string;
+  description: string;
+  product_url: string;
+  quantity: number;
+  price: number;
+  weight: number;
 }
 
 type FormData = {
@@ -58,7 +63,7 @@ type FormData = {
 
 export default function Products() {
   const dispatch = useDispatch<AppDispatch>();
-  const { products, productsLoading, error } = useSelector((state: any) => state.products);
+  const { products } = useSelector((state: any) => state.products);
 
   useEffect(() => {
     dispatch(fetchProduct());
@@ -66,6 +71,7 @@ export default function Products() {
 
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const {
     register,
@@ -78,20 +84,30 @@ export default function Products() {
 
   const onClose = () => {
     reset();
+    setSelectedProduct(null); // clear edit state
     closeModal();
   };
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const res = await ApiHelper("POST", "/products", data);
+      let res;
+      if (selectedProduct) {
+        // Edit mode
+        res = await ApiHelper("PUT", `/products/${selectedProduct.id}`, data);
+      } else {
+        // Add mode
+        res = await ApiHelper("POST", "/products", data);
+      }
 
       if (res.status === 200) {
         onClose();
-        toast.success(res.data.message || "Product added!");
-        dispatch(fetchProduct());
+        setTimeout(() => {
+          toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
+          dispatch(fetchProduct());
+        }, 1000);
       } else {
-        toast.error(res.data.message || "Failed to add Product ❌");
+        toast.error(res.data.message || "Failed to save ❌");
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Something went wrong!", {
@@ -102,10 +118,13 @@ export default function Products() {
     }
   };
 
-  const editPermission = (id: number) => {
-  }
+  const editProduct = (product: Product) => {
+    setSelectedProduct(product);
+    reset(product); // pre-fill form
+    openModal();
+  };
 
-  const deletePermission = async (id: number) => {
+  const deleteProduct = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
     try {
@@ -122,44 +141,26 @@ export default function Products() {
   };
 
   const columns = [
-    {
-      key: "title",
-      header: "Title",
-    },
-    {
-      key: "description",
-      header: "Description"
-    },
-    {
-      key: "product_url",
-      header: "Url"
-    },
-    {
-      key: "quantity",
-      header: "Quantity"
-    },
-    {
-      key: "price",
-      header: "Price Per Unit(USD$)"
-    },
-    {
-      key: "weight",
-      header: "Weight Per Unit (Gram)"
-    },
+    { key: "title", header: "Title" },
+    { key: "description", header: "Description" },
+    { key: "product_url", header: "Url" },
+    { key: "quantity", header: "Quantity" },
+    { key: "price", header: "Price Per Unit(USD$)" },
+    { key: "weight", header: "Weight Per Unit (Gram)" },
     {
       key: "actions",
       header: "Actions",
       render: (row: Product) => (
         <div className="flex gap-3">
           <button
-            onClick={() => editPermission(row.id)}
+            onClick={() => editProduct(row)}
             className="p-2 border border-blue-300 rounded-full text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition"
           >
             <PencilIcon className="w-5 h-5" />
           </button>
 
           <button
-            onClick={() => deletePermission(row.id)}
+            onClick={() => deleteProduct(row.id)}
             className="p-2 border border-red-300 rounded-full text-red-500 hover:bg-red-50 hover:text-red-700 transition"
           >
             <TrashBinIcon className="w-5 h-5" />
@@ -179,7 +180,11 @@ export default function Products() {
           actions={
             <div className="flex gap-3">
               <button
-                onClick={openModal}
+                onClick={() => {
+                  setSelectedProduct(null); // reset to add mode
+                  reset(); // clear form
+                  openModal();
+                }}
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition"
               >
                 + Add Product
@@ -194,7 +199,7 @@ export default function Products() {
         <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
           <div className="relative w-full max-w-[700px] rounded-3xl bg-white p-6 dark:bg-gray-900">
             <h4 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Add Product
+              {selectedProduct ? "Edit Product" : "Add Product"}
             </h4>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -203,27 +208,15 @@ export default function Products() {
                 <Label>
                   Product Title <span className="text-error-500">*</span>
                 </Label>
-                <Input
-                  type="text"
-                  placeholder="Enter product title"
-                  {...register("title")}
-                />
-                {errors.title && (
-                  <p className="text-red-500 text-sm">{errors.title.message}</p>
-                )}
+                <Input type="text" placeholder="Enter product title" {...register("title")} />
+                {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
               </div>
 
               {/* Description */}
               <div>
                 <Label>Description <span className="text-error-500">*</span></Label>
-                <Input
-                  type="text"
-                  placeholder="Enter description"
-                  {...register("description")}
-                />
-                {errors.description && (
-                  <p className="text-red-500 text-sm">{errors.description.message}</p>
-                )}
+                <Input type="text" placeholder="Enter description" {...register("description")} />
+                {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
               </div>
 
               {/* Product URL */}
@@ -231,60 +224,28 @@ export default function Products() {
                 <Label>
                   Product URL <span className="text-error-500">*</span>
                 </Label>
-                <Input
-                  type="text"
-                  placeholder="Enter product URL"
-                  {...register("product_url")}
-                />
-                {errors.product_url && (
-                  <p className="text-red-500 text-sm">{errors.product_url.message}</p>
-                )}
+                <Input type="text" placeholder="Enter product URL" {...register("product_url")} />
+                {errors.product_url && <p className="text-red-500 text-sm">{errors.product_url.message}</p>}
               </div>
 
               {/* Quantity, Price, Weight in one row */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <Label>
-                    Quantity <span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    placeholder="Enter quantity"
-                    {...register("quantity")}
-                  />
-                  {errors.quantity && (
-                    <p className="text-red-500 text-sm">{errors.quantity.message}</p>
-                  )}
+                  <Label>Quantity <span className="text-error-500">*</span></Label>
+                  <Input type="number" placeholder="Enter quantity" {...register("quantity")} />
+                  {errors.quantity && <p className="text-red-500 text-sm">{errors.quantity.message}</p>}
                 </div>
 
                 <div>
-                  <Label>
-                    Price <span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Enter price"
-                    {...register("price")}
-                  />
-                  {errors.price && (
-                    <p className="text-red-500 text-sm">{errors.price.message}</p>
-                  )}
+                  <Label>Price <span className="text-error-500">*</span></Label>
+                  <Input type="number" step="0.01" placeholder="Enter price" {...register("price")} />
+                  {errors.price && <p className="text-red-500 text-sm">{errors.price.message}</p>}
                 </div>
 
                 <div>
-                  <Label>
-                    Weight <span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Enter weight"
-                    {...register("weight")}
-                  />
-                  {errors.weight && (
-                    <p className="text-red-500 text-sm">{errors.weight.message}</p>
-                  )}
+                  <Label>Weight <span className="text-error-500">*</span></Label>
+                  <Input type="number" step="0.01" placeholder="Enter weight" {...register("weight")} />
+                  {errors.weight && <p className="text-red-500 text-sm">{errors.weight.message}</p>}
                 </div>
               </div>
 
@@ -294,14 +255,12 @@ export default function Products() {
                   Close
                 </Button>
                 <Button type="submit" size="sm" disabled={isSubmitting || loading}>
-                  {loading ? "Saving..." : "Save Changes"}
+                  {loading ? "Saving..." : selectedProduct ? "Update Product" : "Save Changes"}
                 </Button>
               </div>
             </form>
           </div>
         </Modal>
-
-
       </div>
     </>
   );

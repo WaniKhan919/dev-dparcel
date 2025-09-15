@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import Label from "../../components/form/Label";
@@ -6,35 +6,85 @@ import Input from "../../components/form/input/InputField";
 import MultiSelect from "../../components/form/MultiSelect";
 import { Controller, useForm } from "react-hook-form";
 import Checkbox from "../../components/form/input/Checkbox";
+import { AppDispatch } from "../../store";
+import { fetchProduct } from "../../slices/productSlice";
+import { useDispatch, useSelector } from "react-redux";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { ApiHelper } from "../../utils/ApiHelper";
+import toast from "react-hot-toast";
 
 const steps = ["Shipping Info", "Shipping Address", "Product Details"];
-const multiOptions = [
-  { value: "1", text: "Option 1", selected: false },
-  { value: "2", text: "Option 2", selected: false },
-  { value: "3", text: "Option 3", selected: false },
-  { value: "4", text: "Option 4", selected: false },
-  { value: "5", text: "Option 5", selected: false },
+
+const stepSchemas = [
+  // Step 0: Shipping Info
+  yup.object().shape({
+    serviceType: yup.string().required("Please select a service type"),
+  }),
+
+  // Step 1: Shipping Address
+  yup.object().shape({
+    shipFrom: yup.string().required("Ship From is required"),
+    shipTo: yup.string().required("Ship To is required"),
+  }),
+
+  // Step 2: Product Details
+  yup.object().shape({
+    products: yup.array().min(1, "Select at least one product"),
+    weight: yup.string().required("Weight is required"),
+    price: yup.string().required("Price is required"),
+    terms: yup.boolean().oneOf([true], "You must accept the terms"),
+  }),
 ];
 
-type FormValues = {
-  terms: boolean;
-};
-
 export default function Order() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { products } = useSelector((state: any) => state.products);
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  const { control } = useForm<FormValues>({
-    defaultValues: { terms: false },
+  const [multiOptions, setMultiOptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedValues, setSelectedValues] = useState<any[]>([]);
+
+  const {
+    register,
+    handleSubmit,
+    trigger,
+    control,
+    formState: { errors },
+    reset,
+    setValue,
+  } = useForm<any>({
+    resolver: yupResolver(stepSchemas[currentStep] as any),
+    mode: "onChange",
+    defaultValues: {
+      serviceType: "",
+      shipFrom: "",
+      shipTo: "",
+      products: [],
+      weight: "",
+      price: "",
+      terms: false,
+    },
   });
 
-  const [formData, setFormData] = useState({
-    serviceType: "",
-    shipFrom: "",
-    shipTo: "",
-    products: [] as string[],
-  });
+  useEffect(() => {
+    dispatch(fetchProduct());
+  }, [dispatch]);
 
-  const nextStep = () => {
+  useEffect(() => {
+    if (products && Array.isArray(products)) {
+      const formatted = products.map((item: any) => ({
+        value: String(item.id),
+        text: item.title,
+        selected: false,
+      }));
+      setMultiOptions(formatted);
+    }
+  }, [products]);
+
+  const nextStep = async () => {
+    const isValid = await trigger(); // validate current step only
+    if (!isValid) return;
     if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
   };
 
@@ -42,23 +92,38 @@ export default function Order() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  const handleChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
-    if (type === "checkbox") {
-      setFormData((prev) => {
-        const products = checked
-          ? [...prev.products, value]
-          : prev.products.filter((p) => p !== value);
-        return { ...prev, products };
-      });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
+    const onSubmitForm = async (data: any) => {
+        setLoading(true);
+        try {
+            console.log("Selected Products:", data.products);
+            const payload = {
+                service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
+                ship_from: data.shipFrom,
+                ship_to: data.shipTo,
+                order_details: (data.products || []).map((id: string) => ({
+                    product_id: parseInt(id, 10), 
+                    quantity: 1,
+                })),
+            };
 
-  const handleSubmit = () => {
-    alert("Form submitted! " + JSON.stringify(formData, null, 2));
-  };
+            const res = await ApiHelper("POST", "/order/store", payload);
+
+            if (res.status === 200 && res.data.success) {
+                toast.success(res.data.message || "Order placed successfully");
+                reset();
+                setSelectedValues([]);
+            } else {
+                toast.error(res.data.message || "Failed to place order ❌");
+            }  
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "Something went wrong!", {
+            style: { background: "#f44336", color: "#fff" },
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
   const countries = ["USA", "Canada", "UK", "Germany", "Pakistan", "India"];
 
@@ -77,15 +142,14 @@ export default function Order() {
             >
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold transition 
-                  ${
-                    index === currentStep
-                      ? "bg-blue-500 text-white shadow-lg"
-                      : index < currentStep
-                      ? "bg-green-500 text-white"
-                      : "bg-gray-200 text-gray-600"
+                  ${index === currentStep
+                    ? "bg-blue-500 text-white shadow-lg"
+                    : index < currentStep
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-200 text-gray-600"
                   }`}
               >
-                {index < currentStep ? <></> : index + 1}
+                {index < currentStep ? "✓" : index + 1}
               </div>
               <span className="ml-3 font-medium hidden sm:inline-block">
                 {step}
@@ -93,9 +157,8 @@ export default function Order() {
               {index < steps.length - 1 && (
                 <div className="flex-1 h-1 bg-gray-200 mx-3">
                   <div
-                    className={`h-1 transition ${
-                      index < currentStep ? "bg-blue-500" : ""
-                    }`}
+                    className={`h-1 transition ${index < currentStep ? "bg-blue-500" : ""
+                      }`}
                   />
                 </div>
               )}
@@ -115,22 +178,19 @@ export default function Order() {
                   <label
                     key={option}
                     className={`flex-1 flex items-center justify-between cursor-pointer rounded-xl border p-5 transition 
-                      ${
-                        formData.serviceType === option
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 bg-white hover:bg-gray-50"
+                      ${option === control._formValues.serviceType
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 bg-white hover:bg-gray-50"
                       }`}
                   >
                     <input
                       type="radio"
-                      name="serviceType"
                       value={option}
-                      checked={formData.serviceType === option}
-                      onChange={handleChange}
+                      {...register("serviceType")}
                       className="hidden"
                     />
                     <span className="font-medium text-gray-700">{option}</span>
-                    {formData.serviceType === option && (
+                    {option === control._formValues.serviceType && (
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white">
                         ✓
                       </span>
@@ -138,6 +198,9 @@ export default function Order() {
                   </label>
                 ))}
               </div>
+              {errors.serviceType && (
+                <p className="text-red-500 text-sm">{errors.serviceType?.message  as string}</p>
+              )}
             </div>
           )}
 
@@ -152,9 +215,7 @@ export default function Order() {
                     Ship From <span className="text-red-500">*</span>
                   </Label>
                   <select
-                    name="shipFrom"
-                    value={formData.shipFrom}
-                    onChange={handleChange}
+                    {...register("shipFrom")}
                     className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Country</option>
@@ -164,15 +225,16 @@ export default function Order() {
                       </option>
                     ))}
                   </select>
+                  {errors.shipFrom && (
+                    <p className="text-red-500 text-sm">{errors.shipFrom?.message  as string}</p>
+                  )}
                 </div>
                 <div>
                   <Label>
                     Ship To <span className="text-red-500">*</span>
                   </Label>
                   <select
-                    name="shipTo"
-                    value={formData.shipTo}
-                    onChange={handleChange}
+                    {...register("shipTo")}
                     className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Country</option>
@@ -182,6 +244,9 @@ export default function Order() {
                       </option>
                     ))}
                   </select>
+                  {errors.shipTo && (
+                    <p className="text-red-500 text-sm">{errors.shipTo?.message  as string}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -193,11 +258,23 @@ export default function Order() {
                 Product Details
               </h2>
 
-              <MultiSelect
-                label="Select Multiple Product"
-                options={multiOptions}
-                onChange={(values) => setSelectedValues(values)}
+              <Controller
+                control={control}
+                name="products"
+                render={({ field }) => (
+                  <MultiSelect
+                    label="Select Multiple Product"
+                    options={multiOptions}
+                    onChange={(values) => {
+                        field.onChange(values);
+                        setSelectedValues(values);
+                    }}
+                  />
+                )}
               />
+              {errors.products && (
+                <p className="text-red-500 text-sm">{errors.products?.message  as string}</p>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
@@ -208,8 +285,12 @@ export default function Order() {
                   <Input
                     type="text"
                     placeholder="Approximate Weight"
+                    {...register("weight")}
                     className="w-full"
                   />
+                  {errors.weight && (
+                    <p className="text-red-500 text-sm">{errors.weight?.message  as string}</p>
+                  )}
                 </div>
                 <div>
                   <Label>
@@ -218,35 +299,38 @@ export default function Order() {
                   <Input
                     type="text"
                     placeholder="Total Price"
+                    {...register("price")}
                     className="w-full"
                   />
+                  {errors.price && (
+                    <p className="text-red-500 text-sm">{errors.price?.message  as string}</p>
+                  )}
                 </div>
               </div>
-              
+
               <h2 className="text-xl font-semibold text-gray-800">
                 Additional Services
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                    { id: "photo", label: "Product Photo" },
-                    { id: "consolidation", label: "Package Consolidation" },
-                    { id: "assistance", label: "Purchase Assistance" },
+                  { id: "id_photo", label: "Product Photo" },
+                  { id: "is_consolidation", label: "Package Consolidation" },
+                  { id: "is_assistance", label: "Purchase Assistance" },
+                  { id: "is_forwarding", label: "Forwarding Service Fee" },
                 ].map((item) => (
-                    <label
+                  <label
                     key={item.id}
                     className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md transition"
-                    >
+                  >
                     <input
-                        type="checkbox"
-                        name={item.id}
-                        value={item.label}
-                        className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                      type="checkbox"
+                      {...register(item.id)}
+                      className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="font-medium text-gray-700">{item.label}</span>
-                    </label>
+                  </label>
                 ))}
-            </div>
-
+              </div>
 
               <div className="flex items-start gap-3">
                 <Controller
@@ -268,6 +352,9 @@ export default function Order() {
                   , its policies, and the privacy policy.
                 </p>
               </div>
+              {errors.terms && (
+                <p className="text-red-500 text-sm">{errors.terms?.message as string}</p>
+              )}
             </div>
           )}
 
@@ -286,14 +373,14 @@ export default function Order() {
                 onClick={nextStep}
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600"
               >
-                Next 
+                Next
               </button>
             ) : (
               <button
-                onClick={handleSubmit}
+                onClick={handleSubmit(onSubmitForm)}
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600"
               >
-                 Submit
+                Submit
               </button>
             )}
           </div>

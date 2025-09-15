@@ -98,12 +98,12 @@ class ProductController extends Controller
             ], 500);
         }
     }
-
     /** Update a product */
-    public function update(Request $request, Product $product)
+    public function update(Request $request,$id)
     {
         DB::beginTransaction();
         try {
+            $product = Product::find($id);
             $validated = $request->validate([
                 'user_id'     => 'required|exists:users,id',
                 'title'       => 'required|string|max:255',
@@ -135,10 +135,11 @@ class ProductController extends Controller
     }
 
     /** Delete a product */
-    public function destroy(Product $product)
+    public function destroy($id)
     {
         DB::beginTransaction();
         try {
+            $product = Product::find($id);
             $product->delete();
 
             DB::commit();
