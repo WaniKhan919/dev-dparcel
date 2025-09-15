@@ -70,6 +70,12 @@ const navItems: NavItem[] = [
     // permissions: ["create_order"], // 🔹 only if permission granted
   },
   {
+    icon: <PlusIcon />,
+    name: "Form",
+    path: "/formWizard",
+    // permissions: ["create_order"], // 🔹 only if permission granted
+  },
+  {
     icon: <LockIcon />,
     name: "Batch import",
     path: "/profile",

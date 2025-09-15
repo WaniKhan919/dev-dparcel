@@ -25,6 +25,7 @@ import Roles from "./pages/Roles/Roles";
 import Permissions from "./pages/Permissions/Permissions";
 import Products from "./pages/Products/Products";
 import Order from "./pages/Order/Order";
+import FormWizard from "./components/common/FormWizard";
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
             <Route index path="/permissions" element={<Permissions />} />
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/formWizard" element={<FormWizard />} />
             <Route path="/request" element={<Order />} />
 
             {/* Others Page
