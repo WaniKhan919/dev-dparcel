@@ -72,6 +72,9 @@ export default function Products() {
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const {
     register,
@@ -101,10 +104,11 @@ export default function Products() {
       }
 
       if (res.status === 200) {
-        onClose();
+   toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
         setTimeout(() => {
           toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
           dispatch(fetchProduct());
+          onClose();
         }, 1000);
       } else {
         toast.error(res.data.message || "Failed to save ❌");
@@ -124,11 +128,12 @@ export default function Products() {
     openModal();
   };
 
-  const deleteProduct = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
+  const deleteProduct = async () => {
+    if (!productToDelete) return;
 
+    setDeleting(true);
     try {
-      const res = await ApiHelper("DELETE", `/products/${id}`);
+      const res = await ApiHelper("DELETE", `/products/${productToDelete.id}`);
       if (res.status === 200) {
         toast.success(res.data.message || "Product deleted!");
         dispatch(fetchProduct());
@@ -137,8 +142,13 @@ export default function Products() {
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Something went wrong!");
+    } finally {
+      setDeleting(false);
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
     }
   };
+
 
   const columns = [
     { key: "title", header: "Title" },
@@ -160,11 +170,41 @@ export default function Products() {
           </button>
 
           <button
-            onClick={() => deleteProduct(row.id)}
+            onClick={() => {
+              setProductToDelete(row);
+              setDeleteModalOpen(true);
+            }}
             className="p-2 border border-red-300 rounded-full text-red-500 hover:bg-red-50 hover:text-red-700 transition"
           >
             <TrashBinIcon className="w-5 h-5" />
           </button>
+          {/* Delete Confirmation Modal */}
+          <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} className="max-w-md m-4">
+            <div className="bg-white p-6 rounded-2xl text-center">
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                Confirm Delete
+              </h3>
+              <p className="mb-6 text-gray-600">
+                Are you sure you want to delete <strong>{productToDelete?.title}</strong>?
+              </p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => setDeleteModalOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={deleteProduct}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </Modal>
+
         </div>
       ),
     },
@@ -249,6 +289,8 @@ export default function Products() {
                 </div>
               </div>
 
+
+
               {/* Buttons */}
               <div className="flex justify-end gap-3">
                 <Button size="sm" variant="outline" onClick={onClose}>
@@ -261,6 +303,8 @@ export default function Products() {
             </form>
           </div>
         </Modal>
+
+
       </div>
     </>
   );
