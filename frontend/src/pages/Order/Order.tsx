@@ -95,7 +95,6 @@ export default function Order() {
     const onSubmitForm = async (data: any) => {
         setLoading(true);
         try {
-            console.log("Selected Products:", data.products);
             const payload = {
                 service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
                 ship_from: data.shipFrom,
@@ -170,36 +169,43 @@ export default function Order() {
         <div className="bg-white shadow-lg rounded-2xl p-6 space-y-6">
           {currentStep === 0 && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Service Type
-              </h2>
-              <div className="flex flex-col sm:flex-row gap-4">
-                {["Buy For Me", "Ship For Me"].map((option) => (
-                  <label
-                    key={option}
-                    className={`flex-1 flex items-center justify-between cursor-pointer rounded-xl border p-5 transition 
-                      ${option === control._formValues.serviceType
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 bg-white hover:bg-gray-50"
-                      }`}
-                  >
-                    <input
-                      type="radio"
-                      value={option}
-                      {...register("serviceType")}
-                      className="hidden"
-                    />
-                    <span className="font-medium text-gray-700">{option}</span>
-                    {option === control._formValues.serviceType && (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white">
-                        ✓
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Service Type</h2>
+
+              <Controller
+                control={control}
+                name="serviceType"
+                render={({ field }) => (
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {["Buy For Me", "Ship For Me"].map((option) => (
+                      <label
+                        key={option}
+                        className={`flex-1 flex items-center justify-between cursor-pointer rounded-xl border p-5 transition 
+                          ${field.value === option
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-300 bg-white hover:bg-gray-50"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          value={option}
+                          checked={field.value === option}
+                          onChange={() => field.onChange(option)} // ✅ update RHF value
+                          className="hidden"
+                        />
+                        <span className="font-medium text-gray-700">{option}</span>
+                        {field.value === option && (
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white">
+                            ✓
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              />
+
               {errors.serviceType && (
-                <p className="text-red-500 text-sm">{errors.serviceType?.message  as string}</p>
+                <p className="text-red-500 text-sm">{errors.serviceType.message as string}</p>
               )}
             </div>
           )}
