@@ -92,36 +92,36 @@ export default function Order() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-    const onSubmitForm = async (data: any) => {
-        setLoading(true);
-        try {
-            const payload = {
-                service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
-                ship_from: data.shipFrom,
-                ship_to: data.shipTo,
-                order_details: (data.products || []).map((id: string) => ({
-                    product_id: parseInt(id, 10), 
-                    quantity: 1,
-                })),
-            };
+  const onSubmitForm = async (data: any) => {
+    setLoading(true);
+    try {
+      const payload = {
+        service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
+        ship_from: data.shipFrom,
+        ship_to: data.shipTo,
+        order_details: (data.products || []).map((id: string) => ({
+          product_id: parseInt(id, 10),
+          quantity: 1,
+        })),
+      };
 
-            const res = await ApiHelper("POST", "/order/store", payload);
+      const res = await ApiHelper("POST", "/order/store", payload);
 
-            if (res.status === 200 && res.data.success) {
-                toast.success(res.data.message || "Order placed successfully");
-                reset();
-                setSelectedValues([]);
-            } else {
-                toast.error(res.data.message || "Failed to place order ❌");
-            }  
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Something went wrong!", {
-            style: { background: "#f44336", color: "#fff" },
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
+      if (res.status === 200 && res.data.success) {
+        toast.success(res.data.message || "Order placed successfully");
+        reset();
+        setSelectedValues([]);
+      } else {
+        toast.error(res.data.message || "Failed to place order ❌");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Something went wrong!", {
+        style: { background: "#f44336", color: "#fff" },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const countries = ["USA", "Canada", "UK", "Germany", "Pakistan", "India"];
@@ -144,8 +144,8 @@ export default function Order() {
                   ${index === currentStep
                     ? "bg-blue-500 text-white shadow-lg"
                     : index < currentStep
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-200 text-gray-600"
+                      ? "bg-green-500 text-white"
+                      : "bg-gray-200 text-gray-600"
                   }`}
               >
                 {index < currentStep ? "✓" : index + 1}
@@ -232,7 +232,7 @@ export default function Order() {
                     ))}
                   </select>
                   {errors.shipFrom && (
-                    <p className="text-red-500 text-sm">{errors.shipFrom?.message  as string}</p>
+                    <p className="text-red-500 text-sm">{errors.shipFrom?.message as string}</p>
                   )}
                 </div>
                 <div>
@@ -251,7 +251,7 @@ export default function Order() {
                     ))}
                   </select>
                   {errors.shipTo && (
-                    <p className="text-red-500 text-sm">{errors.shipTo?.message  as string}</p>
+                    <p className="text-red-500 text-sm">{errors.shipTo?.message as string}</p>
                   )}
                 </div>
               </div>
@@ -271,15 +271,16 @@ export default function Order() {
                   <MultiSelect
                     label="Select Multiple Product"
                     options={multiOptions}
+                    defaultSelected={field.value || []} // initial selected values
                     onChange={(values) => {
-                        field.onChange(values);
-                        setSelectedValues(values);
+                      field.onChange(values); // update RHF state
+                      setSelectedValues(values); // your local state if needed
                     }}
                   />
                 )}
               />
               {errors.products && (
-                <p className="text-red-500 text-sm">{errors.products?.message  as string}</p>
+                <p className="text-red-500 text-sm">{errors.products?.message as string}</p>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -295,7 +296,7 @@ export default function Order() {
                     className="w-full"
                   />
                   {errors.weight && (
-                    <p className="text-red-500 text-sm">{errors.weight?.message  as string}</p>
+                    <p className="text-red-500 text-sm">{errors.weight?.message as string}</p>
                   )}
                 </div>
                 <div>
@@ -309,7 +310,7 @@ export default function Order() {
                     className="w-full"
                   />
                   {errors.price && (
-                    <p className="text-red-500 text-sm">{errors.price?.message  as string}</p>
+                    <p className="text-red-500 text-sm">{errors.price?.message as string}</p>
                   )}
                 </div>
               </div>

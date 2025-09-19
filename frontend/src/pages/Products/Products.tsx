@@ -104,7 +104,7 @@ export default function Products() {
       }
 
       if (res.status === 200) {
-   toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
+        toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
         setTimeout(() => {
           toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
           dispatch(fetchProduct());

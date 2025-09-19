@@ -9,8 +9,10 @@ import {
   PageIcon,
   TableIcon,
   UserCircleIcon,
+  DocsIcon,
   PlusIcon,
   LockIcon,
+  BoxIcon,
   UserIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
@@ -58,7 +60,7 @@ const navItems: NavItem[] = [
     roles: ["admin"], // 🔹 hide whole section unless role is admin
   },
   {
-    icon: <PlusIcon />,
+    icon: <BoxIcon />,
     name: "Products",
     path: "/products",
     // permissions: ["create_order"], // 🔹 only if permission granted
@@ -69,12 +71,12 @@ const navItems: NavItem[] = [
     path: "/request",
     // permissions: ["create_order"], // 🔹 only if permission granted
   },
-  {
-    icon: <PlusIcon />,
-    name: "Form",
-    path: "/formWizard",
-    // permissions: ["create_order"], // 🔹 only if permission granted
-  },
+  // {
+  //   icon: <DocsIcon />,
+  //   name: "Form",
+  //   path: "/formWizard",
+  //   // permissions: ["create_order"], // 🔹 only if permission granted
+  // },
   {
     icon: <LockIcon />,
     name: "Batch import",
