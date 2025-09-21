@@ -72,13 +72,13 @@ class ShipperController extends Controller
             $perPage = (int) $request->get('per_page', 10);
 
             $shipperRequests = ShipperRequest::with(['order.orderDetails.product'])
-            ->where('user_id', $userId)
-            ->orderBy('id', 'desc')
-            ->paginate($perPage);
+                ->where('user_id', $userId)
+                ->orderBy('id', 'desc')
+                ->paginate($perPage);
 
             return response()->json([
                 'success' => true,
-                'data'    => $shipperRequests->items(), // actual records
+                'data'    => $shipperRequests, // actual records
                 'meta'    => [
                     'current_page'  => $shipperRequests->currentPage(),
                     'last_page'     => $shipperRequests->lastPage(),

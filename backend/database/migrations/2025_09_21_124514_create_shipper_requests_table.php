@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('shipper_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id');
-            $table->foreignId('user_id');
+            $table->unsignedBigInteger('order_id');
+            $table->unsignedBigInteger('user_id');
             $table->text('message')->nullable();
             $table->enum('status', [
                 'pending',

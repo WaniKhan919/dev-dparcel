@@ -14,7 +14,7 @@ class ShipperRequest extends Model
     ];
 
     // Relationships
-    public function request()
+    public function order()
     {
         return $this->belongsTo(Order::class,);
     }
