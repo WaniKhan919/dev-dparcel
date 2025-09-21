@@ -60,7 +60,11 @@ export default function SignInForm() {
           icon: "🎉",
         });
         setTimeout(() => {
-          navigate("/");
+          if (res.data.user.roles.includes("shipper")) {
+            navigate("/shopper/dashboard");
+          }else{
+            navigate("/");
+          }
         }, 1000);
       } else {
         toast.error(res.data.message || "Login failed ❌");

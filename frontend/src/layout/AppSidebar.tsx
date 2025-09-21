@@ -51,6 +51,12 @@ const navItems: NavItem[] = [
     permissions: ["user_dashboard"], // 🔹 only users with this permission
   },
   {
+    icon: <GridIcon />,
+    name: "Dashboard",
+    path: "/shopper/dashboard",
+    // permissions: ["user_dashboard"], // 🔹 only users with this permission
+  },
+  {
     icon: <UserIcon />,
     name: "Role & Permission",
     subItems: [
@@ -58,6 +64,14 @@ const navItems: NavItem[] = [
       { name: "Permissions", path: "/permissions" },
     ],
     roles: ["admin"], // 🔹 hide whole section unless role is admin
+  },
+  {
+    icon: <UserIcon />,
+    name: "Shopper Request",
+    subItems: [
+      { name: "View Request", path: "/shopper/requests" },
+    ],
+    // roles: ["admin"], // 🔹 hide whole section unless role is admin
   },
   {
     icon: <BoxIcon />,

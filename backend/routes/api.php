@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ShipperController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\Api\OrderController;
@@ -52,5 +53,13 @@ Route::middleware('auth:sanctum')->group(function () {
     ->group(function () {
         Route::get('/', 'index');
         Route::post('/store', 'store');
+    });
+    Route::prefix('shipper')
+    ->controller(ShipperController::class)
+    ->group(function () {
+        Route::get('/get/requests', 'getRequests');
+        Route::post('/confirm/request', 'confirmRequest');
+        Route::get('/get/offers', 'getMyOffers');
+
     });
 });

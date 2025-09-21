@@ -1,94 +1,166 @@
 import React, { useState } from "react";
+import { ApiHelper } from "../../utils/ApiHelper";
+import toast from "react-hot-toast";
+import { Modal } from "../../components/ui/modal";
 
-interface Driver {
+interface Notification {
   id: number;
   name: string;
-  rating: number;
-  rides: number;
-  car: string;
-  time: number;
-  distance: number;
-  price: number;
+  ship_to: string;
+  ship_from: string;
+  service_type: string;
+  total_aprox_weight: number;
 }
 
 interface CardToastProps {
-  notiffications: Driver[];
+  notifications: Notification[];
 }
 
-export default function CardToast({ notiffications }: CardToastProps) {
-  const [visibleIds, setVisibleIds] = useState<number[]>(notiffications.map(d => d.id));
+export default function CardToast({ notifications }: CardToastProps) {
+  const [visibleIds, setVisibleIds] = useState<number[]>(notifications.map(d => d.id));
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    id: number | null;
+    status: "accepted" | "ignored" | null;
+  }>({ open: false, id: null, status: null });
 
-  const handleAccept = (id: number) => {
-    alert(`Driver ${id} Accepted!`);
-    setVisibleIds(prev => prev.filter(d => d !== id));
+  const confirmRequest = async (id: number, status: "accepted" | "ignored") => {
+    try {
+      const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status });
+
+      if (response.status === 200) {
+        setVisibleIds(prev => prev.filter(d => d !== id));
+        toast.success(response.data.message, {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+          icon: "🎉",
+        });
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("API Error!");
+    }
   };
 
-  const handleDecline = (id: number) => {
-    alert(`Driver ${id} Declined!`);
-    setVisibleIds(prev => prev.filter(d => d !== id));
+  const handleConfirm = () => {
+    if (confirmModal.id && confirmModal.status) {
+      confirmRequest(confirmModal.id, confirmModal.status);
+    }
+    setConfirmModal({ open: false, id: null, status: null });
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[100000] flex flex-col gap-3 max-h-[100vh] overflow-y-auto scroll-hidden">
-      {notiffications
-        .filter(notification => visibleIds.includes(notification.id))
-        .map((notification,index) => (
-          <div
-            key={notification.id}
-            className="w-80 bg-white rounded-3xl p-4 shadow-lg animate-slide-up animate-toast-pop"
-            style={{ animationDelay: `${index * 0.2}s` }}
-          >
-            <div className="flex justify-between items-center">
-              {/* Left Section */}
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gray-400 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">
-                    {notification.name.charAt(0)}
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>{notification.name}</span>
-                    <span>⭐ {notification.rating}</span>
-                    <span className="text-gray-400">({notification.rides} rides)</span>
+    <>
+      {/* Toast Cards */}
+      <div className="fixed bottom-4 right-4 z-[100000] flex flex-col gap-3 max-h-[100vh] overflow-y-auto scroll-hidden">
+        {notifications
+          .filter(notification => visibleIds.includes(notification.id))
+          .map((notification, index) => (
+            <div
+              key={notification.id}
+              className="w-80 bg-white rounded-3xl p-4 shadow-lg animate-slide-up animate-toast-pop"
+              style={{ animationDelay: `${index * 0.2}s` }}
+            >
+              <div className="flex justify-between items-center">
+                {/* Left Section */}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gray-400 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">
+                      {notification.name.charAt(0)}
+                    </span>
                   </div>
-                  <div className="text-sm">{notification.car}</div>
+                  <div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span>{notification.name}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Section */}
+                <div className="text-right text-sm font-semibold">
+                  <div>{notification.total_aprox_weight} (g)</div>
                 </div>
               </div>
 
-              {/* Right Section */}
-              <div className="text-right text-sm font-semibold">
-                <div>{notification.time} min</div>
-                <div>{notification.distance} km</div>
+              {/* Price */}
+              <div className="flex">
+                <span className="w-1/2 p-4">
+                  <b>From: </b> {notification.ship_from}
+                </span>
+                <span className="w-1/2 p-4">
+                  <b>To: </b> {notification.ship_to}
+                </span>
+              </div>
+              <div className="text-xl font-semibold text-blue-600 mt-4">
+                {notification.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"} ${" "}
+                {notification.total_aprox_weight}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex mt-3">
+                <button
+                  onClick={() =>
+                    setConfirmModal({ open: true, id: notification.id, status: "ignored" })
+                  }
+                  className="bg-gray-200 w-1/2 py-3 rounded-full mr-2"
+                >
+                  Decline
+                </button>
+                <button
+                  onClick={() =>
+                    setConfirmModal({ open: true, id: notification.id, status: "accepted" })
+                  }
+                  style={{
+                    backgroundImage: "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
+                  }}
+                  className="w-1/2 py-3 rounded-full ml-2 text-white font-medium shadow-md"
+                >
+                  Accept
+                </button>
               </div>
             </div>
+          ))}
+      </div>
 
-            {/* Price */}
-            <div className="text-xl font-semibold text-blue-600 mt-4">
-              QAR {notification.price}
-            </div>
-
-            {/* Buttons */}
-            <div className="flex mt-3">
-              <button
-                onClick={() => handleDecline(notification.id)}
-                className="bg-gray-200 w-1/2 py-3 rounded-full mr-2"
-              >
-                Decline
-              </button>
-              <button
-                onClick={() => handleAccept(notification.id)}
-                style={{
-                  backgroundImage: "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
-                }}
-                className="w-1/2 py-3 rounded-full ml-2 text-white font-medium shadow-md"
-              >
-                Accept
-              </button>
-            </div>
+      {/* Confirm Modal */}
+      <Modal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal({ open: false, id: null, status: null })}
+        className="max-w-md m-4"
+      >
+        <div className="bg-white p-6 rounded-2xl text-center">
+          <h3 className="text-xl font-semibold mb-4 text-gray-800">Confirm Action</h3>
+          <p className="mb-6 text-gray-600">
+            Are you sure you want to{" "}
+            <strong className="capitalize">{confirmModal.status}</strong> this request?
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => setConfirmModal({ open: false, id: null, status: null })}
+              className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 transition"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              className={`px-4 py-2 rounded-lg text-white transition ${
+                confirmModal.status === "accepted"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-red-600 hover:bg-red-700"
+              }`}
+            >
+              Confirm
+            </button>
           </div>
-        ))}
-    </div>
+        </div>
+      </Modal>
+    </>
   );
 }

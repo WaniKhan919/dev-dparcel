@@ -27,6 +27,8 @@ import Products from "./pages/Products/Products";
 import Order from "./pages/Order/Order";
 import FormWizard from "./components/common/FormWizard";
 import ViewOrder from "./pages/Order/ViewOrder";
+import ShopperDashboard from "./pages/Dashboard/ShopperDashboard";
+import ShopperRequests from "./pages/Requests/ShopperRequests";
 
 export default function App() {
   return (
@@ -48,12 +50,14 @@ export default function App() {
             }
           >
             <Route index path="/" element={<Home />} />
+            <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/products" element={<Products />} />
             <Route path="/request" element={<Order />} />
             <Route path="/view/request" element={<ViewOrder />} />
+            <Route path="/shopper/requests" element={<ShopperRequests />} />
 
             {/* Others Page
             <Route path="/profile" element={<UserProfiles />} />

@@ -1,80 +1,43 @@
-import PageMeta from "../../components/common/PageMeta";
+  import PageMeta from "../../components/common/PageMeta";
 import { InfoIcon } from "../../icons";
-import Card from "../Products/card";
+import Card from "../Products/Card";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "../../store";
+import { fetchRequests } from "../../slices/shopperRequestSlice";
+import { useEffect, useMemo, useState } from "react";
+
+interface Notification {
+  id: number;
+  name: string;
+  ship_to: string;
+  ship_from: string;
+  service_type: string;
+  total_aprox_weight: number;
+}
 
 export default function ShopperDashboard() {
-  const drivers = [
-    {
-      id: 1,
-      name: "John Doe",
-      rating: 4.8,
-      rides: 120,
-      car: "Toyota Prius",
-      time: 5,
-      distance: 3.2,
-      price: 25,
-    },
-    {
-      id: 2,
-      name: "Alice Smith",
-      rating: 4.6,
-      rides: 95,
-      car: "Honda Civic",
-      time: 8,
-      distance: 5.1,
-      price: 30,
-    },
-    {
-      id: 2,
-      name: "Alice Smith",
-      rating: 4.6,
-      rides: 95,
-      car: "Honda Civic",
-      time: 8,
-      distance: 5.1,
-      price: 30,
-    },
-    {
-      id: 2,
-      name: "Alice Smith",
-      rating: 4.6,
-      rides: 95,
-      car: "Honda Civic",
-      time: 8,
-      distance: 5.1,
-      price: 30,
-    },
-    {
-      id: 2,
-      name: "Alice Smith",
-      rating: 4.6,
-      rides: 95,
-      car: "Honda Civic",
-      time: 8,
-      distance: 5.1,
-      price: 30,
-    },
-    {
-      id: 2,
-      name: "Alice Smith",
-      rating: 4.6,
-      rides: 95,
-      car: "Honda Civic",
-      time: 8,
-      distance: 5.1,
-      price: 30,
-    },
-    {
-      id: 2,
-      name: "Alice Smith",
-      rating: 4.6,
-      rides: 95,
-      car: "Honda Civic",
-      time: 8,
-      distance: 5.1,
-      price: 30,
-    },
-  ];
+  
+  const dispatch = useDispatch<AppDispatch>();
+  const { requests, loading, error } = useSelector((state: any) => state.shopperRequest);
+
+
+  
+  useEffect(() => {
+    dispatch(fetchRequests());
+    console.log(requests)
+  }, [dispatch]);
+  
+  const notification: Notification[] = useMemo(() => {
+    if (!requests) return [];
+    return requests.map((item: any) => ({
+      id: Number(item.id),
+      name: item.user?.name || "Unknown",
+      ship_to: item.ship_to,
+      ship_from: item.ship_from,
+      service_type: item.service_type,
+      total_aprox_weight: Number(item.total_aprox_weight),
+    }));
+  }, [requests]);
   return (
     <>
       <PageMeta
@@ -164,7 +127,10 @@ export default function ShopperDashboard() {
             </div>
         </div>
         <div className="col-span-4">
-          <Card notiffications={drivers} />
+          {
+            notification.length > 0 &&
+              <Card notifications={notification} />
+          }
         </div>
 
       </div>
