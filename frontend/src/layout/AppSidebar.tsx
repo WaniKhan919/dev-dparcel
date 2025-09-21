@@ -68,8 +68,11 @@ const navItems: NavItem[] = [
   {
     icon: <PlusIcon />,
     name: "Request",
-    path: "/request",
-    // permissions: ["create_order"], // 🔹 only if permission granted
+    subItems: [
+      { name: "Create Request", path: "/request" },
+      { name: "View Request", path: "/view/request" },
+    ],
+    // roles: ["create_order"], // 🔹 hide whole section unless role is admin
   },
   // {
   //   icon: <DocsIcon />,

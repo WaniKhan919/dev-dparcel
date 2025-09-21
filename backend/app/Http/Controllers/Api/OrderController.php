@@ -13,6 +13,38 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+    public function index(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+
+            $perPage = (int) $request->get('per_page', 10);
+
+            $orders = Order::with('orderDetails.product')->where('user_id', $userId)
+                            ->orderBy('id', 'desc')
+                            ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $orders->items(), // actual records
+                'meta'    => [
+                    'current_page' => $orders->currentPage(),
+                    'last_page'    => $orders->lastPage(),
+                    'per_page'     => $orders->perPage(),
+                    'total'        => $orders->total(),
+                    'next_page_url'=> $orders->nextPageUrl(),
+                    'prev_page_url'=> $orders->previousPageUrl(),
+                ],
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get orders',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
     public function store(Request $request)
     {
         DB::beginTransaction();
