@@ -2,64 +2,50 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchOffers } from "../../slices/shipperOffersSlice";
 
 interface Request {
+  id: number;
+  service_type: string;
+  ship_from: string;
+  ship_to: string;
+  total_aprox_weight: string;
+  total_price: string;
+  status: string;
+  order_details: {
     id: number;
-    service_type: string;
-    ship_from: string;
-    ship_to: string;
-    products: string; // comma-separated
-    total_aprox_weight: string;
-    total_price: string;
-    weight_per_unit: string;
-    order_details: {
-        id: number;
-        quantity: number;
-        price: string;
-        product: {
-        id: number;
-        title: string;
-        weight?: string;
-        };
-    }[];
+    quantity: number;
+    price: string;
+    product: {
+      id: number;
+      title: string;
+      weight?: string;
+    };
+  }[];
 }
 
 export default function ShopperRequests() {
   const dispatch = useDispatch<AppDispatch>();
-  const { data: apiData, meta, loading } = useSelector((state: any) => state.order);
+  const { data, meta, loading } = useSelector((state: any) => state.shipperOffers);
 
   useEffect(() => {
     dispatch(fetchOffers({ page: 1, per_page: 10 }));
   }, [dispatch]);
-  useEffect(() => {
-  console.log('Redux state.data:', apiData);
-  console.log('Mapped offers:', offers);
-}, [apiData]);
-
-const offers: Request[] = apiData.map((item: any) => ({
-  id: item.id,
-  service_type: item.order?.service_type,
-  ship_from: item.order?.ship_from,
-  ship_to: item.order?.ship_to,
-  total_aprox_weight: item.order?.total_aprox_weight,
-  total_price: item.order?.total_price,
-  order_details: item.order?.order_details?.map((detail: any) => ({
-    id: detail.id,
-    quantity: detail.quantity,
-    price: detail.price,
-    product: {
-      id: detail.product?.id,
-      title: detail.product?.title,
-      weight: detail.product?.weight,
-    },
-  })),
-  status: item.status,
-}));
-
+  const requests: Request[] = useMemo(() => {
+    return data.map((offer: any) => ({
+      id: offer.id,
+      service_type: offer.order?.service_type ?? "",
+      ship_from: offer.order?.ship_from ?? "",
+      ship_to: offer.order?.ship_to ?? "",
+      total_aprox_weight: offer.order?.total_aprox_weight ?? "",
+      total_price: offer.order?.total_price ?? "",
+      status: offer.status,
+      order_details: offer.order?.order_details ?? [],
+    }));
+  }, [data]);
 
   const columns = [
     {
@@ -106,7 +92,29 @@ const offers: Request[] = apiData.map((item: any) => ({
         </div>
       ),
     },
-    { key: "status", header: "Status" },
+    {
+      key: "status",
+      header: "Status",
+      render: (record: Request) => {
+        const statusColors: Record<string, string> = {
+          pending: "bg-yellow-100 text-yellow-800",
+          accepted: "bg-green-100 text-green-800",
+          rejected: "bg-red-100 text-red-800",
+          cancelled: "bg-gray-200 text-gray-800",
+          ignored: "bg-orange-100 text-orange-800",
+        };
+
+        return (
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              statusColors[record.status] || "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+          </span>
+        );
+      },
+    },
     {
       key: "actions",
       header: "Actions",
@@ -120,7 +128,7 @@ const offers: Request[] = apiData.map((item: any) => ({
       <PageBreadcrumb pageTitle="View Requests" />
       <div className="space-y-6">
         <ComponentCard title="View Requests">
-          <DParcelTable columns={columns} data={offers} />
+          <DParcelTable columns={columns} data={requests} />
         </ComponentCard>
       </div>
     </>

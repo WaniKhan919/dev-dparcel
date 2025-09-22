@@ -78,7 +78,7 @@ class ShipperController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => $shipperRequests, // actual records
+                'data'    => $shipperRequests->items(),
                 'meta'    => [
                     'current_page'  => $shipperRequests->currentPage(),
                     'last_page'     => $shipperRequests->lastPage(),

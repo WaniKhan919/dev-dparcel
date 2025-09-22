@@ -138,6 +138,7 @@ export default function Permissions() {
 
     return (
         <>
+        
             <PageMeta title="Delivering Parcel | Permissions" description="" />
             <PageBreadcrumb pageTitle="Permissions" />
             {
@@ -148,7 +149,9 @@ export default function Permissions() {
                     permissionId={permissionId}
                 />
             }
+            
             <div className="space-y-6">
+                 
                 <ComponentCard
                     title="Permissions"
                     actions={
@@ -169,12 +172,15 @@ export default function Permissions() {
                     }
                 >
                     <DParcelTable columns={columns} data={permissions} />
-                    <AssignPermissionDrawer
-                        isOpen={assignDrawer}
-                        onClose={() => setAssignDrawer(false)}
-                    />
-                </ComponentCard>
-
+                    
+                {
+                    assignDrawer &&
+                        <AssignPermissionDrawer
+                            isOpen={assignDrawer}
+                            onClose={() => setAssignDrawer(false)}
+                        />
+                } 
+                </ComponentCard>    
                 {/* Modal */}
                 <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
                     <div className="relative w-full max-w-[700px] rounded-3xl bg-white p-6 dark:bg-gray-900">

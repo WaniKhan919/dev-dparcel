@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { ApiHelper } from "../utils/ApiHelper";
 
 interface DataType {
-  type?: number;
   page?: number;
   per_page?: number;
 }
@@ -22,7 +21,7 @@ const initialState: OrderRequestState = {
 
 export const fetchOrders = createAsyncThunk(
   'orderRequest/fetch',
-  async ({ type, page = 1, per_page = 10 }:DataType, { rejectWithValue }) => {
+  async ({ page = 1, per_page = 10 }:DataType, { rejectWithValue }) => {
     try {
       const response = await ApiHelper('GET', `/order?page=${page}&per_page=${per_page}`);
       if (response.status === 200 && response.data?.data) {

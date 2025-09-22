@@ -26,7 +26,7 @@ export const fetchOffers = createAsyncThunk(
     try {
       const response = await ApiHelper('GET', `/shipper/get/offers?page=${page}&per_page=${per_page}`);
       if (response.status === 200 && response.data?.data) {
-        return response.data.data;
+        return response.data;
       } else {
         return rejectWithValue(response.data?.message || 'Error fetching');
       }
@@ -37,7 +37,7 @@ export const fetchOffers = createAsyncThunk(
 );
 
 const shipperOffersSlice = createSlice({
-  name: "order",
+  name: "offer",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
@@ -48,7 +48,7 @@ const shipperOffersSlice = createSlice({
       })
       .addCase(fetchOffers.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload.data.data; 
+        state.data = action.payload.data; 
         state.meta = {
           currentPage: action.payload.current_page,
           lastPage: action.payload.last_page,
