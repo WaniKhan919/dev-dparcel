@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -68,7 +69,7 @@ class AuthController extends Controller
                     'roles'  => $user->roles->pluck('name'),
                 ],
                 'permissions' => $user->roles
-                        ->flatMap(fn($role) => $role->permissions->pluck('name'))
+                        ->flatMap(fn($role) => $role->permissions->pluck('code'))
                         ->unique()
                         ->values(),
                 'token'   => $onlyToken,
@@ -85,6 +86,7 @@ class AuthController extends Controller
     /*** Signup API */
     public function signup(Request $request)
     {
+        // DB::beginTransaction();
         try {
             $validated = $request->validate([
                 'name'     => 'required|string|max:255',
@@ -116,13 +118,14 @@ class AuthController extends Controller
 
             // send code (email/SMS placeholder)
             Mail::to($user->email)->send(new VerifyUserMail($user->name, $verificationCode));
-
+            // DB::commit();
             return response()->json([
                 'message' => 'User registered successfully. Please verify your account using the code sent.',
                 'user_id' => $user->id, // frontend can use this for verification step
             ], 201);
 
         } catch (Exception $e) {
+            // DB::rollBack();
             return response()->json([
                 'message' => 'Something went wrong during signup',
                 'error'   => $e->getMessage()

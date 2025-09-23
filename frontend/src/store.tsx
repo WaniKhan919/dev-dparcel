@@ -3,6 +3,7 @@ import roleReducer from "./slices/roleSlice";
 import permissionReducer from "./slices/permissionSlice";
 import productReducer from "./slices/productSlice";
 import orderReducer from "./slices/orderSlice";
+import allOrderReducer from "./slices/allOrderSlice";
 import shopperRequestReducer from "./slices/shopperRequestSlice";
 import shipperOffersReducer from "./slices/shipperOffersSlice";
 
@@ -12,6 +13,7 @@ export const store = configureStore({
     permissions: permissionReducer,
     products: productReducer,
     order: orderReducer,
+    allOrder: allOrderReducer,
     shopperRequest: shopperRequestReducer,
     shipperOffers: shipperOffersReducer,
   },

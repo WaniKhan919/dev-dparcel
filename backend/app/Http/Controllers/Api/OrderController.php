@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\OrderDetail;
-use App\Models\Product;
 use Exception;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\OrderDetail;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
 
 class OrderController extends Controller
 {
@@ -23,6 +24,36 @@ class OrderController extends Controller
             $orders = Order::with('orderDetails.product')->where('user_id', $userId)
                             ->orderBy('id', 'desc')
                             ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $orders->items(), // actual records
+                'meta'    => [
+                    'current_page' => $orders->currentPage(),
+                    'last_page'    => $orders->lastPage(),
+                    'per_page'     => $orders->perPage(),
+                    'total'        => $orders->total(),
+                    'next_page_url'=> $orders->nextPageUrl(),
+                    'prev_page_url'=> $orders->previousPageUrl(),
+                ],
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get orders',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function allOrders(Request $request)
+    {
+        try {
+            $perPage = (int) $request->get('per_page', 10);
+
+            $orders = Order::with(['orderDetails.product','shopperRequest.shipper','user'])
+                        ->orderBy('id', 'desc')
+                        ->paginate($perPage);
 
             return response()->json([
                 'success' => true,
@@ -63,6 +94,10 @@ class OrderController extends Controller
             $totalPrice = 0;
             $totalWeight = 0;
 
+            do {
+                $trackingNumber = 'TRK-' . strtoupper(Str::random(10));
+            } while (Order::where('tracking_number', $trackingNumber)->exists());
+
             // create order
             $order = Order::create([
                 'user_id' => $userId,
@@ -71,7 +106,9 @@ class OrderController extends Controller
                 'ship_to' => $validated['ship_to'],
                 'total_aprox_weight' => 0,
                 'total_price' => 0,
+                'tracking_number' => $trackingNumber,
             ]);
+            
             //  loop products
             foreach ($validated['order_details'] as $detail) {
                 $product = Product::findOrFail($detail['product_id']);

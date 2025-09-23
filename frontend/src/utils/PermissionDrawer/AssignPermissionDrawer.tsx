@@ -1,7 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
-import { fetchPermission } from "../../slices/permissionSlice";
-import { useDispatch, useSelector } from "react-redux";
+import * as yup from "yup";
+import { toast } from "react-hot-toast";
 import { AppDispatch } from "../../store";
+import { useForm } from "react-hook-form";
+import { ApiHelper } from "../../utils/ApiHelper";
+import { fetchRoles } from "../../slices/roleSlice";
+import { useEffect, useMemo, useState } from "react";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPermission } from "../../slices/permissionSlice";
+
+// Yup schema
+const schema = yup.object().shape({
+  roleId: yup.number().nullable().required("Role is required"),
+  permissions: yup
+    .array()
+    .of(yup.number())
+    .min(1, "At least one permission must be selected"),
+});
 
 interface AssignPermissionDrawerProps {
   isOpen: boolean;
@@ -13,16 +28,38 @@ export default function AssignPermissionDrawer({
   onClose,
 }: AssignPermissionDrawerProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { permissions, permissionsLoading, error } = useSelector((state: any) => state.permissions);
+  const { roles, rolesLoading, error } = useSelector((state: any) => state.roles);
+  const { permissions, permissionsLoading } = useSelector(
+    (state: any) => state.permissions
+  );
+
   useEffect(() => {
-      dispatch(fetchPermission());
+    dispatch(fetchRoles());
+    dispatch(fetchPermission());
   }, [dispatch]);
 
-  const roles = [
-    { id: 1, name: "Admin" },
-    { id: 2, name: "Manager" },
-    { id: 3, name: "User" },
-  ];
+  const {
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      roleId: undefined,
+      permissions: [],
+    },
+  });
+  const selectedRole = watch("roleId");
+  const selectedPermissions = watch("permissions") || [];
+
+  const mappedRoles = useMemo(() => {
+    if (!roles) return [];
+    return roles.map((record: any) => ({
+      id: record.id,
+      name: record.name,
+    }));
+  }, [roles]);
 
   const mappedPermissions = useMemo(() => {
     if (!permissions) return [];
@@ -33,43 +70,56 @@ export default function AssignPermissionDrawer({
     }));
   }, [permissions]);
 
-  const [selectedRole, setSelectedRole] = useState<number | null>(null);
-  const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
+  // const [selectedRole, setSelectedRole] = useState<number | null>(null);
+  // const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const togglePermission = (id: number) => {
-    setSelectedPermissions((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
-  };
 
   const handleSelectAll = () => {
     if (selectAll) {
-      setSelectedPermissions([]);
+      setValue("permissions", [], { shouldValidate: true });
     } else {
-      setSelectedPermissions(permissions.map((p:any) => p.id));
+      setValue("permissions", permissions.map((p: any) => p.id), { shouldValidate: true });
     }
     setSelectAll(!selectAll);
   };
 
-  const handleSubmit = () => {
-    if (!selectedRole) {
-      alert("⚠️ Please select a role first!");
-      return;
+  const onSubmit = async (data: any) => {
+    setLoading(true);
+    try {
+      const res = await ApiHelper("POST", `/roles/${data.roleId}/permissions`, {
+        permissions: data.permissions,
+      });
+      if (res.status === 200) {
+        toast.success("Permissions assigned!");
+        // onClose();
+      } else {
+        toast.error(res.data.message || "Failed to assign permissions ❌");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Something went wrong!");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    console.log("Submitting:", {
-      roleId: selectedRole,
-      permissions: selectedPermissions,
-    });
-
-    alert(
-      `✅ Assigned ${selectedPermissions.length} permissions to role ID ${selectedRole}`
-    );
-
-    onClose();
+   const fetchRolePermissions = async (roleId:any) => {
+    try {
+      const res = await ApiHelper("GET", `/roles/${roleId}/permissions`);
+      if (res.status === 200) {
+        setValue("permissions", res.data.permissions);
+        setSelectAll(res.data.permissions.length === mappedPermissions.length);
+      }
+    } catch (err: any) {
+      toast.error("Failed to fetch role permissions");
+    }
+  };
+  const handleRoleChange = async (roleId: number) => {
+    setValue("roleId", roleId);
+    fetchRolePermissions(roleId)
   };
 
   return (
@@ -98,75 +148,96 @@ export default function AssignPermissionDrawer({
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-6 h-[calc(100%-60px)] flex flex-col">
-          {/* Role Dropdown */}
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Select Role <span className="text-red-500">*</span>
-            </label>
-            <select
-              className="w-full border rounded-lg px-3 py-2"
-              value={selectedRole ?? ""}
-              onChange={(e) => setSelectedRole(Number(e.target.value))}
-            >
-              <option value="" disabled>
-                Choose a role
-              </option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="p-5 space-y-6 h-[calc(100%-60px)] flex flex-col">
+            {/* Role Dropdown */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Select Role <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                value={selectedRole ?? ""}
+                onChange={(e) => handleRoleChange(Number(e.target.value))}
+              >
+                <option value="" disabled>
+                  Choose a role
                 </option>
-              ))}
-            </select>
-          </div>
+                {mappedRoles.map((role: any) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
+              {errors.roleId && <p className="text-red-500 text-sm">{errors.roleId.message}</p>}
+            </div>
 
-          {/* Select All Button */}
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium text-gray-800">Permissions</h3>
-            <button
-              onClick={handleSelectAll}
-              className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs"
-            >
-              {selectAll ? "Unselect All" : "Select All"}
-            </button>
-          </div>
+            {/* Select All Button */}
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium text-gray-800">Permissions</h3>
+              <button
+                onClick={handleSelectAll}
+                className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs"
+              >
+                {selectAll ? "Unselect All" : "Select All"}
+              </button>
+            </div>
 
-          {/* Permissions Grid */}
-          <div className="flex-1 overflow-y-auto border rounded-lg p-3">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {mappedPermissions.map((permission:any) => (
-                <label
-                  key={permission.id}
-                  className="flex items-center gap-2 text-sm text-gray-700 border rounded-md px-2 py-1 hover:bg-gray-50 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600"
-                    checked={selectedPermissions.includes(permission.id)}
-                    onChange={() => togglePermission(permission.id)}
-                  />
-                  {permission.name}
-                </label>
-              ))}
+            {/* Permissions Grid */}
+            <div className="flex-1 overflow-y-auto border rounded-lg p-3">
+              {errors.permissions && <p className="text-red-500 text-sm mb-2">{errors.permissions.message}</p>}
+              {permissionsLoading ? (
+                <p className="text-sm text-gray-500">Loading permissions...</p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {mappedPermissions.map((permission: any) => (
+                    <label
+                      key={permission.id}
+                      className="flex items-center gap-2 text-sm text-gray-700 border rounded-md px-2 py-1 hover:bg-gray-50 cursor-pointer"
+                    >
+                     <input
+                        type="checkbox"
+                        className="h-4 w-4 text-blue-600"
+                        checked={selectedPermissions.includes(permission.id)}
+                        onChange={() => {
+                          let updated = [...selectedPermissions];
+                          if (updated.includes(permission.id)) {
+                            updated = updated.filter((p) => p !== permission.id);
+                          } else {
+                            updated.push(permission.id);
+                          }
+                          setValue("permissions", updated, { shouldValidate: true });
+                        }}
+                      />
+                      {permission.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex justify-end gap-3 border-t pt-4">
+              <button
+                onClick={onClose}
+                disabled={loading}
+                className="px-4 py-2 rounded-md border text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  backgroundImage: "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
+                }}
+                className="px-5 py-2 rounded-md text-white hover:bg-green-700"
+              >
+                {loading ? "Assigning..." : "Assign Permissions"}
+              </button>
             </div>
           </div>
-
-          {/* Footer Buttons */}
-          <div className="flex justify-end gap-3 border-t pt-4">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-md border text-gray-700 hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-5 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
-            >
-              Assign Permissions
-            </button>
-          </div>
-        </div>
+        </form>
       </div>
     </div>
   );

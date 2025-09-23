@@ -17,6 +17,7 @@ import { ApiHelper } from "../../utils/ApiHelper";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchProduct } from "../../slices/productSlice";
+import TextArea from "../../components/form/input/TextArea";
 
 const schema = yup.object().shape({
   title: yup.string().required("Product title is required"),
@@ -255,7 +256,7 @@ export default function Products() {
               {/* Description */}
               <div>
                 <Label>Description <span className="text-error-500">*</span></Label>
-                <Input type="text" placeholder="Enter description" {...register("description")} />
+                <TextArea placeholder="Enter description" {...register("description")}></TextArea>
                 {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
               </div>
 

@@ -2,10 +2,11 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchOffers } from "../../slices/shipperOffersSlice";
+import { createPortal } from "react-dom";
 
 interface Request {
   id: number;
@@ -51,7 +52,7 @@ export default function ShopperRequests() {
     {
       key: "service_type",
       header: "Ship Type",
-      render: (record: Request) => 
+      render: (record: Request) =>
         record.service_type === "ship_for_me" ? "Ship For Me" : "Shop For Me",
     },
     {
@@ -106,9 +107,8 @@ export default function ShopperRequests() {
 
         return (
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              statusColors[record.status] || "bg-gray-100 text-gray-800"
-            }`}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[record.status] || "bg-gray-100 text-gray-800"
+              }`}
           >
             {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
           </span>
@@ -118,7 +118,79 @@ export default function ShopperRequests() {
     {
       key: "actions",
       header: "Actions",
-      render: (record: Request) => <></>,
+      render: (record: Request) => {
+        const [open, setOpen] = useState(false);
+        const buttonRef = useRef<HTMLButtonElement>(null);
+        const [position, setPosition] = useState({ top: 0, left: 0 });
+
+        const toggleDropdown = () => {
+          if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setPosition({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+          }
+          setOpen(!open);
+        };
+
+        // Close on outside click
+        useEffect(() => {
+          const handleClickOutside = (e: MouseEvent) => {
+            if (
+              buttonRef.current &&
+              !buttonRef.current.contains(e.target as Node)
+            ) {
+              setOpen(false);
+            }
+          };
+          document.addEventListener("mousedown", handleClickOutside);
+          return () => document.removeEventListener("mousedown", handleClickOutside);
+        }, []);
+
+        return (
+          <>
+            <button
+              ref={buttonRef}
+              type="button"
+              onClick={toggleDropdown}
+              className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-3 py-1 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+            >
+              Actions
+              <svg
+                className="-mr-1 ml-2 h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+
+            {open &&
+              createPortal(
+                <div
+                  style={{ top: position.top, left: position.left }}
+                  className="absolute mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                >
+                  <div className="py-1">
+                    <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+                      View
+                    </button>
+                    <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+                      Edit
+                    </button>
+                    <button className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left">
+                      Delete
+                    </button>
+                  </div>
+                </div>,
+                document.body
+              )}
+          </>
+        );
+      },
     },
   ];
 

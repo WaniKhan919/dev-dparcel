@@ -43,13 +43,13 @@ export default function SignInForm() {
       const res = await ApiHelper("POST", "/login", data);
 
       if (res.status === 200) {
-        // Instead of localStorage.setItem
-        encryptLocalStorage("access_token", res.data.token);
-        encryptLocalStorage("user", res.data.user);
-        encryptLocalStorage("permissions", res.data.permissions);
+        const { message, user, permissions, token } = res.data;
+        encryptLocalStorage("access_token", token);
+        encryptLocalStorage("user", user);
+        encryptLocalStorage("permissions", permissions);
 
         // Success toast 🎉
-        toast.success(res.data.message || "Login successful!", {
+        toast.success(message || "Login successful!", {
           duration: 3000,
           position: "top-right",
           style: {
@@ -61,8 +61,11 @@ export default function SignInForm() {
         });
         setTimeout(() => {
           if (res.data.user.roles.includes("shipper")) {
+            navigate("/shipper/dashboard");
+          }else if (res.data.user.roles.includes("shopper")) {
             navigate("/shopper/dashboard");
-          }else{
+          }
+          else{
             navigate("/");
           }
         }, 1000);

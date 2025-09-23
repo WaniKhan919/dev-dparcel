@@ -23,6 +23,7 @@ return new class extends Migration
             $table->boolean('is_package_consolidation')->default(false);
             $table->boolean('is_purchase_assistance')->default(false);
             $table->boolean('is_forwarding_service_fee')->default(false);
+            $table->string('tracking_number', 50)->nullable()->unique();
             $table->integer('status')->default(1);
             $table->timestamps();
         });

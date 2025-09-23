@@ -29,6 +29,8 @@ import FormWizard from "./components/common/FormWizard";
 import ViewOrder from "./pages/Order/ViewOrder";
 import ShopperDashboard from "./pages/Dashboard/ShopperDashboard";
 import ShopperRequests from "./pages/Requests/ShopperRequests";
+import ViewAllRequests from "./pages/Order/ViewAllRequests";
+import ShipperDashboard from "./pages/Dashboard/ShipperDashboard";
 
 export default function App() {
   return (
@@ -51,8 +53,10 @@ export default function App() {
           >
             <Route index path="/" element={<Home />} />
             <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
+            <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
+            <Route path="/view/requests" element={<ViewAllRequests />} />
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/products" element={<Products />} />
             <Route path="/request" element={<Order />} />

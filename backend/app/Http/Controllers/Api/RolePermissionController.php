@@ -19,7 +19,7 @@ class RolePermissionController extends Controller
                 'permissions.*' => 'exists:permissions,id',
             ]);
 
-            $role->permissions()->syncWithoutDetaching($validated['permissions']);
+            $role->permissions()->sync($validated['permissions']);
 
             return response()->json([
                 'message' => 'Permissions assigned successfully',
@@ -27,6 +27,22 @@ class RolePermissionController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json(['message' => 'Failed to assign permissions', 'error' => $e->getMessage()], 500);
+        }
+    }
+   public function getPermissions($roleId)
+    {
+        try {
+            $role = Role::with('permissions')->findOrFail($roleId);
+
+            return response()->json([
+                'permissions' => $role->permissions->pluck('id')
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch permissions',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

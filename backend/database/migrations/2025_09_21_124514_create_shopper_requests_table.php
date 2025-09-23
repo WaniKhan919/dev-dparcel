@@ -11,13 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('shipper_requests', function (Blueprint $table) {
+        Schema::create('shopper_requests', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('user_id');
             $table->text('message')->nullable();
             $table->enum('status', [
                 'pending',
+                'inprogress',
                 'accepted',
                 'rejected',
                 'cancelled',
@@ -32,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('shipper_requests');
+        Schema::dropIfExists('shopper_requests');
     }
 };

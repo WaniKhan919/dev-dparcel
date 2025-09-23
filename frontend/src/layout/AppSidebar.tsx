@@ -42,19 +42,21 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/",
-    roles: ["admin"], // 🔹 only admin role can see
+    roles: ["admin"],
   },
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    path: "/user/dashboard",
-    permissions: ["user_dashboard"], // 🔹 only users with this permission
+    path: "/shipper/dashboard",
+    roles: ["shipper"],
+    permissions: ["shipper_dashboard"],
   },
   {
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/shopper/dashboard",
-    // permissions: ["user_dashboard"], // 🔹 only users with this permission
+    roles: ["shopper"],
+    permissions: ["shopper_dashboard"],
   },
   {
     icon: <UserIcon />,
@@ -63,7 +65,13 @@ const navItems: NavItem[] = [
       { name: "Roles", path: "/roles" },
       { name: "Permissions", path: "/permissions" },
     ],
-    roles: ["admin"], // 🔹 hide whole section unless role is admin
+    roles: ["admin"],
+  },
+  {
+    icon: <DocsIcon />,
+    name: "View Request",
+    path: "/view/requests",
+    roles: ["admin"],
   },
   {
     icon: <UserIcon />,
@@ -71,13 +79,15 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "View Request", path: "/shopper/requests" },
     ],
-    // roles: ["admin"], // 🔹 hide whole section unless role is admin
+    roles: ["shipper"],
+    permissions: ["view_shopper_request"],
   },
   {
     icon: <BoxIcon />,
     name: "Products",
     path: "/products",
-    // permissions: ["create_order"], // 🔹 only if permission granted
+    roles: ["shopper"],
+    permissions: ["products"],
   },
   {
     icon: <PlusIcon />,
@@ -86,19 +96,14 @@ const navItems: NavItem[] = [
       { name: "Create Request", path: "/request" },
       { name: "View Request", path: "/view/request" },
     ],
-    // roles: ["create_order"], // 🔹 hide whole section unless role is admin
+    roles: ["shopper"],
+    permissions: ["create_request"],
   },
-  // {
-  //   icon: <DocsIcon />,
-  //   name: "Form",
-  //   path: "/formWizard",
-  //   // permissions: ["create_order"], // 🔹 only if permission granted
-  // },
   {
     icon: <LockIcon />,
     name: "Batch import",
     path: "/profile",
-    roles: ["admin"], // 🔹 only admin role can see
+    roles: ["admin"],
   },
   {
     name: "Orders",
@@ -116,7 +121,7 @@ const navItems: NavItem[] = [
     name: "Wallet",
     icon: <PageIcon />,
     path: "/blank",
-    roles: ["shopper"], // 🔹 only shoppers can see
+    roles: ["shopper"],
   },
 ];
 

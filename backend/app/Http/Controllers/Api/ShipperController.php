@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\ShipperRequest;
+use App\Models\ShopperRequest;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +17,7 @@ class ShipperController extends Controller
         try {
         $userId = Auth::id();
 
-        $excludedOrders = ShipperRequest::where('user_id', $userId)
+        $excludedOrders = ShopperRequest::where('user_id', $userId)
             ->whereIn('status', ['accepted', 'rejected', 'cancelled', 'ignored'])
             ->pluck('order_id');
 
@@ -43,7 +43,7 @@ class ShipperController extends Controller
     {
         try {
             
-            $shipperRequest = ShipperRequest::create([
+            $shopperRequest = ShopperRequest::create([
                 'order_id' => $request->id,          // order id from request
                 'user_id'  => Auth::id(),            // logged in user id
                 'message'  => $request->message ?? null, // optional message
@@ -53,7 +53,7 @@ class ShipperController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Request has been accepted from your side',
-                'data'    => $shipperRequest
+                'data'    => $shopperRequest
             ], 200);
 
         } catch (Exception $e) {
@@ -71,21 +71,21 @@ class ShipperController extends Controller
 
             $perPage = (int) $request->get('per_page', 10);
 
-            $shipperRequests = ShipperRequest::with(['order.orderDetails.product'])
+            $shopperRequests = ShopperRequest::with(['order.orderDetails.product'])
                 ->where('user_id', $userId)
                 ->orderBy('id', 'desc')
                 ->paginate($perPage);
 
             return response()->json([
                 'success' => true,
-                'data'    => $shipperRequests->items(),
+                'data'    => $shopperRequests->items(),
                 'meta'    => [
-                    'current_page'  => $shipperRequests->currentPage(),
-                    'last_page'     => $shipperRequests->lastPage(),
-                    'per_page'      => $shipperRequests->perPage(),
-                    'total'         => $shipperRequests->total(),
-                    'next_page_url' => $shipperRequests->nextPageUrl(),
-                    'prev_page_url' => $shipperRequests->previousPageUrl(),
+                    'current_page'  => $shopperRequests->currentPage(),
+                    'last_page'     => $shopperRequests->lastPage(),
+                    'per_page'      => $shopperRequests->perPage(),
+                    'total'         => $shopperRequests->total(),
+                    'next_page_url' => $shopperRequests->nextPageUrl(),
+                    'prev_page_url' => $shopperRequests->previousPageUrl(),
                 ],
             ], 200);
 

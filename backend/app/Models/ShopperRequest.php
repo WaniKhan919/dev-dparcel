@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ShipperRequest extends Model
+class ShopperRequest extends Model
 {
     protected $fillable = [
         'order_id',
@@ -21,6 +21,6 @@ class ShipperRequest extends Model
 
     public function shipper()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class,'user_id', 'id');
     }
 }

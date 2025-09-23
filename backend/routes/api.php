@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Role Permission assignment
     Route::post('/roles/{role}/permissions', [RolePermissionController::class, 'assign']);
+    Route::get('/roles/{role}/permissions', [RolePermissionController::class, 'getPermissions']);
     Route::delete('/roles/{role}/permissions/{permission}', [RolePermissionController::class, 'revoke']);
 
     // User Pofile
@@ -52,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     ->controller(OrderController::class)
     ->group(function () {
         Route::get('/', 'index');
+        Route::get('/all/orders', 'allOrders');
         Route::post('/store', 'store');
     });
     Route::prefix('shipper')

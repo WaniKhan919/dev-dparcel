@@ -17,6 +17,7 @@ class Order extends Model
         'is_package_consolidation',
         'is_purchase_assistance',
         'is_forwarding_service_fee',
+        'tracking_number',
         'status',
     ];
 
@@ -27,5 +28,9 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+    public function shopperRequest()
+    {
+        return $this->hasOne(ShopperRequest::class);
     }
 }
