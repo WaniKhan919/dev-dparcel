@@ -139,7 +139,7 @@ export default function CardToast({ notifications }: CardToastProps) {
           <h3 className="text-xl font-semibold mb-4 text-gray-800">Confirm Action</h3>
           <p className="mb-6 text-gray-600">
             Are you sure you want to{" "}
-            <strong className="capitalize">{confirmModal.status}</strong> this request?
+            <strong className="capitalize">{confirmModal.status=="inprogress"?'Offer':confirmModal.status}</strong> this request?
           </p>
           <div className="flex justify-center gap-4">
             <button

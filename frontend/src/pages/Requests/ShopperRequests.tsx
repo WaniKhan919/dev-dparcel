@@ -98,11 +98,12 @@ export default function ShopperRequests() {
       header: "Status",
       render: (record: Request) => {
         const statusColors: Record<string, string> = {
-          pending: "bg-yellow-100 text-yellow-800",
-          accepted: "bg-green-100 text-green-800",
-          rejected: "bg-red-100 text-red-800",
-          cancelled: "bg-gray-200 text-gray-800",
-          ignored: "bg-orange-100 text-orange-800",
+          pending: "bg-yellow-100 text-yellow-800",      // waiting
+          inprogress: "bg-blue-100 text-blue-800",      // active work
+          accepted: "bg-green-100 text-green-800",      // success
+          rejected: "bg-red-100 text-red-800",          // failure
+          cancelled: "bg-gray-200 text-gray-800",       // neutral
+          ignored: "bg-purple-100 text-purple-800",     // dismissed
         };
 
         return (
