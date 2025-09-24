@@ -33,4 +33,8 @@ class Order extends Model
     {
         return $this->hasOne(ShopperRequest::class);
     }
+    public function offers()
+    {
+        return $this->hasMany(ShopperRequest::class, 'order_id', 'id');
+    }
 }

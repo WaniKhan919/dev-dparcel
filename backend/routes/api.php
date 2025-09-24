@@ -55,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index');
         Route::get('/all/orders', 'allOrders');
         Route::post('/store', 'store');
+        Route::get('/shipper/offers/{orderId}', 'getShipperOffers');
+        Route::post('/offer/{offerId}/status', 'offerStatus');
     });
     Route::prefix('shipper')
     ->controller(ShipperController::class)

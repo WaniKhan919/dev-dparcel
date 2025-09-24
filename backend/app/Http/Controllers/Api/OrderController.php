@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
+use App\Models\ShopperRequest;
 
 class OrderController extends Controller
 {
@@ -154,4 +155,50 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    public function getShipperOffers($orderId){
+        try{
+            $order = Order::with([
+                        'offers.shipper'
+                    ])
+                    ->where('id', $orderId)
+                    ->firstOrFail();
+            return response()->json([
+            'success' => true,
+            'data'    => $order
+        ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get shipper offers',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function offerStatus(Request $request, $offerId)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:accepted,rejected',
+            ]);
+
+            $offer = ShopperRequest::findOrFail($offerId);
+            $offer->status = $request->status;
+            $offer->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Offer has been {$request->status} successfully.",
+                'data'    => $offer,
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update offer status',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

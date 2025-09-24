@@ -86,7 +86,7 @@ class AuthController extends Controller
     /*** Signup API */
     public function signup(Request $request)
     {
-        // DB::beginTransaction();
+        DB::beginTransaction();
         try {
             $validated = $request->validate([
                 'name'     => 'required|string|max:255',
@@ -118,14 +118,14 @@ class AuthController extends Controller
 
             // send code (email/SMS placeholder)
             Mail::to($user->email)->send(new VerifyUserMail($user->name, $verificationCode));
-            // DB::commit();
+            DB::commit();
             return response()->json([
                 'message' => 'User registered successfully. Please verify your account using the code sent.',
                 'user_id' => $user->id, // frontend can use this for verification step
             ], 201);
 
         } catch (Exception $e) {
-            // DB::rollBack();
+            DB::rollBack();
             return response()->json([
                 'message' => 'Something went wrong during signup',
                 'error'   => $e->getMessage()

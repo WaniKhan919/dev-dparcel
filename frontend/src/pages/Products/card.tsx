@@ -21,10 +21,10 @@ export default function CardToast({ notifications }: CardToastProps) {
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
     id: number | null;
-    status: "accepted" | "ignored" | null;
+    status: "inprogress" | "cancelled" | null;
   }>({ open: false, id: null, status: null });
 
-  const confirmRequest = async (id: number, status: "accepted" | "ignored") => {
+  const confirmRequest = async (id: number, status: "inprogress" | "cancelled") => {
     try {
       const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status });
 
@@ -107,22 +107,22 @@ export default function CardToast({ notifications }: CardToastProps) {
               <div className="flex mt-3">
                 <button
                   onClick={() =>
-                    setConfirmModal({ open: true, id: notification.id, status: "ignored" })
+                    setConfirmModal({ open: true, id: notification.id, status: "cancelled" })
                   }
                   className="bg-gray-200 w-1/2 py-3 rounded-full mr-2"
                 >
-                  Decline
+                  Cancelled
                 </button>
                 <button
                   onClick={() =>
-                    setConfirmModal({ open: true, id: notification.id, status: "accepted" })
+                    setConfirmModal({ open: true, id: notification.id, status: "inprogress" })
                   }
                   style={{
                     backgroundImage: "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
                   }}
                   className="w-1/2 py-3 rounded-full ml-2 text-white font-medium shadow-md"
                 >
-                  Accept
+                  Accept Offer
                 </button>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function CardToast({ notifications }: CardToastProps) {
             <button
               onClick={handleConfirm}
               className={`px-4 py-2 rounded-lg text-white transition ${
-                confirmModal.status === "accepted"
+                confirmModal.status === "inprogress"
                   ? "bg-blue-600 hover:bg-blue-700"
                   : "bg-red-600 hover:bg-red-700"
               }`}
