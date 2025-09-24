@@ -13,6 +13,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ApiHelper } from "../../utils/ApiHelper";
 import toast from "react-hot-toast";
+import { current } from "@reduxjs/toolkit";
 
 const steps = ["Shipping Info", "Shipping Address", "Product Details"];
 
@@ -83,7 +84,7 @@ export default function Order() {
   }, [products]);
 
   const nextStep = async () => {
-    const isValid = await trigger(); // validate current step only
+    const isValid = await trigger(); 
     if (!isValid) return;
     if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
   };
@@ -109,8 +110,11 @@ export default function Order() {
 
       if (res.status === 200 && res.data.success) {
         toast.success(res.data.message || "Order placed successfully");
-        reset();
+       setTimeout(()=>{
+ reset();
+        setCurrentStep(0);
         setSelectedValues([]);
+       },500)
       } else {
         toast.error(res.data.message || "Failed to place order ❌");
       }
@@ -381,7 +385,9 @@ export default function Order() {
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600"
               >
                 Next
+              
               </button>
+              
             ) : (
               <button
                 onClick={handleSubmit(onSubmitForm)}

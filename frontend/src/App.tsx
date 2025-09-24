@@ -44,7 +44,7 @@ export default function App() {
           <Route path="/verify" element={<VerifyOtp />} />
 
           {/* Dashboard Layout */}
-          <Route 
+          <Route
             element={
               <PrivateRoute>
                 <AppLayout />
@@ -87,7 +87,19 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-      <Toaster position="top-right" reverseOrder={false}  />
+      <Toaster
+        position="top-right"
+        gutter={8} 
+        containerStyle={{
+          zIndex: 999999,   
+          top: 80,         
+        }}
+        toastOptions={{
+          duration: 3000,
+         
+        }}
+      />
+
     </>
   );
 }
