@@ -31,6 +31,7 @@ import ShopperDashboard from "./pages/Dashboard/ShopperDashboard";
 import ShopperRequests from "./pages/Requests/ShopperRequests";
 import ViewAllRequests from "./pages/Order/ViewAllRequests";
 import ShipperDashboard from "./pages/Dashboard/ShipperDashboard";
+import ShopperPayments from "./pages/Payments/ShopperPayments";
 
 export default function App() {
   return (
@@ -62,6 +63,7 @@ export default function App() {
             <Route path="/request" element={<Order />} />
             <Route path="/view/request" element={<ViewOrder />} />
             <Route path="/shopper/requests" element={<ShopperRequests />} />
+            <Route path="/shopper/payment" element={<ShopperPayments />} />
 
             {/* Others Page
             <Route path="/profile" element={<UserProfiles />} />

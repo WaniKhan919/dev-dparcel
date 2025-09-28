@@ -107,7 +107,6 @@ export default function Products() {
       if (res.status === 200) {
         toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
         setTimeout(() => {
-          toast.success(res.data.message || (selectedProduct ? "Product updated!" : "Product added!"));
           dispatch(fetchProduct());
           onClose();
         }, 1000);
@@ -284,7 +283,7 @@ export default function Products() {
                 </div>
 
                 <div>
-                  <Label>Weight <span className="text-error-500">*</span></Label>
+                  <Label>Weight (Gram) <span className="text-error-500">*</span></Label>
                   <Input type="number" step="0.01" placeholder="Enter weight" {...register("weight")} />
                   {errors.weight && <p className="text-red-500 text-sm">{errors.weight.message}</p>}
                 </div>

@@ -26,7 +26,7 @@ interface Request {
       weight?: string;
     };
     }[];
-  shopper_request:{
+  order_offer:{
     id: number;
     order_id: number;
     user_id: number;
@@ -97,7 +97,7 @@ export default function ViewAllRequests() {
       key: "user",
       header: "Shopper",
       render: (record: Request) => (
-        <span>{record.shopper_request.shipper.name}</span>
+        <span>{record.order_offer.shipper.name}</span>
       ),
     },
     {
@@ -128,10 +128,10 @@ export default function ViewAllRequests() {
         return (
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium ${
-              statusColors[record.shopper_request.status] || "bg-gray-100 text-gray-800"
+              statusColors[record.order_offer.status] || "bg-gray-100 text-gray-800"
             }`}
           >
-            {record.shopper_request.status.charAt(0).toUpperCase() + record.shopper_request.status.slice(1)}
+            {record.order_offer.status.charAt(0).toUpperCase() + record.order_offer.status.slice(1)}
           </span>
         );
       },

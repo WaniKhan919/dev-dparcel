@@ -6,6 +6,8 @@ import orderReducer from "./slices/orderSlice";
 import allOrderReducer from "./slices/allOrderSlice";
 import shopperRequestReducer from "./slices/shopperRequestSlice";
 import shipperOffersReducer from "./slices/shipperOffersSlice";
+import shopperPaymentReducer from "./slices/shopperPaymentSlice";
+import orderStatusReducer from "./slices/orderStatusSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +18,8 @@ export const store = configureStore({
     allOrder: allOrderReducer,
     shopperRequest: shopperRequestReducer,
     shipperOffers: shipperOffersReducer,
+    shopperPayments: shopperPaymentReducer,
+    orderStatus: orderStatusReducer,
   },
 });
 

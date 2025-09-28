@@ -13,6 +13,7 @@ interface Notification {
   ship_from: string;
   service_type: string;
   total_aprox_weight: number;
+  total_price: number;
 }
 
 export default function ShipperDashboard() {
@@ -33,6 +34,7 @@ export default function ShipperDashboard() {
       ship_from: item.ship_from,
       service_type: item.service_type,
       total_aprox_weight: Number(item.total_aprox_weight),
+      total_price: Number(item.total_price),
     }));
   }, [requests]);
 

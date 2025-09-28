@@ -100,6 +100,12 @@ const navItems: NavItem[] = [
     permissions: ["create_request"],
   },
   {
+    name: "Payments",
+    icon: <PageIcon />,
+    path: "/shopper/payment",
+    roles: ["shopper"],
+  },
+  {
     icon: <LockIcon />,
     name: "Batch import",
     path: "/profile",
@@ -116,12 +122,6 @@ const navItems: NavItem[] = [
     icon: <TableIcon />,
     path: "/basic-tables",
     permissions: ["view_documents"],
-  },
-  {
-    name: "Wallet",
-    icon: <PageIcon />,
-    path: "/blank",
-    roles: ["shopper"],
   },
 ];
 

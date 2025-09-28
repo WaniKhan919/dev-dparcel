@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\OrderTracking;
 use Exception;
 use App\Models\Order;
 use App\Models\Product;
@@ -11,7 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
-use App\Models\ShopperRequest;
+use App\Models\Attachment;
+use App\Models\OrderOffer;
+use App\Models\OrderStatus;
 
 class OrderController extends Controller
 {
@@ -22,7 +25,7 @@ class OrderController extends Controller
 
             $perPage = (int) $request->get('per_page', 10);
 
-            $orders = Order::with('orderDetails.product')->where('user_id', $userId)
+            $orders = Order::with(['orderDetails.product','acceptedOffer','orderPayment'])->where('user_id', $userId)
                             ->orderBy('id', 'desc')
                             ->paginate($perPage);
 
@@ -47,12 +50,32 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    
+    public function getOrderStatuses()
+    {
+        try {
+            $order_statuses = OrderStatus::get();
+
+            return response()->json([
+                'success' => true,
+                'data'    => $order_statuses,
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get orders statuses',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function allOrders(Request $request)
     {
         try {
             $perPage = (int) $request->get('per_page', 10);
 
-            $orders = Order::with(['orderDetails.product','shopperRequest.shipper','user'])
+            $orders = Order::with(['orderDetails.product','orderOffer.shipper','user'])
                         ->orderBy('id', 'desc')
                         ->paginate($perPage);
 
@@ -182,7 +205,7 @@ class OrderController extends Controller
                 'status' => 'required|in:accepted,rejected',
             ]);
 
-            $offer = ShopperRequest::findOrFail($offerId);
+            $offer = OrderOffer::findOrFail($offerId);
             $offer->status = $request->status;
             $offer->save();
 
@@ -196,6 +219,85 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update offer status',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateStatus(Request $request)
+    {
+        $request->validate([
+            'order_id'   => 'required|exists:orders,id',
+            'status_id'  => 'required|exists:order_statuses,id',
+            'remarks'    => 'nullable|string',
+            'tracking_number' => 'nullable|string',
+            'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // 1. Create order tracking entry
+            $tracking = OrderTracking::create([
+                'order_id'        => $request->order_id,
+                'status_id'       => $request->status_id,
+                'remarks'         => $request->remarks,
+                'tracking_number' => $request->tracking_number,
+            ]);
+
+            // 2. Handle attachments if provided
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    $file->move(public_path('files'), $filename);
+
+                    $path = 'files/' . $filename;
+
+                    Attachment::create([
+                        'related_id' => $tracking->id,
+                        'type'       => 1, 
+                        'file_path'  => $path,
+                        'file_type'  => $file->getClientMimeType(),
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order status updated successfully',
+                'data'    => $tracking->load('attachments'),
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update order status',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getOrderTracking($id){
+        try {
+            $tracking = OrderTracking::with('status')->where('order_id',$id)->get();
+            if (!$tracking) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order tracking not found',
+                    'data'    => null
+                ], 404);
+            }
+            return response()->json([
+                'success' => true,
+                'data'    => $tracking,
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get order tracking',
                 'error'   => $e->getMessage()
             ], 500);
         }

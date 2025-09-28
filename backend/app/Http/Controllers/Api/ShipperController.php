@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\ShopperRequest;
+use App\Models\OrderOffer;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +17,7 @@ class ShipperController extends Controller
         try {
         $userId = Auth::id();
 
-        $excludedOrders = ShopperRequest::where('user_id', $userId)
+        $excludedOrders = OrderOffer::where('user_id', $userId)
             ->whereIn('status', ['accepted', 'rejected', 'cancelled', 'ignored'])
             ->pluck('order_id');
 
@@ -43,7 +43,7 @@ class ShipperController extends Controller
     {
         try {
             
-            $shopperRequest = ShopperRequest::create([
+            $orderOffer = OrderOffer::create([
                 'order_id' => $request->id,          // order id from request
                 'user_id'  => Auth::id(),            // logged in user id
                 'message'  => $request->message ?? null, // optional message
@@ -52,8 +52,8 @@ class ShipperController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Request has been accepted from your side',
-                'data'    => $shopperRequest
+                'message' => 'Offer has been sent from your side',
+                'data'    => $orderOffer
             ], 200);
 
         } catch (Exception $e) {
@@ -71,21 +71,21 @@ class ShipperController extends Controller
 
             $perPage = (int) $request->get('per_page', 10);
 
-            $shopperRequests = ShopperRequest::with(['order.orderDetails.product'])
+            $orderOffers = OrderOffer::with(['order.orderDetails.product'])
                 ->where('user_id', $userId)
                 ->orderBy('id', 'desc')
                 ->paginate($perPage);
 
             return response()->json([
                 'success' => true,
-                'data'    => $shopperRequests->items(),
+                'data'    => $orderOffers->items(),
                 'meta'    => [
-                    'current_page'  => $shopperRequests->currentPage(),
-                    'last_page'     => $shopperRequests->lastPage(),
-                    'per_page'      => $shopperRequests->perPage(),
-                    'total'         => $shopperRequests->total(),
-                    'next_page_url' => $shopperRequests->nextPageUrl(),
-                    'prev_page_url' => $shopperRequests->previousPageUrl(),
+                    'current_page'  => $orderOffers->currentPage(),
+                    'last_page'     => $orderOffers->lastPage(),
+                    'per_page'      => $orderOffers->perPage(),
+                    'total'         => $orderOffers->total(),
+                    'next_page_url' => $orderOffers->nextPageUrl(),
+                    'prev_page_url' => $orderOffers->previousPageUrl(),
                 ],
             ], 200);
 

@@ -29,12 +29,20 @@ class Order extends Model
     {
         return $this->belongsTo(User::class);
     }
-    public function shopperRequest()
+    public function orderOffer()
     {
-        return $this->hasOne(ShopperRequest::class);
+        return $this->hasOne(OrderOffer::class);
     }
     public function offers()
     {
-        return $this->hasMany(ShopperRequest::class, 'order_id', 'id');
+        return $this->hasMany(OrderOffer::class, 'order_id', 'id');
+    }
+    public function acceptedOffer()
+    {
+        return $this->hasOne(OrderOffer::class)->where('status', 'accepted');
+    }
+    public function orderPayment()
+    {
+        return $this->hasOne(OrderPayment::class,'order_id','id');
     }
 }

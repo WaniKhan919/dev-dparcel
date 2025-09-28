@@ -1,13 +1,15 @@
 <?php
 
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\ShipperController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\API\RoleController;
-use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\StripeController;
+use App\Http\Controllers\Api\ShipperController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RolePermissionController;
 
 // Public routes
@@ -57,6 +59,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', 'store');
         Route::get('/shipper/offers/{orderId}', 'getShipperOffers');
         Route::post('/offer/{offerId}/status', 'offerStatus');
+        Route::get('/statuses', 'getOrderStatuses');
+        Route::post('/update-status', action: 'updateStatus');
+        Route::get('/get-order-tracking/{id}', action: 'getOrderTracking');
     });
     Route::prefix('shipper')
     ->controller(ShipperController::class)
@@ -66,4 +71,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/get/offers', 'getMyOffers');
 
     });
+    Route::prefix('shopper')->group(function () {
+        Route::get('/payments', [PaymentController::class, 'index']);
+    });
+    Route::post('/create-payment-intent', [StripeController::class, 'createPaymentIntent']);
+    Route::post('/store-payment', [StripeController::class, 'storePayment']);
 });

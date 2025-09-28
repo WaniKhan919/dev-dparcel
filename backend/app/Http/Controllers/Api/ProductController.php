@@ -45,7 +45,7 @@ class ProductController extends Controller
             $validated = $request->validate([
                 'title'       => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'product_url' => 'required|string|unique:products,product_url',
+                'product_url' => 'required|string',
                 'quantity'    => 'required|integer|min:0',
                 'price'       => 'required|numeric|min:0',
                 'weight'      => 'nullable|numeric|min:0',
@@ -108,7 +108,7 @@ class ProductController extends Controller
                 'user_id'     => 'required|exists:users,id',
                 'title'       => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'product_url' => 'required|string|unique:products,product_url,' . $product->id,
+                'product_url' => 'required|string',
                 'quantity'    => 'required|integer|min:0',
                 'price'       => 'required|numeric|min:0',
                 'weight'      => 'nullable|numeric|min:0',

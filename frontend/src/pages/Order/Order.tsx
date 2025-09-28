@@ -77,6 +77,8 @@ export default function Order() {
       const formatted = products.map((item: any) => ({
         value: String(item.id),
         text: item.title,
+        price: item.price,
+        weight: item.weight,
         selected: false,
       }));
       setMultiOptions(formatted);
@@ -91,6 +93,26 @@ export default function Order() {
 
   const prevStep = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  const handleProducts = (values: any) => {
+    const selectedProducts = multiOptions.filter((opt) =>
+      values.includes(opt.value)
+    );
+    const totalPrice = selectedProducts.reduce(
+      (sum, item) => sum + parseFloat(item.price),
+      0
+    );
+
+    const totalWeight = selectedProducts.reduce(
+      (sum, item) => sum + parseFloat(item.weight),
+      0
+    );
+    setValue("products", values);
+    setValue("price", totalPrice.toFixed(2));
+    setValue("weight", totalWeight.toFixed(2));
+
+    setSelectedValues(values);
   };
 
   const onSubmitForm = async (data: any) => {
@@ -110,11 +132,11 @@ export default function Order() {
 
       if (res.status === 200 && res.data.success) {
         toast.success(res.data.message || "Order placed successfully");
-       setTimeout(()=>{
- reset();
-        setCurrentStep(0);
-        setSelectedValues([]);
-       },500)
+        setTimeout(()=>{
+          reset();
+          setCurrentStep(0);
+          setSelectedValues([]);
+        },500)
       } else {
         toast.error(res.data.message || "Failed to place order ❌");
       }
@@ -193,7 +215,7 @@ export default function Order() {
                           type="radio"
                           value={option}
                           checked={field.value === option}
-                          onChange={() => field.onChange(option)} // ✅ update RHF value
+                          onChange={() => field.onChange(option)} 
                           className="hidden"
                         />
                         <span className="font-medium text-gray-700">{option}</span>
@@ -275,11 +297,8 @@ export default function Order() {
                   <MultiSelect
                     label="Select Multiple Product"
                     options={multiOptions}
-                    defaultSelected={field.value || []} // initial selected values
-                    onChange={(values) => {
-                      field.onChange(values); // update RHF state
-                      setSelectedValues(values); // your local state if needed
-                    }}
+                    defaultSelected={field.value || []}
+                    onChange={handleProducts}
                   />
                 )}
               />

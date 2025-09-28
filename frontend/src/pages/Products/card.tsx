@@ -10,6 +10,7 @@ interface Notification {
   ship_from: string;
   service_type: string;
   total_aprox_weight: number;
+  total_price: number;
 }
 
 interface CardToastProps {
@@ -33,11 +34,11 @@ export default function CardToast({ notifications }: CardToastProps) {
         toast.success(response.data.message, {
           duration: 3000,
           position: "top-right",
-          style: {
-            background: "#4caf50",
-            color: "#fff",
-            fontWeight: "bold",
-          },
+          // style: {
+          //   background: "#4caf50",
+          //   color: "#fff",
+          //   fontWeight: "bold",
+          // },
           icon: "🎉",
         });
       } else {
@@ -100,7 +101,7 @@ export default function CardToast({ notifications }: CardToastProps) {
               </div>
               <div className="text-xl font-semibold text-blue-600 mt-4">
                 {notification.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"} ${" "}
-                {notification.total_aprox_weight}
+                {notification.total_price}
               </div>
 
               {/* Buttons */}
@@ -122,7 +123,7 @@ export default function CardToast({ notifications }: CardToastProps) {
                   }}
                   className="w-1/2 py-3 rounded-full ml-2 text-white font-medium shadow-md"
                 >
-                  Accept Offer
+                  Send Offer
                 </button>
               </div>
             </div>

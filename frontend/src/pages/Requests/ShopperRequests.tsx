@@ -7,6 +7,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchOffers } from "../../slices/shipperOffersSlice";
 import { createPortal } from "react-dom";
+import ViewShopperOffersDrawer from "../../utils/Drawers/Offers/ViewShopperOffersDrawer";
+import ManageOrderTrackingDrawer from "../../utils/Drawers/Order/ManageOrderTrackingDrawer";
+import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
 
 interface Request {
   id: number;
@@ -31,10 +34,15 @@ interface Request {
 export default function ShopperRequests() {
   const dispatch = useDispatch<AppDispatch>();
   const { data, meta, loading } = useSelector((state: any) => state.shipperOffers);
+  const [openOfferDrawer, setOpenOfferDrawer] = useState(false)
+  const [openManageOfferDrawer, setOpenManageOfferDrawer] = useState(false)
+  const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
+  const [orderData, setOrderData] = useState([])
 
   useEffect(() => {
     dispatch(fetchOffers({ page: 1, per_page: 10 }));
   }, [dispatch]);
+
   const requests: Request[] = useMemo(() => {
     return data.map((offer: any) => ({
       id: offer.id,
@@ -45,6 +53,7 @@ export default function ShopperRequests() {
       total_price: offer.order?.total_price ?? "",
       status: offer.status,
       order_details: offer.order?.order_details ?? [],
+      order:offer.order
     }));
   }, [data]);
 
@@ -122,22 +131,27 @@ export default function ShopperRequests() {
       render: (record: Request) => {
         const [open, setOpen] = useState(false);
         const buttonRef = useRef<HTMLButtonElement>(null);
+        const dropdownRef = useRef<HTMLDivElement>(null);
         const [position, setPosition] = useState({ top: 0, left: 0 });
 
         const toggleDropdown = () => {
           if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
-            setPosition({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+            setPosition({
+              top: rect.bottom + window.scrollY,
+              left: rect.left + window.scrollX,
+            });
           }
-          setOpen(!open);
+          setOpen((prev) => !prev);
         };
 
-        // Close on outside click
         useEffect(() => {
           const handleClickOutside = (e: MouseEvent) => {
             if (
               buttonRef.current &&
-              !buttonRef.current.contains(e.target as Node)
+              !buttonRef.current.contains(e.target as Node) &&
+              dropdownRef.current &&
+              !dropdownRef.current.contains(e.target as Node)
             ) {
               setOpen(false);
             }
@@ -172,18 +186,44 @@ export default function ShopperRequests() {
             {open &&
               createPortal(
                 <div
+                  ref={dropdownRef}
                   style={{ top: position.top, left: position.left }}
                   className="absolute mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
                 >
                   <div className="py-1">
-                    <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
-                      View
+                    {/* Existing Actions */}
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        viewOffers(record);
+                        setOpen(false);
+                      }}
+                    >
+                      View Offers
                     </button>
-                    <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
-                      Edit
+
+                    {/* New Actions */}
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        manageOrder(record);
+                        setOpen(false);
+                      }}
+                    >
+                      Manage Order
                     </button>
-                    <button className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left">
-                      Delete
+
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openMessage(record);
+                        setOpen(false);
+                      }}
+                    >
+                      Conversation
                     </button>
                   </div>
                 </div>,
@@ -194,6 +234,23 @@ export default function ShopperRequests() {
       },
     },
   ];
+  const viewOffers = (record: any) => {
+    setOrderData(record)
+    setOpenOfferDrawer(true)
+  }
+  const manageOrder = (record: any) => {
+    setOrderData(record)
+    setOpenManageOfferDrawer(true)
+  }
+  const openMessage = (record: any) => {
+    setOrderData(record)
+    setOpenMessageDrawer(true)
+  }
+  const onClose = () => {
+    setOpenOfferDrawer(false)
+    setOpenMessageDrawer(false)
+    setOpenManageOfferDrawer(false)
+  }
 
   return (
     <>
@@ -202,6 +259,30 @@ export default function ShopperRequests() {
       <div className="space-y-6">
         <ComponentCard title="View Requests">
           <DParcelTable columns={columns} data={requests} />
+          {
+            openOfferDrawer &&
+            <ViewShopperOffersDrawer
+              isOpen={openOfferDrawer}
+              onClose={onClose}
+              orderData={orderData}
+            />
+          }
+          {
+            openManageOfferDrawer &&
+            <ManageOrderTrackingDrawer
+              isOpen={openManageOfferDrawer}
+              onClose={onClose}
+              orderData={orderData}
+            />
+          }
+          {
+            openMessageDrawer &&
+            <OrderMessages
+              isOpen={openMessageDrawer}
+              onClose={onClose}
+              orderData={orderData}
+            />
+          }
         </ComponentCard>
       </div>
     </>

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,   // roles first
             AdminSeeder::class,  // then admin user attaches role
+            OrderStatusSeeder::class,
         ]);
     }
 }
