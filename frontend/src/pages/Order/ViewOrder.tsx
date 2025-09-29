@@ -11,6 +11,8 @@ import ViewOffersDrawer from "../../utils/Drawers/Offers/ViewOffersDrawer";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import PaymentModal from "../../utils/PaymentModal";
+import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
+import ShopperOrderMessages from "../../utils/Drawers/Order/ShopperOrderMessages";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
@@ -54,6 +56,7 @@ export default function ViewOrder() {
   const [orderData, setOrderData] = useState([])
   const [selectedOrder, setSelectedOrder] = useState<Request | null>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
 
   const openPayment = (record: Request) => {
     setSelectedOrder(record);
@@ -62,6 +65,11 @@ export default function ViewOrder() {
   const trackOrder = (record: Request) => {
     //
   };
+
+  const openMessage = (record: any) => {
+    setOrderData(record)
+    setOpenMessageDrawer(true)
+  }
 
   useEffect(() => {
     dispatch(fetchOrders({ page: 1, per_page: 10 }));
@@ -73,6 +81,7 @@ export default function ViewOrder() {
   }
   const onClose = () => {
     setOpenOfferDrawer(false)
+    setOpenMessageDrawer(false)
   }
 
   const columns = [
@@ -257,7 +266,7 @@ export default function ViewOrder() {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // refundPayment(record); // <-- you’ll define this function
+                        openMessage(record);
                         setOpen(false);
                       }}
                     >
@@ -301,6 +310,14 @@ export default function ViewOrder() {
               />
             </Elements>
           )}
+          {
+            openMessageDrawer &&
+            <ShopperOrderMessages
+              isOpen={openMessageDrawer}
+              onClose={onClose}
+              orderData={orderData}
+            />
+          }
 
         </ComponentCard>
       </div>

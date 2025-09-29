@@ -11,7 +11,7 @@ interface ViewOffersDrawerProps {
   orderData: any;
 }
 
-export default function OrderMessages({
+export default function ShopperOrderMessages({
   isOpen,
   onClose,
   orderData,
@@ -49,7 +49,7 @@ export default function OrderMessages({
 
       const formData = new FormData();
       formData.append("order_id", orderData?.id);
-      formData.append("receiver_id", orderData?.order?.user_id);
+      formData.append("receiver_id", orderData?.accepted_offer?.user_id);
       if (type === "text") {
         formData.append("message_text", content);
       }

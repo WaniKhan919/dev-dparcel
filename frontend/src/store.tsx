@@ -8,6 +8,8 @@ import shopperRequestReducer from "./slices/shopperRequestSlice";
 import shipperOffersReducer from "./slices/shipperOffersSlice";
 import shopperPaymentReducer from "./slices/shopperPaymentSlice";
 import orderStatusReducer from "./slices/orderStatusSlice";
+import getMessagesReduce from "./slices/getMessagesSlice";
+import getAdminMessagesReduce from "./slices/getAdminMessagesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +22,8 @@ export const store = configureStore({
     shipperOffers: shipperOffersReducer,
     shopperPayments: shopperPaymentReducer,
     orderStatus: orderStatusReducer,
+    getMessages: getMessagesReduce,
+    getAdminMessages: getAdminMessagesReduce,
   },
 });
 

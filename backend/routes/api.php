@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\Api\OrderController;
@@ -76,4 +77,19 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::post('/create-payment-intent', [StripeController::class, 'createPaymentIntent']);
     Route::post('/store-payment', [StripeController::class, 'storePayment']);
+
+    Route::prefix('messages')
+    ->controller(MessageController::class)
+    ->group(function () {
+        Route::get('/', 'index');
+        Route::post('/send', 'store');
+
+    });
+    Route::prefix('admin')
+    ->controller(MessageController::class)
+    ->group(function () {
+        Route::get('/messages', 'getMessagesForAdmin');
+        Route::post('/messages/status', 'updateMessageStatus');
+
+    });
 });
