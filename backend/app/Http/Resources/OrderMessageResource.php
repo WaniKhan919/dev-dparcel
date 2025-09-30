@@ -18,7 +18,13 @@ class OrderMessageResource extends JsonResource
             'sender_id'    => $this->sender_id,
             'receiver_id'  => $this->receiver_id,
             'message_text' => $this->message_text,
-            'attachments'  => $this->attachments,
+            'attachments'  => $this->attachments->map(function ($attachment) {
+                return [
+                    'id'        => $attachment->id,
+                    'file_path' => asset('order_attachments/' . basename($attachment->file_path)),
+                    'file_type' => $attachment->file_type,
+                ];
+            }),
             'status'       => $this->status,
             'approved_by'  => $this->approved_by,
             'created_at'   => Carbon::parse($this->created_at)->format('d M Y h:i a'),
@@ -29,6 +35,8 @@ class OrderMessageResource extends JsonResource
                     'id'    => $this->sender->id,
                     'name'  => $this->sender->name,
                     'email' => $this->sender->email,
+                    'role' => $this->sender?->roles?->pluck('name')->first(),
+
                 ];
             }),
 
@@ -37,6 +45,7 @@ class OrderMessageResource extends JsonResource
                     'id'    => $this->receiver->id,
                     'name'  => $this->receiver->name,
                     'email' => $this->receiver->email,
+                    'role' => $this->receiver?->roles?->pluck('name')->first(),
                 ];
             }),
         ];

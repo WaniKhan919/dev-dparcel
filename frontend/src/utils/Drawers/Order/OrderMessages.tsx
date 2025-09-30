@@ -25,6 +25,7 @@ export default function OrderMessages({
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const user = getUser()
 
   // TODO: replace with actual logged-in user ID from auth state
@@ -50,19 +51,20 @@ export default function OrderMessages({
       const formData = new FormData();
       formData.append("order_id", orderData?.id);
       formData.append("receiver_id", orderData?.order?.user_id);
-      if (type === "text") {
+
+      if (type === "text" && content.trim() !== "") {
         formData.append("message_text", content);
       }
+
       if (file) {
         formData.append("attachments", file);
       }
 
-      const res = await ApiHelper("POST", "/messages/send", formData);
-
+      const res = await ApiHelper("POST", "/messages/send", formData, {}, true);
       if (res.data.success) {
-        // after sending, re-fetch messages
         dispatch(fetchMessages({ order_id: orderData.id }));
         setInputMessage("");
+        if (fileInputRef.current) fileInputRef.current.value = ""; // reset file input
       }
     } catch (err: any) {
       console.error(err);
@@ -125,47 +127,77 @@ export default function OrderMessages({
             </>
           ) : (
             <>
-              {
-                messages?.map((msg: any) => {
-                  const isSender = Number(msg.sender_id) === Number(user.id);
-                  const isImage = !!msg.attachments;
+              {messages?.map((msg: any) => {
+                const isSender = Number(msg.sender_id) === Number(user.id);
 
-                  // Decide bubble style
-                  const bubbleBgClass = isSender
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-900";
+                const bubbleBgClass = isSender
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-900";
 
-                  return (
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex w-full mb-2 ${isSender ? "justify-end" : "justify-start"}`}
+                  >
                     <div
-                      key={msg.id}
-                      className={`flex w-full mb-2 ${isSender ? "justify-end" : "justify-start"}`}
+                      className={`max-w-xs md:max-w-md px-4 py-2 rounded-lg shadow ${bubbleBgClass}`}
                     >
-                      <div
-                        className={`max-w-xs md:max-w-md px-4 py-2 rounded-lg shadow ${bubbleBgClass}`}
-                      >
-                        {/* Message Content */}
-                        {isImage ? (
-                          <img
-                            src={msg.attachments}
-                            alt="attachment"
-                            className="max-h-60 w-auto rounded mb-1"
-                          />
-                        ) : (
-                          <p className="break-words">{msg.message_text}</p>
-                        )}
+                      {/* Message Text */}
+                      {msg.message_text && (
+                        <p className="break-words mb-2">{msg.message_text}</p>
+                      )}
 
-                        {/* Timestamp */}
-                        <span
-                          className={`block text-xs mt-1 ${isSender ? "text-blue-100" : "text-gray-500"
-                            }`}
-                        >
-                          {msg.created_at}
-                        </span>
-                      </div>
+                      {/* Attachments */}
+                      {msg.attachments?.length > 0 &&
+                        msg.attachments.map((file: any) => {
+                          const isImage = file.file_type.startsWith("image/");
+                          return isImage ? (
+                            <img
+                              key={file.id}
+                              src={file.file_path}
+                              alt="attachment"
+                              className="max-h-60 w-auto rounded mb-2 cursor-pointer hover:opacity-80"
+                              onClick={() => setPreviewImage(file.file_path)}
+                            />
+                          ) : (
+                            <a
+                              key={file.id}
+                              href={file.file_path}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block text-sm underline text-blue-200 mb-2"
+                            >
+                              📎 Download File
+                            </a>
+                          );
+                        })}
+
+                      {/* Timestamp */}
+                      <span
+                        className={`block text-xs mt-1 ${isSender ? "text-blue-100" : "text-gray-500"
+                          }`}
+                      >
+                        {msg.created_at}
+                      </span>
                     </div>
-                  );
-                })
-              }
+                  </div>
+                );
+              })}
+
+              {/* Image Preview Modal */}
+              {previewImage && (
+                <div
+                  className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+                  onClick={() => setPreviewImage(null)}
+                >
+                  <img
+                    src={previewImage}
+                    alt="Preview"
+                    className="max-h-[90%] max-w-[90%] rounded shadow-lg"
+                    onClick={(e) => e.stopPropagation()} // prevent closing when clicking image
+                  />
+                </div>
+              )}
             </>
           )}
 
@@ -189,7 +221,12 @@ export default function OrderMessages({
             className="text-gray-500 hover:text-gray-700"
             disabled={isLoading}
           >
-            📎
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Add attachment">
+              <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
+              <path d="M14 3v5a1 1 0 0 0 1 1h5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
+              <circle cx="18" cy="18" r="3.2" fill="currentColor" />
+              <path d="M18 16.4v3.2M16.4 18h3.2" stroke="white" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
           </button>
           <input
             type="file"

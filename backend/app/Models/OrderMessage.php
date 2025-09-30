@@ -14,7 +14,6 @@ class OrderMessage extends Model
         'sender_id',
         'receiver_id',
         'message_text',
-        'attachments',
         'status',
         'approved_by',
         'approved_at'
@@ -38,5 +37,9 @@ class OrderMessage extends Model
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class, 'related_id')->where('type', 2);
     }
 }

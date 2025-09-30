@@ -32,6 +32,8 @@ import ShopperRequests from "./pages/Requests/ShopperRequests";
 import ViewAllRequests from "./pages/Order/ViewAllRequests";
 import ShipperDashboard from "./pages/Dashboard/ShipperDashboard";
 import ShopperPayments from "./pages/Payments/ShopperPayments";
+import AllPayments from "./pages/Payments/AllPayments";
+import ShipperPayments from "./pages/Payments/ShipperPayments";
 
 export default function App() {
   return (
@@ -52,18 +54,27 @@ export default function App() {
               </PrivateRoute>
             }
           >
+            {/* Admin Routes */}
             <Route index path="/" element={<Home />} />
-            <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
-            <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
             <Route path="/view/requests" element={<ViewAllRequests />} />
-            <Route path="/profile" element={<UserProfiles />} />
+            <Route path="/payments" element={<AllPayments />} />
+
+            {/* Shopper Routes */}
+            <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
             <Route path="/products" element={<Products />} />
             <Route path="/request" element={<Order />} />
+            <Route path="/shopper/payment" element={<ShopperPayments />} />
+
+            {/* Shipper Routes */}
+            <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />
             <Route path="/view/request" element={<ViewOrder />} />
             <Route path="/shopper/requests" element={<ShopperRequests />} />
-            <Route path="/shopper/payment" element={<ShopperPayments />} />
+            <Route path="/shipper/payment" element={<ShipperPayments />} />
+
+            {/* Common Routes */}
+            <Route path="/profile" element={<UserProfiles />} />
 
             {/* Others Page
             <Route path="/profile" element={<UserProfiles />} />

@@ -13,6 +13,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import PaymentModal from "../../utils/PaymentModal";
 import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
 import ShopperOrderMessages from "../../utils/Drawers/Order/ShopperOrderMessages";
+import TrackOrderDrawer from "../../utils/Drawers/Order/TrackOrderDrawer";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
@@ -25,6 +26,7 @@ interface Request {
   total_aprox_weight: string;
   total_price: string;
   weight_per_unit: string;
+  tracking_number: string;
   order_details: {
     id: number;
     quantity: number;
@@ -57,13 +59,11 @@ export default function ViewOrder() {
   const [selectedOrder, setSelectedOrder] = useState<Request | null>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
+  const [openTrackOrderDrawer, setOpenTrackOrderDrawer] = useState(false)
 
   const openPayment = (record: Request) => {
     setSelectedOrder(record);
     setIsPaymentOpen(true);
-  };
-  const trackOrder = (record: Request) => {
-    //
   };
 
   const openMessage = (record: any) => {
@@ -79,9 +79,14 @@ export default function ViewOrder() {
     setOrderData(record)
     setOpenOfferDrawer(true)
   }
+  const trackOrder = (record: any) => {
+    setOrderData(record)
+    setOpenTrackOrderDrawer(true)
+  }
   const onClose = () => {
     setOpenOfferDrawer(false)
     setOpenMessageDrawer(false)
+    setOpenTrackOrderDrawer(false)
   }
 
   const columns = [
@@ -310,6 +315,15 @@ export default function ViewOrder() {
               />
             </Elements>
           )}
+          
+          {
+            openTrackOrderDrawer &&
+            <TrackOrderDrawer
+              isOpen={openTrackOrderDrawer}
+              onClose={onClose}
+              orderData={orderData}
+            />
+          }
           {
             openMessageDrawer &&
             <ShopperOrderMessages

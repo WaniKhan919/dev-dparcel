@@ -16,8 +16,7 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
             $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-            $table->text('message_text');
-            $table->string('attachments')->nullable();
+            $table->text('message_text')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             

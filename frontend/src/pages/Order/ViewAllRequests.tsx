@@ -59,6 +59,8 @@ export default function ViewAllRequests() {
     setOrderData(record)
     setOpenMessageDrawer(true)
   }
+  const trackOrder = (record: any) => {
+  }
   const onClose = () => {
     setOpenMessageDrawer(false)
   }
@@ -230,7 +232,7 @@ export default function ViewAllRequests() {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // trackOrder(record);
+                        trackOrder(record);
                         setOpen(false);
                       }}
                     >

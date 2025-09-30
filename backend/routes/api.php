@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Shipper\PaymentController as ShipperPaymentController;
 use App\Http\Controllers\Api\StripeController;
 use App\Http\Controllers\Api\ShipperController;
 use App\Http\Controllers\Api\ProductController;
@@ -25,6 +27,18 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::middleware('auth:sanctum')->group(function () {
     // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Admin api routes
+    Route::prefix('admin')->group(function () {
+        Route::controller(MessageController::class)->group(function () {
+            Route::get('/messages', 'getMessagesForAdmin');
+            Route::post('/messages/status', 'updateMessageStatus');
+        });
+
+        Route::controller(AdminPaymentController::class)->group(function () {
+            Route::get('/payments', 'index');
+        });
+    });
 
     // Permissions (Admin only)
     Route::get('/permissions', [PermissionController::class, 'index']);
@@ -85,11 +99,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/send', 'store');
 
     });
-    Route::prefix('admin')
-    ->controller(MessageController::class)
-    ->group(function () {
-        Route::get('/messages', 'getMessagesForAdmin');
-        Route::post('/messages/status', 'updateMessageStatus');
-
+    
+    // Shopper routes
+    Route::prefix('shipper')->group(function () {
+        Route::get('/payments', [ShipperPaymentController::class, 'index']);
     });
+
+
 });

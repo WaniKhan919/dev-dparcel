@@ -14,6 +14,7 @@ import {
   LockIcon,
   BoxIcon,
   UserIcon,
+  DollarLineIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
@@ -38,25 +39,12 @@ type NavItem = {
 
 // restrict items by roles or permissions
 const navItems: NavItem[] = [
+  // admin navigation
   {
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/",
     roles: ["admin"],
-  },
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/shipper/dashboard",
-    roles: ["shipper"],
-    permissions: ["shipper_dashboard"],
-  },
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/shopper/dashboard",
-    roles: ["shopper"],
-    permissions: ["shopper_dashboard"],
   },
   {
     icon: <UserIcon />,
@@ -74,13 +62,25 @@ const navItems: NavItem[] = [
     roles: ["admin"],
   },
   {
-    icon: <UserIcon />,
-    name: "Shopper Request",
-    subItems: [
-      { name: "View Request", path: "/shopper/requests" },
-    ],
-    roles: ["shipper"],
-    permissions: ["view_shopper_request"],
+    icon: <DollarLineIcon />,
+    name: "Payments",
+    path: "/payments",
+    roles: ["admin"],
+  },
+  {
+    icon: <LockIcon />,
+    name: "Batch import",
+    path: "/profile",
+    roles: ["admin"],
+  },
+
+  //shopper navigation
+  {
+    icon: <GridIcon />,
+    name: "Dashboard",
+    path: "/shopper/dashboard",
+    roles: ["shopper"],
+    permissions: ["shopper_dashboard"],
   },
   {
     icon: <BoxIcon />,
@@ -104,24 +104,32 @@ const navItems: NavItem[] = [
     icon: <PageIcon />,
     path: "/shopper/payment",
     roles: ["shopper"],
+    permissions: ["shopper_payment"],
+  },
+
+  // shipper navigation
+  {
+    icon: <GridIcon />,
+    name: "Dashboard",
+    path: "/shipper/dashboard",
+    roles: ["shipper"],
+    permissions: ["shipper_dashboard"],
   },
   {
-    icon: <LockIcon />,
-    name: "Batch import",
-    path: "/profile",
-    roles: ["admin"],
+    icon: <UserIcon />,
+    name: "Shopper Request",
+    subItems: [
+      { name: "View Request", path: "/shopper/requests" },
+    ],
+    roles: ["shipper"],
+    permissions: ["view_shopper_request"],
   },
   {
-    name: "Orders",
-    icon: <ListIcon />,
-    path: "/form-elements",
-    permissions: ["view_orders"],
-  },
-  {
-    name: "Documents",
-    icon: <TableIcon />,
-    path: "/basic-tables",
-    permissions: ["view_documents"],
+    name: "Payments",
+    icon: <PageIcon />,
+    path: "/shipper/payment",
+    roles: ["shipper"],
+    permissions: ["shipper_payment"],
   },
 ];
 

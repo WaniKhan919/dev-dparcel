@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../store";
 import { fetchAdminMessages } from "../../../slices/getAdminMessagesSlice";
@@ -24,6 +24,7 @@ export default function AdminOrderMessages({
   );
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -50,7 +51,7 @@ export default function AdminOrderMessages({
         });
         dispatch(fetchAdminMessages({ order_id: orderData.id }));
       } else {
-        toast.error(res.data.message );
+        toast.error(res.data.message);
       }
     } catch (err: any) {
       toast.error("Something went wrong");
@@ -67,9 +68,8 @@ export default function AdminOrderMessages({
 
       {/* Drawer */}
       <div
-        className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-xl flex flex-col transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-xl flex flex-col transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between bg-gray-100 px-4 py-3 border-b sticky top-0 z-10">
@@ -91,14 +91,12 @@ export default function AdminOrderMessages({
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`flex mb-2 ${
-                    i % 2 === 0 ? "justify-start" : "justify-end"
-                  }`}
+                  className={`flex mb-2 ${i % 2 === 0 ? "justify-start" : "justify-end"
+                    }`}
                 >
                   <div
-                    className={`max-w-xs md:max-w-md px-4 py-2 rounded-lg shadow animate-pulse ${
-                      i % 2 === 0 ? "bg-gray-200" : "bg-blue-200"
-                    }`}
+                    className={`max-w-xs md:max-w-md px-4 py-2 rounded-lg shadow animate-pulse ${i % 2 === 0 ? "bg-gray-200" : "bg-blue-200"
+                      }`}
                   >
                     <div className="h-4 w-32 bg-gray-300 rounded mb-2"></div>
                     <div className="h-3 w-20 bg-gray-300 rounded"></div>
@@ -114,66 +112,120 @@ export default function AdminOrderMessages({
                 </p>
               ) : (
                 messages.map((msg: any) => {
-                  const isImage = !!msg.attachments;
+                  // Decide alignment
+                  const isShipper = msg.sender?.role === "shipper";
+                  const alignment = isShipper ? "justify-end" : "justify-start";
+                  const bubbleColor = isShipper ? "bg-blue-200" : "bg-gray-200";
+                  const textColor = "text-gray-900";
 
                   return (
-                    <div
-                      key={msg.id}
-                      className="flex justify-start mb-2"
-                    >
-                      <div className="max-w-xs md:max-w-md px-4 py-2 rounded-lg shadow bg-gray-200 text-gray-900 relative">
-                        {/* Message Text or Image */}
-                        {isImage ? (
-                          <img
-                            src={msg.attachments}
-                            alt="attachment"
-                            className="max-h-60 w-auto rounded mb-1"
-                          />
-                        ) : (
-                          <p className="break-words">{msg.message_text}</p>
-                        )}
+                    <div key={msg.id} className={`flex ${alignment} mb-4`}>
+                      <div className="max-w-xs md:max-w-md">
+                        {/* Sender info */}
+                        <p className="text-xs text-gray-500 mb-1">
+                          {msg.sender?.name} ({msg.sender?.role})
+                        </p>
 
-                        {/* Timestamp */}
-                        <span className="block text-xs mt-1 text-gray-500">
-                          {msg.created_at}
-                        </span>
+                        {/* Message bubble */}
+                        <div
+                          className={`px-4 py-2 rounded-lg shadow ${bubbleColor} ${textColor} relative`}
+                        >
+                          {/* Text message */}
+                          {msg.message_text && (
+                            <p className="break-words mb-2">{msg.message_text}</p>
+                          )}
 
-                        {/* Action Buttons (Approve / Reject) */}
-                        {msg.status === "pending" && (
-                          <div className="flex gap-2 mt-2">
-                            <button
-                              onClick={() => handleApproval(msg.id, "approved")}
-                              className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleApproval(msg.id, "rejected")}
-                              className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
+                          {/* Attachments */}
+                          {msg.attachments?.length > 0 && (
+                            <div className="space-y-2">
+                              {msg.attachments.map((file: any) => {
+                                const isImage = file.file_type.startsWith("image/");
+                                return (
+                                  <div key={file.id} className="mb-2">
+                                    {isImage ? (
+                                      <img
+                                        src={file.file_path}
+                                        alt="attachment"
+                                        className="max-h-60 w-auto rounded mb-1 cursor-pointer"
+                                        onClick={() => window.open(file.file_path, "_blank")}
+                                      />
+                                    ) : (
+                                      <a
+                                        href={file.file_path}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-sm underline text-blue-600 mb-1"
+                                      >
+                                        📎 Download File
+                                      </a>
+                                    )}
 
-                        {/* Show final status if not pending */}
-                        {msg.status !== "pending" && (
-                          <span
-                            className={`inline-block mt-2 text-xs font-semibold px-2 py-1 rounded ${
-                              msg.status === "approved"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {msg.status}
+                                    {/* Attachment Approval Actions */}
+                                    {msg.status === "pending" ? (
+                                      <div className="flex gap-2 mt-1">
+                                        <button
+                                          onClick={() =>
+                                            handleApproval(msg.id, "approved")
+                                          }
+                                          className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+                                        >
+                                          Approve
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleApproval(msg.id, "rejected")
+                                          }
+                                          className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span
+                                        className={`inline-block mt-1 text-xs font-semibold px-2 py-1 rounded ${msg.status === "approved"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-red-100 text-red-700"
+                                          }`}
+                                      >
+                                        {msg.status}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Message Timestamp */}
+                          <span className="block text-xs mt-2 text-gray-500">
+                            {msg.created_at}
                           </span>
-                        )}
+
+                          {/* Message Approval (optional, if you want per-message too) */}
+                          {msg.message_text && msg.status === "pending" && (
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                onClick={() => handleApproval(msg.id, "approved")}
+                                className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleApproval(msg.id, "rejected")}
+                                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
                 })
               )}
             </>
+
           )}
 
           <div ref={messagesEndRef}></div>
