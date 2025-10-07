@@ -15,6 +15,7 @@ import {
   BoxIcon,
   UserIcon,
   DollarLineIcon,
+  TaskIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
@@ -68,8 +69,14 @@ const navItems: NavItem[] = [
     roles: ["admin"],
   },
   {
+    icon: <TaskIcon />,
+    name: "Services",
+    path: "/services",
+    roles: ["admin"],
+  },
+  {
     icon: <LockIcon />,
-    name: "Batch import",
+    name: "Profile",
     path: "/profile",
     roles: ["admin"],
   },

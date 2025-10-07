@@ -36,6 +36,7 @@ class ServiceController extends Controller
                 'price'       => 'required|numeric',
                 'description' => 'nullable|string',
                 'is_required' => 'required|boolean',
+                'status' => 'nullable|numeric',
             ]);
 
             $service = Service::create($validated);
@@ -70,6 +71,7 @@ class ServiceController extends Controller
                 'price'       => 'required|numeric',
                 'description' => 'nullable|string',
                 'is_required' => 'required|boolean',
+                'status'       => 'nullable|numeric',
             ]);
 
             $service->update($validated);

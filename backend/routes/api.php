@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\Api\MessageController;
@@ -37,6 +38,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::controller(AdminPaymentController::class)->group(function () {
             Route::get('/payments', 'index');
+        });
+        Route::prefix('service')->group(function () {
+            Route::controller(ServiceController::class)->group(function (){
+                Route::get('/', 'index');
+                Route::post('/store', 'store');
+                Route::put('/update/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+
         });
     });
 

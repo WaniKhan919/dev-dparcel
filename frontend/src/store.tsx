@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import roleReducer from "./slices/roleSlice";
 import permissionReducer from "./slices/permissionSlice";
+import servicesReducer from "./slices/servicesSlice";
 import productReducer from "./slices/productSlice";
 import orderReducer from "./slices/orderSlice";
 import allOrderReducer from "./slices/allOrderSlice";
@@ -17,6 +18,7 @@ export const store = configureStore({
   reducer: {
     roles: roleReducer,
     permissions: permissionReducer,
+    services: servicesReducer,
     products: productReducer,
     order: orderReducer,
     allOrder: allOrderReducer,
