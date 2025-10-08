@@ -21,7 +21,7 @@ export default function UserDropdown() {
   async function handleLogout() {
     try {
 
-      await ApiHelper("POST","/logout", {});
+      await ApiHelper("POST", "/logout", {});
       // Clear storage
       localStorage.removeItem("access_token");
       localStorage.removeItem("user");
@@ -69,9 +69,8 @@ export default function UserDropdown() {
           </svg>
         </span>
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+            }`}
           width="18"
           height="20"
           viewBox="0 0 18 20"
@@ -103,25 +102,34 @@ export default function UserDropdown() {
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-          <li>
-            <DropdownItem
-              onItemClick={closeDropdown}
-              tag="a"
-              to={userHasRole('admin')?'/':userHasPermission('user_dashboard')?'/user/dashboard':''}
-              className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="size-6"
+          {(userHasRole('admin') || userHasPermission('shipper_dashboard') || userHasPermission('shopper_dashboard')) && (
+            <li>
+              <DropdownItem
+                onItemClick={closeDropdown}
+                tag="a"
+                to={
+                  userHasRole('admin')
+                    ? '/'
+                    : userHasPermission('shipper_dashboard')
+                      ? '/shipper/dashboard'
+                      : userHasRole('shopper_dashboard')
+                        ? '/'
+                        : '/shipper/dashboard'
+                }
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 21v-8.25M15.75 
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="size-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 21v-8.25M15.75 
                     21v-8.25M8.25 21v-8.25M3 
                     9l9-6 9 
                     6m-1.5 12V10.332A48.36 48.36 
@@ -129,11 +137,30 @@ export default function UserDropdown() {
                     0-5.056.2-7.5.582V21M3 
                     21h18M12 
                     6.75h.008v.008H12V6.75Z"
-                />
-              </svg>
-              Dashboard
-            </DropdownItem>
-          </li>
+                  />
+                </svg>
+                Dashboard
+              </DropdownItem>
+            </li>
+          )}
+
+          {
+            userHasPermission('create_request') &&
+            <li>
+              <DropdownItem
+                onItemClick={closeDropdown}
+                tag="a"
+                to='/view/requests'
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 7.5V6a3 3 0 016 0v1.5M3 9h18l-1.5 10.5A2.25 2.25 0 0117.25 21H6.75A2.25 2.25 0 014.5 19.5L3 9z" />
+                </svg>
+
+                My Request
+              </DropdownItem>
+            </li>
+          }
           <li>
             <DropdownItem
               onItemClick={closeDropdown}

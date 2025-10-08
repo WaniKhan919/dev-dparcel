@@ -26,7 +26,7 @@ const initialState: Servicestate = {
 export const fetchServices = createAsyncThunk<Permission[], void, { rejectValue: string }>(
   "services/fetchServices",
   async (_, { rejectWithValue }) => {
-    const response = await ApiHelper<{ data: Permission[] }>("GET", "/services");
+    const response = await ApiHelper<{ data: Permission[] }>("GET", "/service");
 
     if (response.status >= 200 && response.status < 300) {
       return response.data.data;

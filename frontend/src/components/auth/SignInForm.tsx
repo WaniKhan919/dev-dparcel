@@ -63,7 +63,7 @@ export default function SignInForm() {
           if (res.data.user.roles.includes("shipper")) {
             navigate("/shipper/dashboard");
           }else if (res.data.user.roles.includes("shopper")) {
-            navigate("/shopper/dashboard");
+            navigate("/request");
           }
           else{
             navigate("/");

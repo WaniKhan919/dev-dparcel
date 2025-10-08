@@ -39,15 +39,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::controller(AdminPaymentController::class)->group(function () {
             Route::get('/payments', 'index');
         });
-        Route::prefix('service')->group(function () {
-            Route::controller(ServiceController::class)->group(function (){
-                Route::get('/', 'index');
-                Route::post('/store', 'store');
-                Route::put('/update/{id}', 'update');
-                Route::delete('/{id}', 'destroy');
-            });
-
+    });
+    Route::prefix('service')->group(function () {
+        Route::controller(ServiceController::class)->group(function (){
+            Route::get('/', 'index');
+            Route::post('/store', 'store');
+            Route::put('/update/{id}', 'update');
+            Route::delete('/{id}', 'destroy');
         });
+
     });
 
     // Permissions (Admin only)

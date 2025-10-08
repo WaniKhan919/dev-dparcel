@@ -3,33 +3,37 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
-import MultiSelect from "../../components/form/MultiSelect";
 import { Controller, useForm } from "react-hook-form";
 import Checkbox from "../../components/form/input/Checkbox";
 import { AppDispatch } from "../../store";
-import { fetchProduct } from "../../slices/productSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ApiHelper } from "../../utils/ApiHelper";
 import toast from "react-hot-toast";
-import { current } from "@reduxjs/toolkit";
+import { Modal } from "../../components/ui/modal";
+import TextArea from "../../components/form/input/TextArea";
+import Button from "../../components/ui/button/Button";
 
-const steps = ["Shipping Info", "Shipping Address", "Product Details"];
+const steps = ["Shipping Info", "Shipping Address", "Product Details", "Additional Services"];
+
+type Product = {
+  title: string;
+  price: number;
+  description: string;
+  weight: number;
+  quantity: number;
+  product_url?: string;
+};
 
 const stepSchemas = [
-  // Step 0: Shipping Info
   yup.object().shape({
     serviceType: yup.string().required("Please select a service type"),
   }),
-
-  // Step 1: Shipping Address
   yup.object().shape({
     shipFrom: yup.string().required("Ship From is required"),
     shipTo: yup.string().required("Ship To is required"),
   }),
-
-  // Step 2: Product Details
   yup.object().shape({
     products: yup.array().min(1, "Select at least one product"),
     weight: yup.string().required("Weight is required"),
@@ -38,14 +42,41 @@ const stepSchemas = [
   }),
 ];
 
+const productSchema = yup.object().shape({
+  title: yup.string().required("Product title is required"),
+  description: yup.string().required("Description is required"),
+  product_url: yup
+    .string()
+    .url("Enter a valid URL")
+    .required("Product URL is required"),
+  quantity: yup
+    .number()
+    .typeError("Quantity must be a number")
+    .positive("Quantity must be greater than 0")
+    .integer("Quantity must be an integer")
+    .required("Quantity is required"),
+  price: yup
+    .number()
+    .typeError("Price must be a number")
+    .positive("Price must be greater than 0")
+    .required("Price is required"),
+  weight: yup
+    .number()
+    .typeError("Weight must be a number")
+    .positive("Weight must be greater than 0")
+    .required("Weight is required"),
+});
+
+
 export default function Order() {
   const dispatch = useDispatch<AppDispatch>();
-  const { products } = useSelector((state: any) => state.products);
   const [currentStep, setCurrentStep] = useState(0);
-  const [multiOptions, setMultiOptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedValues, setSelectedValues] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
 
+  // main step form
   const {
     register,
     handleSubmit,
@@ -53,7 +84,6 @@ export default function Order() {
     control,
     formState: { errors },
     reset,
-    setValue,
   } = useForm<any>({
     resolver: yupResolver(stepSchemas[currentStep] as any),
     mode: "onChange",
@@ -68,51 +98,65 @@ export default function Order() {
     },
   });
 
-  useEffect(() => {
-    dispatch(fetchProduct());
-  }, [dispatch]);
+  const {
+    register: registerProduct,
+    handleSubmit: handleProductSubmit,
+    reset: resetProductForm,
+    formState: { errors: productErrors },
+  } = useForm<Product>({
+    resolver: yupResolver(productSchema),
+    defaultValues: {
+      title: "",
+      price: 0,
+      description: "",
+      weight: 0,
+      quantity: 1,
+      product_url: "",
+    },
+  });
 
-  useEffect(() => {
-    if (products && Array.isArray(products)) {
-      const formatted = products.map((item: any) => ({
-        value: String(item.id),
-        text: item.title,
-        price: item.price,
-        weight: item.weight,
-        selected: false,
-      }));
-      setMultiOptions(formatted);
+
+  const handleAddNewProduct = () => {
+    resetProductForm();
+    setSelectedProductIndex(null);
+    setIsProductModalOpen(true);
+  };
+
+  const handleEditProduct = (index: number) => {
+    const product = products[index];
+    resetProductForm(product);
+    setSelectedProductIndex(index);
+    setIsProductModalOpen(true);
+  };
+
+  const handleRemoveProduct = (index: number) => {
+    setProducts((prev) => prev.filter((_, i) => i !== index));
+    toast.success("Product removed successfully");
+  };
+
+  const handleSaveProduct = (data: Product) => {
+    if (selectedProductIndex !== null) {
+      // Update existing product
+      setProducts((prev) =>
+        prev.map((p, i) => (i === selectedProductIndex ? data : p))
+      );
+      toast.success("Product updated!");
+    } else {
+      // Add new product
+      setProducts((prev) => [...prev, data]);
+      toast.success("Product added!");
     }
-  }, [products]);
+    setIsProductModalOpen(false);
+  };
 
   const nextStep = async () => {
-    const isValid = await trigger(); 
+    const isValid = await trigger();
     if (!isValid) return;
     if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
-  };
-
-  const handleProducts = (values: any) => {
-    const selectedProducts = multiOptions.filter((opt) =>
-      values.includes(opt.value)
-    );
-    const totalPrice = selectedProducts.reduce(
-      (sum, item) => sum + parseFloat(item.price),
-      0
-    );
-
-    const totalWeight = selectedProducts.reduce(
-      (sum, item) => sum + parseFloat(item.weight),
-      0
-    );
-    setValue("products", values);
-    setValue("price", totalPrice.toFixed(2));
-    setValue("weight", totalWeight.toFixed(2));
-
-    setSelectedValues(values);
   };
 
   const onSubmitForm = async (data: any) => {
@@ -122,21 +166,16 @@ export default function Order() {
         service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
         ship_from: data.shipFrom,
         ship_to: data.shipTo,
-        order_details: (data.products || []).map((id: string) => ({
-          product_id: parseInt(id, 10),
-          quantity: 1,
-        })),
+        products,
       };
 
       const res = await ApiHelper("POST", "/order/store", payload);
 
       if (res.status === 200 && res.data.success) {
         toast.success(res.data.message || "Order placed successfully");
-        setTimeout(()=>{
-          reset();
-          setCurrentStep(0);
-          setSelectedValues([]);
-        },500)
+        reset();
+        setProducts([]);
+        setCurrentStep(0);
       } else {
         toast.error(res.data.message || "Failed to place order ❌");
       }
@@ -149,7 +188,6 @@ export default function Order() {
     }
   };
 
-
   const countries = ["USA", "Canada", "UK", "Germany", "Pakistan", "India"];
 
   return (
@@ -161,10 +199,7 @@ export default function Order() {
         {/* Stepper */}
         <div className="flex items-center justify-between mb-8">
           {steps.map((step, index) => (
-            <div
-              key={index}
-              className="flex-1 flex items-center last:flex-none"
-            >
+            <div key={index} className="flex-1 flex items-center last:flex-none">
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold transition 
                   ${index === currentStep
@@ -176,14 +211,11 @@ export default function Order() {
               >
                 {index < currentStep ? "✓" : index + 1}
               </div>
-              <span className="ml-3 font-medium hidden sm:inline-block">
-                {step}
-              </span>
+              <span className="ml-3 font-medium hidden sm:inline-block">{step}</span>
               {index < steps.length - 1 && (
                 <div className="flex-1 h-1 bg-gray-200 mx-3">
                   <div
-                    className={`h-1 transition ${index < currentStep ? "bg-blue-500" : ""
-                      }`}
+                    className={`h-1 transition ${index < currentStep ? "bg-blue-500" : ""}`}
                   />
                 </div>
               )}
@@ -193,10 +225,10 @@ export default function Order() {
 
         {/* Step Content */}
         <div className="bg-white shadow-lg rounded-2xl p-6 space-y-6">
+          {/* Step 0 */}
           {currentStep === 0 && (
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800">Service Type</h2>
-
               <Controller
                 control={control}
                 name="serviceType"
@@ -215,7 +247,7 @@ export default function Order() {
                           type="radio"
                           value={option}
                           checked={field.value === option}
-                          onChange={() => field.onChange(option)} 
+                          onChange={() => field.onChange(option)}
                           className="hidden"
                         />
                         <span className="font-medium text-gray-700">{option}</span>
@@ -229,32 +261,26 @@ export default function Order() {
                   </div>
                 )}
               />
-
               {errors.serviceType && (
                 <p className="text-red-500 text-sm">{errors.serviceType.message as string}</p>
               )}
             </div>
           )}
 
+          {/* Step 1 */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Shipping Address
-              </h2>
+              <h2 className="text-xl font-semibold text-gray-800">Shipping Address</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <Label>
-                    Ship From <span className="text-red-500">*</span>
-                  </Label>
+                  <Label>Ship From <span className="text-red-500">*</span></Label>
                   <select
                     {...register("shipFrom")}
                     className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Country</option>
                     {countries.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                   {errors.shipFrom && (
@@ -262,18 +288,14 @@ export default function Order() {
                   )}
                 </div>
                 <div>
-                  <Label>
-                    Ship To <span className="text-red-500">*</span>
-                  </Label>
+                  <Label>Ship To <span className="text-red-500">*</span></Label>
                   <select
                     {...register("shipTo")}
                     className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Country</option>
                     {countries.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                   {errors.shipTo && (
@@ -284,63 +306,108 @@ export default function Order() {
             </div>
           )}
 
+          {/* Step 2 */}
           {currentStep === 2 && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Product Details
-              </h2>
-
-              <Controller
-                control={control}
-                name="products"
-                render={({ field }) => (
-                  <MultiSelect
-                    label="Select Multiple Product"
-                    options={multiOptions}
-                    defaultSelected={field.value || []}
-                    onChange={handleProducts}
-                  />
-                )}
-              />
-              {errors.products && (
-                <p className="text-red-500 text-sm">{errors.products?.message as string}</p>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <Label>
-                    Total Approx Weight (Gram){" "}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder="Approximate Weight"
-                    {...register("weight")}
-                    className="w-full"
-                  />
-                  {errors.weight && (
-                    <p className="text-red-500 text-sm">{errors.weight?.message as string}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>
-                    Products Total Price <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder="Total Price"
-                    {...register("price")}
-                    className="w-full"
-                  />
-                  {errors.price && (
-                    <p className="text-red-500 text-sm">{errors.price?.message as string}</p>
-                  )}
-                </div>
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-800">Product Details</h2>
+                <Button onClick={handleAddNewProduct}>+ Add Product</Button>
               </div>
 
-              <h2 className="text-xl font-semibold text-gray-800">
-                Additional Services
-              </h2>
+              {products.length === 0 ? (
+                <p className="text-gray-500 text-center py-6">
+                  No products added yet. Click “Add Product” to get started.
+                </p>
+              ) : (
+                <>
+                  {/* Product Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {products.map((product, index) => (
+                      <div
+                        key={index}
+                        className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-5 flex flex-col border border-gray-100"
+                      >
+                        {product.product_url ? (
+                          <div className="relative w-full h-44 mb-4 overflow-hidden rounded-xl">
+                            <img
+                              src={product.product_url}
+                              alt={product.title}
+                              className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-44 mb-4 bg-gray-50 rounded-xl text-gray-400 text-sm">
+                            No image available
+                          </div>
+                        )}
+
+                        <h4 className="text-lg font-semibold text-gray-800 mb-1">{product.title}</h4>
+                        <p className="text-sm text-gray-500 mb-3 line-clamp-2">{product.description}</p>
+
+                        <div className="grid grid-cols-2 gap-y-1 text-sm text-gray-700">
+                          <p>
+                            <span className="font-medium text-gray-800">Price:</span> ${product.price}
+                          </p>
+                          <p>
+                            <span className="font-medium text-gray-800">Qty:</span> {product.quantity}
+                          </p>
+                          <p>
+                            <span className="font-medium text-gray-800">Weight:</span> {product.weight}g
+                          </p>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-5 pt-3 border-t border-gray-100">
+                          <button
+                            onClick={() => handleEditProduct(index)}
+                            className="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleRemoveProduct(index)}
+                            className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Total Summary */}
+                  <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                    <div>
+                      <p className="text-gray-800 font-semibold text-lg">Totals</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="text-gray-700">
+                        <span className="font-medium">Total Approx Weight:</span>{" "}
+                        {products.reduce(
+                          (sum, p) => sum + (Number(p.weight) || 0) * (Number(p.quantity) || 0),
+                          0
+                        )}{" "}
+                        g
+                      </div>
+                      <div className="text-gray-700">
+                        <span className="font-medium">Total Price:</span> $
+                        {products
+                          .reduce(
+                            (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
+                            0
+                          )
+                          .toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 3 */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold text-gray-800">Additional Services</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
                   { id: "id_photo", label: "Product Photo" },
@@ -393,7 +460,7 @@ export default function Order() {
             <button
               onClick={prevStep}
               disabled={currentStep === 0}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
             >
               Previous
             </button>
@@ -401,16 +468,14 @@ export default function Order() {
             {currentStep < steps.length - 1 ? (
               <button
                 onClick={nextStep}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600"
+                className="px-5 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600"
               >
                 Next
-              
               </button>
-              
             ) : (
               <button
                 onClick={handleSubmit(onSubmitForm)}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600"
+                className="px-5 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600"
               >
                 Submit
               </button>
@@ -418,6 +483,65 @@ export default function Order() {
           </div>
         </div>
       </div>
+
+      {/* ✅ Product Modal */}
+      <Modal
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        className="max-w-[700px] m-4"
+      >
+        <div className="relative w-full max-w-[700px] rounded-3xl bg-white p-6 dark:bg-gray-900">
+          <h4 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">
+            {selectedProductIndex !== null ? "Edit Product" : "Add Product"}
+          </h4>
+          <form onSubmit={handleProductSubmit(handleSaveProduct)} className="space-y-6">
+            <div>
+              <Label>Product Title *</Label>
+              <Input type="text" placeholder="Enter product title" {...registerProduct("title")} />
+              {productErrors.title && <p className="text-red-500 text-sm mt-1">{productErrors.title.message}</p>}
+            </div>
+
+            <div>
+              <Label>Description *</Label>
+              <TextArea placeholder="Enter description" {...registerProduct("description")} />
+              {productErrors.description && <p className="text-red-500 text-sm mt-1">{productErrors.description.message}</p>}
+            </div>
+
+            <div>
+              <Label>Product URL *</Label>
+              <Input type="text" placeholder="Enter product URL" {...registerProduct("product_url")} />
+              {productErrors.product_url && <p className="text-red-500 text-sm mt-1">{productErrors.product_url.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label>Quantity *</Label>
+                <Input type="number" {...registerProduct("quantity")} />
+                {productErrors.quantity && <p className="text-red-500 text-sm mt-1">{productErrors.quantity.message}</p>}
+              </div>
+              <div>
+                <Label>Price *</Label>
+                <Input type="number" step="0.01" {...registerProduct("price")} />
+                {productErrors.price && <p className="text-red-500 text-sm mt-1">{productErrors.price.message}</p>}
+              </div>
+              <div>
+                <Label>Weight (Gram) *</Label>
+                <Input type="number" step="0.01" {...registerProduct("weight")} />
+                {productErrors.weight && <p className="text-red-500 text-sm mt-1">{productErrors.weight.message}</p>}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button size="sm" variant="outline" onClick={() => setIsProductModalOpen(false)}>
+                Close
+              </Button>
+              <Button type="submit" size="sm">
+                {selectedProductIndex !== null ? "Update Product" : "Save Product"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </>
   );
 }

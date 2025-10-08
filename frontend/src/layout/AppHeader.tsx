@@ -6,9 +6,12 @@ import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import SettingsDropdown from "../components/header/SettingsDropdown";
+import { userHasPermission } from "../utils/DparcelHelper";
+import MessageDropdown from "../components/header/MessageDropdown";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<"message" | "notification" | null>(null);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -123,13 +126,33 @@ const AppHeader: React.FC = () => {
           } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
-            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg">
-              <span className="text-lg font-bold">+</span>
-              <span>Create an order</span>
-            </button>
+            {userHasPermission("create_request") && (
+              <Link
+                to="/request"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg"
+              >
+                <span className="text-lg font-bold">+</span>
+                <span>Create an order</span>
+              </Link>
+            )}
             {/* <!-- Dark Mode Toggler --> */}
             {/* <SettingsDropdown /> */}
             {/* <!-- Notification Menu Area --> */}
+            {/* Message and Notification dropdowns controlled here */}
+            <MessageDropdown
+              isOpen={openDropdown === "message"}
+              onToggle={() =>
+                setOpenDropdown(openDropdown === "message" ? null : "message")
+              }
+              closeOthers={() => setOpenDropdown(null)}
+            />
+            <NotificationDropdown
+              isOpen={openDropdown === "notification"}
+              onToggle={() =>
+                setOpenDropdown(openDropdown === "notification" ? null : "notification")
+              }
+              closeOthers={() => setOpenDropdown(null)}
+            />
           </div>
           {/* <!-- User Area --> */}
           <UserDropdown />
