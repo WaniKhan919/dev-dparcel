@@ -23,43 +23,58 @@ type Product = {
   description: string;
   weight: number;
   quantity: number;
-  product_url?: string;
+  product_url: string;
 };
 
 const stepSchemas = [
+  // Step 1: Service Type
   yup.object().shape({
     serviceType: yup.string().required("Please select a service type"),
   }),
+
+  // Step 2: Shipping Address
   yup.object().shape({
     shipFrom: yup.string().required("Ship From is required"),
     shipTo: yup.string().required("Ship To is required"),
   }),
+
+  // Step 3: Product Validation (handled separately)
+  yup.object().shape({}), // Leave empty, we'll handle products manually
+
+  // Step 4: Terms validation
   yup.object().shape({
-    products: yup.array().min(1, "Select at least one product"),
-    weight: yup.string().required("Weight is required"),
-    price: yup.string().required("Price is required"),
     terms: yup.boolean().oneOf([true], "You must accept the terms"),
   }),
 ];
 
 const productSchema = yup.object().shape({
   title: yup.string().required("Product title is required"),
+
   description: yup.string().required("Description is required"),
+
   product_url: yup
     .string()
-    .url("Enter a valid URL")
-    .required("Product URL is required"),
+    .required("Product URL is required")
+    .matches(
+      /^(https?:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/[^\s]*)?$/,
+      "Enter a valid single URL"
+    ),
+
   quantity: yup
     .number()
     .typeError("Quantity must be a number")
     .positive("Quantity must be greater than 0")
     .integer("Quantity must be an integer")
+    .max(1000, "Quantity cannot be greater than 1000")
     .required("Quantity is required"),
+
   price: yup
     .number()
     .typeError("Price must be a number")
     .positive("Price must be greater than 0")
+    .max(10000, "Price cannot be greater than 10000")
     .required("Price is required"),
+
   weight: yup
     .number()
     .typeError("Weight must be a number")
@@ -68,10 +83,12 @@ const productSchema = yup.object().shape({
 });
 
 
+
 export default function Order() {
   const dispatch = useDispatch<AppDispatch>();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [productRequired, setProductRequired] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
@@ -146,14 +163,26 @@ export default function Order() {
       setProducts((prev) => [...prev, data]);
       toast.success("Product added!");
     }
+    setProductRequired(false)
     setIsProductModalOpen(false);
   };
 
-  const nextStep = async () => {
-    const isValid = await trigger();
-    if (!isValid) return;
-    if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
-  };
+const nextStep = async () => {
+  // Validate fields for this step
+  const isValid = await trigger();
+  if (!isValid) return;
+
+  // Step 3 (Product Details): must have at least one product
+  if (currentStep === 2 && products.length === 0) {
+    // toast.error("Please add at least one product before continuing.");
+    setProductRequired(true)
+    return;
+  }
+
+  if (currentStep < steps.length - 1) {
+    setCurrentStep(currentStep + 1);
+  }
+};
 
   const prevStep = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
@@ -307,13 +336,17 @@ export default function Order() {
           )}
 
           {/* Step 2 */}
-          {currentStep === 2 && (
+          {currentStep === 2 && ( 
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-800">Product Details</h2>
                 <Button onClick={handleAddNewProduct}>+ Add Product</Button>
               </div>
-
+              {currentStep === 2 && products.length === 0 && productRequired && (
+                <p className="text-red-500 text-sm mt-2 text-center">
+                  Please add at least one product before continuing.
+                </p>
+              )}
               {products.length === 0 ? (
                 <p className="text-gray-500 text-center py-6">
                   No products added yet. Click “Add Product” to get started.
