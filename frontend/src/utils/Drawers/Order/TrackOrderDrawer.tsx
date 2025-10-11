@@ -68,7 +68,7 @@ export default function TrackOrderDrawer({
         {/* Header */}
         <div className="flex items-center justify-between bg-gray-100 px-4 py-3 border-b sticky top-0 z-10">
           <h2 className="text-lg font-semibold">
-            Order – #{orderData?.tracking_number}
+            Order # :  {orderData?.request_number}
           </h2>
           <button
             onClick={onClose}

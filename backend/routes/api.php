@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
@@ -85,8 +86,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/shipper/offers/{orderId}', 'getShipperOffers');
         Route::post('/offer/{offerId}/status', 'offerStatus');
         Route::get('/statuses', 'getOrderStatuses');
-        Route::post('/update-status', action: 'updateStatus');
-        Route::get('/get-order-tracking/{id}', action: 'getOrderTracking');
+        Route::post('/update-status',  'updateStatus');
+        Route::get('/get-order-tracking/{id}',  'getOrderTracking');
+        Route::get('/get-order-detail/{id}',  'getOrderDetail');
     });
     Route::prefix('shipper')
     ->controller(ShipperController::class)
@@ -108,6 +110,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index');
         Route::post('/send', 'store');
 
+    });
+
+    Route::prefix('notifications')
+    ->controller(NotificationController::class)
+    ->group(function () {
+        Route::get('/', 'index');
+        Route::post('/{id}/read', 'markAsRead');
+        Route::post('/read-all', 'markAllAsRead');
     });
     
     // Shopper routes

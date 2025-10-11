@@ -107,73 +107,7 @@ export default function ViewOffersDrawer({
           </button>
         </div>
 
-        {/* Order Summary */}
         <div className="p-4 space-y-4 p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg p-3 shadow-md">
-            <h3 className="text-lg font-bold mb-3">
-              Tracking: {orderData.tracking_number}
-            </h3>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="font-semibold">Service Type</p>
-                <p className="opacity-90 capitalize">
-                  {orderData.service_type.replace(/_/g, " ")}
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold">Status</p>
-                <p className="opacity-90">
-                  {orderData.status === 1 ? "Active" : "Pending"}
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold">Ship From</p>
-                <p className="opacity-90">{orderData.ship_from}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Ship To</p>
-                <p className="opacity-90">{orderData.ship_to}</p>
-              </div>
-              <div>
-                <p className="font-semibold">Weight</p>
-                <p className="opacity-90">{orderData.total_aprox_weight} g</p>
-              </div>
-              <div>
-                <p className="font-semibold">Total Price</p>
-                <p className="opacity-90">${orderData.total_price}</p>
-              </div>
-            </div>
-          </div>
-
-
-          {/* Product Details */}
-          {orderData.order_details?.length > 0 && (
-            <div className="bg-white border rounded-xl p-4 shadow-sm">
-              <h4 className="text-lg font-semibold mb-3">Product Details</h4>
-              {orderData.order_details.map((detail: any) => (
-                <div
-                  key={detail.id}
-                  className="border-b last:border-b-0 py-2"
-                >
-                  <p className="font-medium">{detail.product.title}</p>
-                  <p className="text-sm text-gray-600">
-                    {detail.product.description}
-                  </p>
-                  <div className="flex justify-between mt-2 text-sm">
-                    <span>Qty: {detail.quantity}</span>
-                    <span>Price: ${detail.price}</span>
-                  </div>
-                  <a
-                    href={detail.product.product_url}
-                    target="_blank"
-                    className="text-blue-500 text-xs hover:underline mt-1 inline-block"
-                  >
-                    View Product
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
           {/* Offers */}
           {offersData?.offers?.length > 0 ? (
             offersData.offers.map((offer: any) => (

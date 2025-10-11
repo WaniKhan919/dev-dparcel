@@ -14,6 +14,7 @@ import PaymentModal from "../../utils/PaymentModal";
 import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
 import ShopperOrderMessages from "../../utils/Drawers/Order/ShopperOrderMessages";
 import TrackOrderDrawer from "../../utils/Drawers/Order/TrackOrderDrawer";
+import ViewOrderDetailDrawer from "../../utils/Drawers/Offers/ViewOrderDetailDrawer";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
@@ -54,8 +55,10 @@ interface Request {
 export default function ViewOrder() {
   const dispatch = useDispatch<AppDispatch>();
   const { data, meta, loading } = useSelector((state: any) => state.order);
+  const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false)
   const [openOfferDrawer, setOpenOfferDrawer] = useState(false)
   const [orderData, setOrderData] = useState([])
+  const [orderId, setOrderId] = useState(0)
   const [selectedOrder, setSelectedOrder] = useState<Request | null>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
@@ -75,6 +78,10 @@ export default function ViewOrder() {
     dispatch(fetchOrders({ page: 1, per_page: 10 }));
   }, [dispatch]);
 
+  const viewOrderDetails = (id: number) => {
+    setOrderId(id)
+    setOpenOrderDetailDrawer(true)
+  }
   const viewOffers = (record: any) => {
     setOrderData(record)
     setOpenOfferDrawer(true)
@@ -85,6 +92,7 @@ export default function ViewOrder() {
   }
   const onClose = () => {
     setOpenOfferDrawer(false)
+    setOpenOrderDetailDrawer(false)
     setOpenMessageDrawer(false)
     setOpenTrackOrderDrawer(false)
   }
@@ -235,6 +243,16 @@ export default function ViewOrder() {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       onClick={(e) => {
                         e.stopPropagation();
+                        viewOrderDetails(record.id);
+                        setOpen(false);
+                      }}
+                    >
+                      View Detail
+                    </button>
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         viewOffers(record);
                         setOpen(false);
                       }}
@@ -266,17 +284,19 @@ export default function ViewOrder() {
                     >
                       Track Order
                     </button>
-
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openMessage(record);
-                        setOpen(false);
-                      }}
-                    >
-                      Conversation
-                    </button>
+                    {
+                    record?.accepted_offer?.status === "accepted" &&
+                      <button
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMessage(record);
+                          setOpen(false);
+                        }}
+                      >
+                        Conversation
+                      </button>
+                    }
                   </div>
                 </div>,
                 document.body
@@ -296,6 +316,14 @@ export default function ViewOrder() {
       <div className="space-y-6">
         <ComponentCard title="Requests">
           <DParcelTable columns={columns} data={data} />
+          {
+            openOrderDetailDrawer &&
+            <ViewOrderDetailDrawer
+              isOpen={openOrderDetailDrawer}
+              onClose={onClose}
+              orderId={orderId}
+            />
+          }
           {
             openOfferDrawer &&
             <ViewOffersDrawer

@@ -6,7 +6,7 @@ import Input from "../../components/form/input/InputField";
 import { Controller, useForm } from "react-hook-form";
 import Checkbox from "../../components/form/input/Checkbox";
 import { AppDispatch } from "../../store";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ApiHelper } from "../../utils/ApiHelper";
@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
 import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
+import { fetchServices } from "../../slices/servicesSlice";
 
 const steps = ["Shipping Info", "Shipping Address", "Product Details", "Additional Services"];
 
@@ -86,6 +87,7 @@ const productSchema = yup.object().shape({
 
 export default function Order() {
   const dispatch = useDispatch<AppDispatch>();
+  const { services, servicesLoading } = useSelector((state: any) => state.services);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [productRequired, setProductRequired] = useState(false);
@@ -99,6 +101,7 @@ export default function Order() {
     handleSubmit,
     trigger,
     control,
+    watch,
     formState: { errors },
     reset,
   } = useForm<any>({
@@ -167,22 +170,22 @@ export default function Order() {
     setIsProductModalOpen(false);
   };
 
-const nextStep = async () => {
-  // Validate fields for this step
-  const isValid = await trigger();
-  if (!isValid) return;
+  const nextStep = async () => {
+    // Validate fields for this step
+    const isValid = await trigger();
+    if (!isValid) return;
 
-  // Step 3 (Product Details): must have at least one product
-  if (currentStep === 2 && products.length === 0) {
-    // toast.error("Please add at least one product before continuing.");
-    setProductRequired(true)
-    return;
-  }
+    // Step 3 (Product Details): must have at least one product
+    if (currentStep === 2 && products.length === 0) {
+      // toast.error("Please add at least one product before continuing.");
+      setProductRequired(true)
+      return;
+    }
 
-  if (currentStep < steps.length - 1) {
-    setCurrentStep(currentStep + 1);
-  }
-};
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
   const prevStep = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
@@ -191,13 +194,36 @@ const nextStep = async () => {
   const onSubmitForm = async (data: any) => {
     setLoading(true);
     try {
+      // 1️⃣ Get active and selected services
+      const activeServices = services?.filter((item: any) => item.status === 1) || [];
+
+      // Use watch() to get checkbox states
+      const watchedValues = watch();
+
+      // Find all checked or required services
+      const selectedServices = activeServices.filter((item: any) => {
+        const fieldName = item.title.replace(/\s+/g, "_").toLowerCase();
+        const isRequired = item.is_required === 1;
+        return isRequired || watchedValues[fieldName];
+      });
+
+      // Map to minimal payload (only IDs)
+      const servicePayload = selectedServices.map((s: any) => ({
+        service_id: s.id,
+      }));
+
+      // 2️⃣ Create final payload
       const payload = {
         service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
         ship_from: data.shipFrom,
         ship_to: data.shipTo,
-        products,
+        products, // from your products state
+        services: servicePayload, // selected service IDs
       };
 
+      console.log("📦 Final Payload:", payload);
+
+      // 3️⃣ Send to backend
       const res = await ApiHelper("POST", "/order/store", payload);
 
       if (res.status === 200 && res.data.success) {
@@ -217,8 +243,11 @@ const nextStep = async () => {
     }
   };
 
-  const countries = ["USA", "Canada", "UK", "Germany", "Pakistan", "India"];
 
+  const countries = ["USA", "Canada", "UK", "Germany", "Pakistan", "India"];
+  useEffect(() => {
+    dispatch(fetchServices());
+  }, [dispatch]);
   return (
     <>
       <PageMeta title="Delivering Parcel | Request" description="" />
@@ -336,7 +365,7 @@ const nextStep = async () => {
           )}
 
           {/* Step 2 */}
-          {currentStep === 2 && ( 
+          {currentStep === 2 && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-800">Product Details</h2>
@@ -441,52 +470,129 @@ const nextStep = async () => {
           {currentStep === 3 && (
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800">Additional Services</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { id: "id_photo", label: "Product Photo" },
-                  { id: "is_consolidation", label: "Package Consolidation" },
-                  { id: "is_assistance", label: "Purchase Assistance" },
-                  { id: "is_forwarding", label: "Forwarding Service Fee" },
-                ].map((item) => (
-                  <label
-                    key={item.id}
-                    className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md transition"
-                  >
-                    <input
-                      type="checkbox"
-                      {...register(item.id)}
-                      className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="font-medium text-gray-700">{item.label}</span>
-                  </label>
-                ))}
-              </div>
 
-              <div className="flex items-start gap-3">
-                <Controller
-                  control={control}
-                  name="terms"
-                  render={({ field }) => (
-                    <Checkbox
-                      className="w-5 h-5 mt-1"
-                      checked={field.value}
-                      onChange={() => field.onChange(!field.value)}
-                    />
-                  )}
-                />
-                <p className="text-sm text-gray-600">
-                  By clicking the tick button, I hereby agree and consent to the{" "}
-                  <a href="#" className="text-blue-500 underline">
-                    terms of business
-                  </a>
-                  , its policies, and the privacy policy.
-                </p>
-              </div>
-              {errors.terms && (
-                <p className="text-red-500 text-sm">{errors.terms?.message as string}</p>
-              )}
+              {/* Watch form data */}
+              {(() => {
+                const watchedValues = watch(); // <-- Add this line
+
+                const productTotal = products.reduce(
+                  (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
+                  0
+                );
+
+                const activeServices = services?.filter((item: any) => item.status === 1) || [];
+
+                const selectedServices = activeServices.filter((item: any) => {
+                  const fieldName = item.title.replace(/\s+/g, "_").toLowerCase();
+                  const isRequired = item.is_required === 1;
+                  return isRequired || watchedValues[fieldName];
+                });
+
+                const serviceTotal = selectedServices.reduce(
+                  (sum: number, s: { price?: string }) => sum + Number(s.price || 0),
+                  0
+                );
+
+                const grandTotal = productTotal + serviceTotal;
+
+                return (
+                  <>
+                    {/* Services Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {services
+                        ?.filter((item: any) => item.status === 1)
+                        .map((item: any) => {
+                          const inputName = item.title.replace(/\s+/g, "_").toLowerCase();
+                          const isRequired = item.is_required === 1;
+
+                          return (
+                            <div key={item.id} className="relative group">
+                              {/* Tooltip */}
+                              <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-xs bg-gray-800 text-white text-sm rounded-lg px-3 py-2 shadow-lg z-10">
+                                {item.description}
+                              </div>
+
+                              <label
+                                className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md transition ${isRequired ? "bg-gray-50 cursor-not-allowed" : ""
+                                  }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  {...register(inputName)}
+                                  className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                                  defaultChecked={isRequired}
+                                  disabled={isRequired}
+                                  required={isRequired}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-700">
+                                    {item.title}{" "}
+                                    {isRequired && (
+                                      <span className="text-red-500 text-sm ml-1">*</span>
+                                    )}
+                                  </span>
+                                  {item.price && (
+                                    <span className="text-sm text-gray-500">
+                                      ${item.price}
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {/* Totals Section */}
+                    <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                      <div>
+                        <p className="text-gray-800 font-semibold text-lg">Totals</p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="text-gray-700">
+                          <span className="font-medium">Products Total:</span> ${productTotal.toFixed(2)}
+                        </div>
+                        <div className="text-gray-700">
+                          <span className="font-medium">Services Total:</span> ${serviceTotal.toFixed(2)}
+                        </div>
+                        <div className="text-gray-800 font-semibold">
+                          <span className="font-medium">Grand Total:</span> ${grandTotal.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Terms Checkbox */}
+                    <div className="flex items-start gap-3">
+                      <Controller
+                        control={control}
+                        name="terms"
+                        render={({ field }) => (
+                          <Checkbox
+                            className="w-5 h-5 mt-1"
+                            checked={field.value}
+                            onChange={() => field.onChange(!field.value)}
+                          />
+                        )}
+                      />
+                      <p className="text-sm text-gray-600">
+                        By clicking the tick button, I hereby agree and consent to the{" "}
+                        <a href="#" className="text-blue-500 underline">
+                          terms of business
+                        </a>
+                        , its policies, and the privacy policy.
+                      </p>
+                    </div>
+                    {errors.terms && (
+                      <p className="text-red-500 text-sm">
+                        {errors.terms?.message as string}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
+
 
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-6 border-t">

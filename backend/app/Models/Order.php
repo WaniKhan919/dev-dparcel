@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
@@ -13,13 +14,24 @@ class Order extends Model
         'ship_to',
         'total_aprox_weight',
         'total_price',
-        'is_product_photo',
-        'is_package_consolidation',
-        'is_purchase_assistance',
-        'is_forwarding_service_fee',
         'tracking_number',
+        'request_number',
         'status',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($order) {
+            do {
+                $requestNumber = 'REQ-' . now()->format('Ymd') . '-' . strtoupper(Str::random(5));
+            } while (Order::where('request_number', $requestNumber)->exists());
+
+            $order->request_number = $requestNumber;
+        });
+    }
+
 
     public function orderDetails()
     {
@@ -44,5 +56,13 @@ class Order extends Model
     public function orderPayment()
     {
         return $this->hasOne(OrderPayment::class,'order_id','id');
+    }
+    public function orderServices()
+    {
+        return $this->hasMany(OrderService::class);
+    }
+    public function orderTrackings()
+    {
+        return $this->hasMany(OrderTracking::class);
     }
 }

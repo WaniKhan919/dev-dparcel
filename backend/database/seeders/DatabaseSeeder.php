@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,   // roles first
             AdminSeeder::class,  // then admin user attaches role
             OrderStatusSeeder::class,
+            ServiceSeeder::class,
+            PermissionSeeder::class,
         ]);
     }
 }

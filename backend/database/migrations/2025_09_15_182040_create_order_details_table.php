@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedInteger('quantity')->default(1);
             $table->decimal('price', 10, 2)->default(0.00);
             $table->decimal('weight', 8, 2)->nullable();
+            $table->string('request_details_number', 50)->nullable()->unique();
             $table->enum('status', [
                 'pending',
                 'accepted',

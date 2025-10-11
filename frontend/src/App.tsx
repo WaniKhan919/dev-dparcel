@@ -67,11 +67,11 @@ export default function App() {
             <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
             <Route path="/products" element={<Products />} />
             <Route path="/request" element={<Order />} />
+            <Route path="/view/request" element={<ViewOrder />} />
             <Route path="/shopper/payment" element={<ShopperPayments />} />
 
             {/* Shipper Routes */}
             <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />
-            <Route path="/view/request" element={<ViewOrder />} />
             <Route path="/shopper/requests" element={<ShopperRequests />} />
             <Route path="/shipper/payment" element={<ShipperPayments />} />
 

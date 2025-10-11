@@ -12,6 +12,7 @@ class OrderDetail extends Model
         'quantity',
         'price',
         'weight',
+        'request_details_number',
     ];
     
     public function order()
@@ -23,4 +24,5 @@ class OrderDetail extends Model
     {
         return $this->belongsTo(product::class);
     }
+    
 }

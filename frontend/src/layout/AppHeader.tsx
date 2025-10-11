@@ -8,12 +8,25 @@ import UserDropdown from "../components/header/UserDropdown";
 import SettingsDropdown from "../components/header/SettingsDropdown";
 import { userHasPermission } from "../utils/DparcelHelper";
 import MessageDropdown from "../components/header/MessageDropdown";
+import { AppDispatch } from "../store";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchNotifications } from "../slices/notificationSlice";
+
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<"message" | "notification" | null>(null);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { notifications, loading } = useSelector((state: any) => state.notification);
+
+  useEffect(() => {
+    if (openDropdown === "notification") {
+      dispatch(fetchNotifications({ page: 1 }));
+    }
+  }, [openDropdown, dispatch]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -152,6 +165,8 @@ const AppHeader: React.FC = () => {
                 setOpenDropdown(openDropdown === "notification" ? null : "notification")
               }
               closeOthers={() => setOpenDropdown(null)}
+              notifications={notifications}
+              loading={loading}
             />
           </div>
           {/* <!-- User Area --> */}

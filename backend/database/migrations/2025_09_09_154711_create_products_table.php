@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('product_url');
+            $table->text('product_url')->nullable();
             $table->integer('quantity')->default(0);
             $table->decimal('price', 10, 2);
             $table->decimal('weight', 8, 2)->nullable();

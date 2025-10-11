@@ -19,11 +19,8 @@ return new class extends Migration
             $table->string('ship_to');
             $table->decimal('total_aprox_weight', 8, 2)->nullable();
             $table->decimal('total_price', 10, 2)->default(0.00);
-            $table->boolean('is_product_photo')->default(false);
-            $table->boolean('is_package_consolidation')->default(false);
-            $table->boolean('is_purchase_assistance')->default(false);
-            $table->boolean('is_forwarding_service_fee')->default(false);
             $table->string('tracking_number', 50)->nullable()->unique();
+            $table->string('request_number', 50)->nullable()->unique();
             $table->integer('status')->default(1);
             $table->timestamps();
         });

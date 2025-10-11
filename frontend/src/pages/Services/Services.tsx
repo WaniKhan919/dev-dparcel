@@ -85,7 +85,7 @@ export default function Services() {
           size="sm"
           color={row.is_required === 1 ? "success" : "warning"}
         >
-          {row.is_required === 1 ? "Required" : "Inactive"}
+          {row.is_required === 1 ? "Required" : "Not Required"}
         </Badge>
       ),
     },
