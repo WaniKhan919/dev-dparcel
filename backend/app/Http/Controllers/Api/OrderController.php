@@ -200,7 +200,7 @@ class OrderController extends Controller
                 'user_id' => $userId,
                 'sender_id' => null,
                 'order_id' => $order->id,
-                'type' => 'order_created',
+                'type' => 'order',
                 'title' => 'Order Request Placed',
                 'message' => 'Your order request # ' . $order->request_number . ' has been placed successfully.',
             ]);
@@ -212,7 +212,7 @@ class OrderController extends Controller
                     'user_id' => $shipper->id,
                     'sender_id' => $userId,
                     'order_id' => $order->id,
-                    'type' => 'new_order_available',
+                    'type' => 'order',
                     'title' => 'New Order Request Available',
                     'message' => 'A new request # ' . $order->request_number . ' has been placed. You can place your offer now.',
                 ]);
@@ -258,13 +258,40 @@ class OrderController extends Controller
     public function offerStatus(Request $request, $offerId)
     {
         try {
+            $userId = Auth::id();
             $request->validate([
                 'status' => 'required|in:accepted,rejected',
             ]);
-
-            $offer = OrderOffer::findOrFail($offerId);
+            $offer = OrderOffer::with('order')->findOrFail($offerId);
             $offer->status = $request->status;
             $offer->save();
+            if ($request->status == "accepted") {
+                $shipper_title = "Your Offer Was Accepted";
+                $shipper_message = "Your offer for request #{$offer->order->request_number} has been accepted by the shopper.";
+                $shopper_title = "You Accepted an Offer";
+                $shopper_message = "You accepted an offer for request #{$offer->order->request_number}.";
+            } else {
+                $shipper_title = "Your Offer Was Rejected";
+                $shipper_message = "Your offer for request #{$offer->order->request_number} has been rejected by the shopper.";
+                $shopper_title = "You Rejected an Offer";
+                $shopper_message = "You rejected an offer for request #{$offer->order->request_number}.";
+            }
+            NotificationService::createNotification([
+                'user_id' => $offer->user_id,
+                'sender_id' => $userId,
+                'order_id' => $offer->order_id,
+                'type' => 'order',
+                'title' => $shipper_title,
+                'message' => $shipper_message . $offer->order->request_number,
+            ]);
+            NotificationService::createNotification([
+                'user_id' => $userId,
+                'sender_id' => null,
+                'order_id' => $offer->order_id,
+                'type' => 'order',
+                'title' => $shopper_title,
+                'message' => $shopper_message . $offer->order->request_number,
+            ]);
 
             return response()->json([
                 'success' => true,

@@ -23,9 +23,9 @@ const AppHeader: React.FC = () => {
   const { notifications, loading } = useSelector((state: any) => state.notification);
 
   useEffect(() => {
-    if (openDropdown === "notification") {
-      dispatch(fetchNotifications({ page: 1 }));
-    }
+    // if (openDropdown === "notification") {
+      dispatch(fetchNotifications({ page: 1,type:"order" }));
+    // }
   }, [openDropdown, dispatch]);
 
   const handleToggle = () => {

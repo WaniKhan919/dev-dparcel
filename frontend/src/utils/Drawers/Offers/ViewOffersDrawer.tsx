@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { ApiHelper } from "../../ApiHelper";
 import toast from "react-hot-toast";
 import { Modal } from "../../../components/ui/modal";
+import { fetchNotifications } from "../../../slices/notificationSlice";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../../store";
 
 interface ViewOffersDrawerProps {
   isOpen: boolean;
@@ -15,8 +18,10 @@ export default function ViewOffersDrawer({
   orderData
 }: ViewOffersDrawerProps) {
   if (!orderData) return null; // avoid crash if no data
+  const dispatch = useDispatch<AppDispatch>();
   const [loading, setLoading] = useState(false);
   const [offersData, setOffersData] = useState<any>([]);
+  const [actionLoading, setActionLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
     id: number | null;
@@ -48,6 +53,7 @@ export default function ViewOffersDrawer({
   };
 
   const handleOfferAction = async (offerId: number, status: "accepted" | "rejected") => {
+    setActionLoading(true);
     try {
       const res = await ApiHelper("POST", `/order/offer/${offerId}/status`, { status });
 
@@ -62,7 +68,7 @@ export default function ViewOffersDrawer({
           },
           icon: status === "accepted" ? "✅" : "❌",
         });
-        
+        dispatch(fetchNotifications({ page: 1,type:"order" }));
         getOffers()
       }
     } catch (err: any) {
@@ -76,7 +82,9 @@ export default function ViewOffersDrawer({
         },
         icon: "⚠️",
       });
-    }
+    } finally {
+    setActionLoading(false); // hide loader
+  }
   };
 
 
@@ -197,6 +205,14 @@ export default function ViewOffersDrawer({
           )}
         </div>
 
+      {actionLoading && (
+        <div className="absolute inset-0 z-[150] flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm rounded-tr-2xl rounded-br-2xl">
+          <div className="w-12 h-12 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin"></div>
+          <p className="mt-3 text-white font-semibold tracking-wide">
+            Please wait...
+          </p>
+        </div>
+      )}
       </div>
       {/* Confirm Modal */}
       <Modal
@@ -230,6 +246,7 @@ export default function ViewOffersDrawer({
           </div>
         </div>
       </Modal>
+
     </div>
     
   );

@@ -89,13 +89,13 @@ const navItems: NavItem[] = [
     roles: ["shopper"],
     permissions: ["shopper_dashboard"],
   },
-  {
-    icon: <BoxIcon />,
-    name: "Products",
-    path: "/products",
-    roles: ["shopper"],
-    permissions: ["products"],
-  },
+  // {
+  //   icon: <BoxIcon />,
+  //   name: "Products",
+  //   path: "/products",
+  //   roles: ["shopper"],
+  //   permissions: ["products"],
+  // },
   {
     icon: <PlusIcon />,
     name: "Request",
