@@ -3,8 +3,9 @@ import { ApiHelper } from "../../ApiHelper";
 import toast from "react-hot-toast";
 import { Modal } from "../../../components/ui/modal";
 import { fetchNotifications } from "../../../slices/notificationSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../store";
+import { fetchOrders } from "../../../slices/orderSlice";
 
 interface ViewOffersDrawerProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function ViewOffersDrawer({
 }: ViewOffersDrawerProps) {
   if (!orderData) return null; // avoid crash if no data
   const dispatch = useDispatch<AppDispatch>();
+  const { data, meta, orderLoading } = useSelector((state: any) => state.order);
   const [loading, setLoading] = useState(false);
   const [offersData, setOffersData] = useState<any>([]);
   const [actionLoading, setActionLoading] = useState(false);
@@ -68,6 +70,8 @@ export default function ViewOffersDrawer({
           },
           icon: status === "accepted" ? "✅" : "❌",
         });
+
+        dispatch(fetchOrders({ page: 1, per_page: 10 }));
         dispatch(fetchNotifications({ page: 1,type:"order" }));
         getOffers()
       }

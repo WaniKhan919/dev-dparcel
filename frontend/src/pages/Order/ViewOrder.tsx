@@ -11,7 +11,6 @@ import ViewOffersDrawer from "../../utils/Drawers/Offers/ViewOffersDrawer";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import PaymentModal from "../../utils/PaymentModal";
-import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
 import ShopperOrderMessages from "../../utils/Drawers/Order/ShopperOrderMessages";
 import TrackOrderDrawer from "../../utils/Drawers/Order/TrackOrderDrawer";
 import ViewOrderDetailDrawer from "../../utils/Drawers/Offers/ViewOrderDetailDrawer";
