@@ -11,6 +11,7 @@ import MessageDropdown from "../components/header/MessageDropdown";
 import { AppDispatch } from "../store";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchNotifications } from "../slices/notificationSlice";
+import { fetchMessageNotifications } from "../slices/messgeNotificationSlice";
 
 
 const AppHeader: React.FC = () => {
@@ -21,10 +22,13 @@ const AppHeader: React.FC = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const { notifications, loading } = useSelector((state: any) => state.notification);
+  const { notifications: messages, loading: messageLoading } = useSelector((state: any) => state.messageNotification);
+
 
   useEffect(() => {
     // if (openDropdown === "notification") {
       dispatch(fetchNotifications({ page: 1,type:"order" }));
+      dispatch(fetchMessageNotifications({ page: 1,type:"message" }));
     // }
   }, [openDropdown, dispatch]);
 
@@ -158,6 +162,8 @@ const AppHeader: React.FC = () => {
                 setOpenDropdown(openDropdown === "message" ? null : "message")
               }
               closeOthers={() => setOpenDropdown(null)}
+              notifications={messages}
+              loading={messageLoading}
             />
             <NotificationDropdown
               isOpen={openDropdown === "notification"}

@@ -101,9 +101,9 @@ export default function ViewOrder() {
       key: "service_type",
       header: "Ship Type",
       render: (record: Request) => {
-        return record.service_type === "ship_for_me"
+        return record.service_type == "ship_for_me"
           ? "Ship For Me"
-          : "Shop For Me";
+          : "Buy For Me";
       },
     },
     {

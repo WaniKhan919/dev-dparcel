@@ -45,7 +45,7 @@ export default function ShopperRequests() {
 
   const requests: Request[] = useMemo(() => {
     return data.map((offer: any) => ({
-      id: offer.id,
+      id: offer.order_id,
       service_type: offer.order?.service_type ?? "",
       ship_from: offer.order?.ship_from ?? "",
       ship_to: offer.order?.ship_to ?? "",

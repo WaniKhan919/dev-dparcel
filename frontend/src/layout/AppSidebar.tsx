@@ -16,6 +16,7 @@ import {
   UserIcon,
   DollarLineIcon,
   TaskIcon,
+  FolderIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
@@ -75,6 +76,12 @@ const navItems: NavItem[] = [
     roles: ["admin"],
   },
   {
+    icon: <FolderIcon />,
+    name: "Shipper Levels",
+    path: "/shipper/levels",
+    roles: ["admin"],
+  },
+  {
     icon: <LockIcon />,
     name: "Profile",
     path: "/profile",
@@ -130,6 +137,13 @@ const navItems: NavItem[] = [
     ],
     roles: ["shipper"],
     permissions: ["view_shopper_request"],
+  },
+  {
+    icon: <GridIcon />,
+    name: "Subscription",
+    path: "/subscription",
+    roles: ["shipper"],
+    permissions: ["subscription"],
   },
   {
     name: "Payments",

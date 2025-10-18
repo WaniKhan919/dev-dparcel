@@ -8,6 +8,8 @@ use App\Models\OrderMessage;
 use Exception;
 use Illuminate\Http\Request;
 use App\Models\Attachment;
+use App\Models\Order;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
@@ -164,6 +166,17 @@ class MessageController extends Controller
             $message->status = $request->status;
             $message->approved_by = Auth::id();
             $message->save();
+
+            $order = Order::find($message->order_id);
+            
+            NotificationService::createNotification([
+                'user_id'   => $message->receiver_id,
+                'sender_id' => $message->sender_id,
+                'order_id'  => $message->order_id,
+                'type'      => 'message',
+                'title'     => 'New Message Received',
+                'message'   => 'You have received a new message regarding request #' . $order->request_number . '.',
+            ]);
 
             return response()->json([
                 'success' => true,

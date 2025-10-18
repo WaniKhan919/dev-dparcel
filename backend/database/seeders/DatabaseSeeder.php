@@ -13,11 +13,12 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RoleSeeder::class,   // roles first
-            AdminSeeder::class,  // then admin user attaches role
+            RoleSeeder::class,
+            AdminSeeder::class,
             OrderStatusSeeder::class,
             ServiceSeeder::class,
             PermissionSeeder::class,
+            ShippingTypeSeeder::class,
         ]);
     }
 }

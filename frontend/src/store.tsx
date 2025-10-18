@@ -14,6 +14,7 @@ import getMessagesReduce from "./slices/getMessagesSlice";
 import getAdminMessagesReduce from "./slices/getAdminMessagesSlice";
 import allPaymentReducer from "./slices/allPaymentSlice";
 import notificationReducer from "./slices/notificationSlice";
+import messageNotificationReducer from "./slices/messgeNotificationSlice";
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +33,7 @@ export const store = configureStore({
     getAdminMessages: getAdminMessagesReduce,
     allPayments:allPaymentReducer,
     notification:notificationReducer,
+    messageNotification:messageNotificationReducer,
   },
 });
 

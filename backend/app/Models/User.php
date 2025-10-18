@@ -66,4 +66,51 @@ class User extends Authenticatable
     {
         return $this->hasMany(Product::class);
     }
+    public function subscriptions()
+    {
+        return $this->hasMany(ShipperSubscription::class, 'shipper_id')
+            ->where('status', 'active');
+    }
+    public function subscriptionsWithOrders(): array
+    {
+        $subscriptions = $this->subscriptions()->with('level.shippingTypes')->get();
+
+        if ($subscriptions->isEmpty()) {
+            return [
+                'subscriptions' => collect(),
+                'orders' => collect(),
+            ];
+        }
+
+        // Orders that are already processed for this shipper
+        $excludedOrders = OrderOffer::where('user_id', $this->id)
+            ->whereIn('status', ['accepted', 'rejected', 'cancelled', 'ignored'])
+            ->pluck('order_id');
+
+        $allOrders = collect();
+
+        foreach ($subscriptions as $subscription) {
+            $level = $subscription->level;
+
+            if (!$level) continue; // safeguard
+
+            // Get allowed service slugs
+            $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
+
+            if (!empty($allowedServices)) {
+                $orders = Order::with(['orderDetails.product', 'user'])
+                    ->whereNotIn('id', $excludedOrders)
+                    ->whereIn('service_type', $allowedServices)
+                    ->orderBy('id', 'desc')
+                    ->get();
+
+                $allOrders = $allOrders->merge($orders);
+            }
+        }
+
+        return [
+            'subscriptions' => $subscriptions,
+            'orders' => $allOrders->unique('id')->values(),
+        ];
+    }
 }

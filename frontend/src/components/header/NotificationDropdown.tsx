@@ -91,13 +91,13 @@ export default function NotificationDropdown({
                     !n.is_read ? "bg-gray-50 dark:bg-gray-900" : ""
                   }`}
                 >
-                  <span className="relative block w-10 h-10 rounded-full overflow-hidden">
+                  {/* <span className="relative block w-10 h-10 rounded-full overflow-hidden">
                     <img
                       src="/images/user/default-user.jpg"
                       alt="User"
                       className="w-full h-full object-cover rounded-full"
                     />
-                  </span>
+                  </span> */}
                   <span className="block flex-1">
                     <span className="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
                       <span className="font-medium text-gray-800 dark:text-white/90">{n.title}</span>
@@ -113,7 +113,7 @@ export default function NotificationDropdown({
               </li>
             ))}
         </ul>
-        {
+        {/* {
           notifications.length > 0 &&
             <Link
               to="/notifications"
@@ -121,7 +121,7 @@ export default function NotificationDropdown({
             >
               View All Notifications
             </Link>
-        }
+        } */}
       </Dropdown>
     </div>
   );

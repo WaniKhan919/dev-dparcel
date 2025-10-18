@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\ShipperLevelController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\Api\MessageController;
@@ -40,7 +42,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::controller(AdminPaymentController::class)->group(function () {
             Route::get('/payments', 'index');
         });
+        Route::prefix('/shipper-levels')->group(function () {
+            Route::get('/', [ShipperLevelController::class, 'index']);
+            Route::post('/store', [ShipperLevelController::class, 'store']);
+            Route::get('/show{id}', [ShipperLevelController::class, 'show']);
+            Route::put('/update{id}', [ShipperLevelController::class, 'update']);
+            Route::delete('/destroy{id}', [ShipperLevelController::class, 'destroy']);
+        });
     });
+    Route::get('/shipping-types', [ShipperLevelController::class, 'getShippingTypes']);
     Route::prefix('service')->group(function () {
         Route::controller(ServiceController::class)->group(function (){
             Route::get('/', 'index');
@@ -90,13 +100,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/get-order-tracking/{id}',  'getOrderTracking');
         Route::get('/get-order-detail/{id}',  'getOrderDetail');
     });
-    Route::prefix('shipper')
-    ->controller(ShipperController::class)
-    ->group(function () {
-        Route::get('/get/requests', 'getRequests');
-        Route::post('/confirm/request', 'confirmRequest');
-        Route::get('/get/offers', 'getMyOffers');
+    
+    Route::prefix('shipper')->group(function () {
+        Route::controller(ShipperController::class)
+        ->group(function () {
+            Route::get('/get/requests', 'getRequests');
+            Route::post('/confirm/request', 'confirmRequest');
+            Route::get('/get/offers', 'getMyOffers');
 
+        });
+        Route::get('/payments', [ShipperPaymentController::class, 'index']);
+        Route::get('/levels', [SubscriptionController::class, 'index']);
+        Route::post('/subscribe', [SubscriptionController::class, 'subscribe']);
     });
     Route::prefix('shopper')->group(function () {
         Route::get('/payments', [PaymentController::class, 'index']);
@@ -118,11 +133,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index');
         Route::post('/{id}/read', 'markAsRead');
         Route::post('/read-all', 'markAllAsRead');
-    });
-    
-    // Shopper routes
-    Route::prefix('shipper')->group(function () {
-        Route::get('/payments', [ShipperPaymentController::class, 'index']);
     });
 
 

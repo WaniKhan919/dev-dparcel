@@ -70,9 +70,9 @@ export default function ViewAllRequests() {
       key: "service_type",
       header: "Ship Type",
       render: (record: Request) => {
-        return record.service_type === "ship_for_me"
+        return record.service_type == "ship_for_me"
           ? "Ship For Me"
-          : "Shop For Me";
+          : "Buy For Me";
       },
     },
     {
@@ -111,7 +111,7 @@ export default function ViewAllRequests() {
       key: "user",
       header: "Shopper",
       render: (record: Request) => (
-        <span>{record.order_offer.shipper.name}</span>
+        <span>{record?.order_offer?.shipper?.name}</span>
       ),
     },
     {
@@ -131,6 +131,7 @@ export default function ViewAllRequests() {
       key: "status",
       header: "Status",
       render: (record: Request) => {
+        const status = record.order_offer?.status ?? "pending"; // default if null
         const statusColors: Record<string, string> = {
           pending: "bg-yellow-100 text-yellow-800",
           accepted: "bg-green-100 text-green-800",
@@ -138,13 +139,12 @@ export default function ViewAllRequests() {
           cancelled: "bg-gray-200 text-gray-800",
           ignored: "bg-orange-100 text-orange-800",
         };
-
         return (
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[record.order_offer.status] || "bg-gray-100 text-gray-800"
+            className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || "bg-gray-100 text-gray-800"
               }`}
           >
-            {record.order_offer.status.charAt(0).toUpperCase() + record.order_offer.status.slice(1)}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
         );
       },

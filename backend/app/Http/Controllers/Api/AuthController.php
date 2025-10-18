@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\ShipperSubscription;
 use Exception;
 use App\Models\User;
 use App\Models\Role;
@@ -11,6 +12,7 @@ use App\Mail\ResetPasswordMail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
+use App\Models\ShipperLevel;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -136,6 +138,8 @@ class AuthController extends Controller
 
     public function verify(Request $request)
     {
+        
+        DB::beginTransaction();
         try {
             $request->validate([
                 'user_id' => 'required',
@@ -169,13 +173,29 @@ class AuthController extends Controller
                 'verification_code' => null,
                 'verification_expires_at' => null,
             ]);
+            if ($user->hasRole('shipper')) {
 
+                // Get Level 1
+                $level1 = ShipperLevel::where('id', 1)->first();
+
+                if ($level1) {
+                    ShipperSubscription::create([
+                        'shipper_id' => $user->id,
+                        'shipper_level_id' => $level1->id,
+                        'amount' => 0,
+                        'status' => 'active',
+                    ]);
+                }
+            }
+
+            DB::commit();
             return response()->json([
                 'success' => true,
                 'message' => 'Account verified successfully.',
             ], 200);
 
         } catch (Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'error'   => 'Something went wrong during verification.',
                 'details' => $e->getMessage()

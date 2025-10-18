@@ -96,7 +96,7 @@ export default function ShopperOrderMessages({
         {/* Header */}
         <div className="flex items-center justify-between bg-gray-100 px-4 py-3 border-b sticky top-0 z-10">
           <h2 className="text-lg font-semibold">
-            Conversation – #{orderData?.order?.tracking_number}
+            Conversation – {orderData?.request_number}
           </h2>
           <button
             onClick={onClose}
@@ -175,11 +175,49 @@ export default function ShopperOrderMessages({
 
                       {/* Timestamp */}
                       <span
-                        className={`block text-xs mt-1 ${isSender ? "text-blue-100" : "text-gray-500"
+                        className={`flex items-center gap-1 text-xs mt-1 ${isSender ? "text-blue-100 justify-end" : "text-gray-500"
                           }`}
                       >
                         {msg.created_at}
+
+                        {isSender && (
+                          <>
+                            {/* 🕓 Single Tick — Pending */}
+                            {msg.status === "pending" && (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#ffffff"
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-4 h-4 inline-block ml-1 drop-shadow-[0_0_2px_rgba(0,0,0,0.6)]"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+
+                            {/* ✅ Double Tick — Approved */}
+                            {msg.status === "approved" && (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#ffffff"
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-4 h-4 inline-block ml-1 drop-shadow-[0_0_2px_rgba(0,0,0,0.7)]"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                                <polyline points="20 6 9 17 4 12" transform="translate(3,-2)" />
+                              </svg>
+                            )}
+                          </>
+                        )}
                       </span>
+
                     </div>
                   </div>
                 );

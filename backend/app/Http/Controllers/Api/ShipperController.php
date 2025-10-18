@@ -15,34 +15,37 @@ class ShipperController extends Controller
     public function getRequests(Request $request)
     {
         try {
-        $userId = Auth::id();
+            $user = Auth::user();
 
-        $excludedOrders = OrderOffer::where('user_id', $userId)
-            ->whereIn('status', ['accepted', 'rejected', 'cancelled', 'ignored'])
-            ->pluck('order_id');
+            $data = $user->subscriptionsWithOrders();
 
-        $orders = Order::with(['orderDetails.product', 'user'])
-            ->whereNotIn('id', $excludedOrders)
-            ->orderBy('id', 'desc')
-            ->get();
+            // If no subscriptions or orders
+            if ($data['orders']->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'No orders available for your subscription level.'
+                ], 200);
+            }
 
-        return response()->json([
-            'success' => true,
-            'data'    => $orders,
-        ], 200);
-
+            return response()->json([
+                'success' => true,
+                'data' => $data['orders'],
+            ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get request',
-                'error'   => $e->getMessage()
+                'message' => 'Failed to get requests',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
+
+
     public function confirmRequest(Request $request)
     {
         try {
-            
+
             $orderOffer = OrderOffer::create([
                 'order_id' => $request->id,          // order id from request
                 'user_id'  => Auth::id(),            // logged in user id
@@ -55,7 +58,6 @@ class ShipperController extends Controller
                 'message' => 'Offer has been sent from your side',
                 'data'    => $orderOffer
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -88,7 +90,6 @@ class ShipperController extends Controller
                     'prev_page_url' => $orderOffers->previousPageUrl(),
                 ],
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

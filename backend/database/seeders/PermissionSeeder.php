@@ -42,6 +42,10 @@ class PermissionSeeder extends Seeder
                 'name' => 'Shipper Payment',
                 'code' => 'shipper_payment',
             ],
+            [
+                'name' => 'Subscription',
+                'code' => 'subscription',
+            ],
         ]);
     }
 }
