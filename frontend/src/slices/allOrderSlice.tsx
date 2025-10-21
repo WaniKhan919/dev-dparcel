@@ -4,6 +4,11 @@ import { ApiHelper } from "../utils/ApiHelper";
 interface DataType {
   page?: number;
   per_page?: number;
+  request_number?:string
+  status?:string
+  ship_from?:string
+  ship_to?:string
+  date?:string
 }
 interface OrderRequestState {
   data: any[];
@@ -21,9 +26,29 @@ const initialState: OrderRequestState = {
 
 export const fetchAllOrders = createAsyncThunk(
   'allOrderRequest/fetch',
-  async ({ page = 1, per_page = 10 }:DataType, { rejectWithValue }) => {
+  async ({ 
+      page = 1, 
+      per_page = 10,
+      request_number,
+      status,
+      ship_from,
+      ship_to,
+      date,
+    }:DataType, { rejectWithValue }) => {
     try {
-      const response = await ApiHelper('GET', `/order/all/orders?page=${page}&per_page=${per_page}`);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        per_page: per_page.toString(),
+      });
+
+      if (request_number) params.append('request_number', request_number);
+      if (status) params.append('status', status);
+      if (ship_from) params.append('ship_from', ship_from);
+      if (ship_to) params.append('ship_to', ship_to);
+      if (date) params.append('date', date);
+
+      const response = await ApiHelper('GET', `/order/all/orders?${params.toString()}`);
+      
       if (response.status === 200 && response.data?.data) {
         return response.data;
       } else {

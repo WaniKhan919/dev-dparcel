@@ -56,6 +56,9 @@ export default function CardToast({ notifications }: CardToastProps) {
     }
     setConfirmModal({ open: false, id: null, status: null });
   };
+  const handleViewDetails = (id:any) => {
+    
+  };
 
   return (
     <>
@@ -99,10 +102,20 @@ export default function CardToast({ notifications }: CardToastProps) {
                   <b>To: </b> {notification.ship_to}
                 </span>
               </div>
-              <div className="text-xl font-semibold text-blue-600 mt-4">
+             <div className="flex items-center justify-between mt-4">
+              <div className="text-xl font-semibold text-blue-600">
                 {notification.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"} ${" "}
                 {notification.total_price}
               </div>
+
+              <button
+                onClick={() => handleViewDetails(notification.id)}
+                className="text-sm text-blue-600 font-medium underline hover:text-blue-800"
+              >
+                View Details
+              </button>
+            </div>
+
 
               {/* Buttons */}
               <div className="flex mt-3">

@@ -65,4 +65,8 @@ class Order extends Model
     {
         return $this->hasMany(OrderTracking::class);
     }
+    public function orderStatus()
+    {
+        return $this->belongsTo(OrderStatus::class,'status_id','id');
+    }
 }

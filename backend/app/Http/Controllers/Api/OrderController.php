@@ -72,35 +72,68 @@ class OrderController extends Controller
         }
     }
 
-    public function allOrders(Request $request)
-    {
-        try {
-            $perPage = (int) $request->get('per_page', 10);
+public function allOrders(Request $request)
+{
+    try {
+        $perPage = (int) $request->get('per_page', 10);
 
-            $orders = Order::with(['orderDetails.product', 'orderOffer.shipper', 'user'])
-                ->orderBy('id', 'desc')
-                ->paginate($perPage);
+        // ✅ Capture filters individually
+        $requestNumber = $request->get('request_number');
+        $status = $request->get('status');
+        $shipFrom = $request->get('ship_from');
+        $shipTo = $request->get('ship_to');
+        $date = $request->get('date'); // Expected format: YYYY-MM-DD
 
-            return response()->json([
-                'success' => true,
-                'data'    => $orders->items(), // actual records
-                'meta'    => [
-                    'current_page' => $orders->currentPage(),
-                    'last_page'    => $orders->lastPage(),
-                    'per_page'     => $orders->perPage(),
-                    'total'        => $orders->total(),
-                    'next_page_url' => $orders->nextPageUrl(),
-                    'prev_page_url' => $orders->previousPageUrl(),
-                ],
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get orders',
-                'error'   => $e->getMessage()
-            ], 500);
+        $query = Order::with(['orderDetails.product', 'orderOffer.shipper', 'user','orderStatus'])
+            ->orderBy('id', 'desc');
+
+        // ✅ Apply filters only if present
+        if (!empty($requestNumber)) {
+            $query->where('request_number', 'like', "%{$requestNumber}%");
         }
+
+        if (!empty($status)) {
+            $query->where('status', $status);
+        }
+
+        if (!empty($shipFrom)) {
+            $query->where('ship_from', $shipFrom);
+        }
+
+        if (!empty($shipTo)) {
+            $query->where('ship_to', $shipTo);
+        }
+
+        if (!empty($date)) {
+            $query->whereDate('created_at', $date);
+        }
+
+        $orders = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $orders->items(),
+            'meta'    => [
+                'current_page'   => $orders->currentPage(),
+                'last_page'      => $orders->lastPage(),
+                'per_page'       => $orders->perPage(),
+                'total'          => $orders->total(),
+                'next_page_url'  => $orders->nextPageUrl(),
+                'prev_page_url'  => $orders->previousPageUrl(),
+            ],
+        ], 200);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to get orders',
+            'error'   => $e->getMessage()
+        ], 500);
     }
+}
+
+
+
     public function store(Request $request)
     {
         DB::beginTransaction();
@@ -205,8 +238,8 @@ class OrderController extends Controller
                 'message' => 'Your order request # ' . $order->request_number . ' has been placed successfully.',
             ]);
             $shippers = User::whereHas('roles', function ($query) {
-                    $query->where('name', 'shipper');
-                })->get();
+                $query->where('name', 'shipper');
+            })->get();
             foreach ($shippers as $shipper) {
                 NotificationService::createNotification([
                     'user_id' => $shipper->id,
@@ -389,10 +422,10 @@ class OrderController extends Controller
     {
         try {
             $order = Order::with([
-                        'orderDetails.product',
-                        'orderServices.service',
-                        'orderTrackings.status'
-                    ])->findOrFail($id);
+                'orderDetails.product',
+                'orderServices.service',
+                'orderTrackings.status'
+            ])->findOrFail($id);
             if (!$order) {
                 return response()->json([
                     'success' => false,

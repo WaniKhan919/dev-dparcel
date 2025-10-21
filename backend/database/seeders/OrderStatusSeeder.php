@@ -18,17 +18,17 @@ class OrderStatusSeeder extends Seeder
 
         try {
             $statuses = [
-                ['id' => 1, 'name' => 'pending'],             // Order created, waiting for admin or confirmation
-                ['id' => 2, 'name' => 'awaiting_payment'],    // Waiting for user payment
-                ['id' => 3, 'name' => 'paid'],                // Payment received
-                ['id' => 4, 'name' => 'purchased'],           // Admin purchased product (Buy for Me only)
-                ['id' => 5, 'name' => 'in_warehouse'],        // Package arrived at warehouse
-                ['id' => 6, 'name' => 'packed'],              // Order packed and ready for shipment
-                ['id' => 7, 'name' => 'shipped'],             // Shipped out from warehouse
-                ['id' => 8, 'name' => 'in_transit'],          // Package on the way to destination
-                ['id' => 9, 'name' => 'delivered'],           // Successfully delivered
-                ['id' => 10, 'name' => 'cancelled'],          // Cancelled by user/admin
-                ['id' => 11, 'name' => 'returned'],           // Returned to warehouse/sender
+                ['id' => 1, 'name' => 'Pending'],             // Order created, waiting for admin or confirmation
+                ['id' => 2, 'name' => 'Awaiting Payment'],    // Waiting for user payment
+                ['id' => 3, 'name' => 'Paid'],                // Payment received
+                ['id' => 4, 'name' => 'Purchased'],           // Admin purchased product (Buy for Me only)
+                ['id' => 5, 'name' => 'In Warehouse'],        // Package arrived at warehouse
+                ['id' => 6, 'name' => 'Packed'],              // Order packed and ready for shipment
+                ['id' => 7, 'name' => 'Shipped'],             // Shipped out from warehouse
+                ['id' => 8, 'name' => 'In Transit'],          // Package on the way to destination
+                ['id' => 9, 'name' => 'Delivered'],           // Successfully delivered
+                ['id' => 10, 'name' => 'Cancelled'],          // Cancelled by user/admin
+                ['id' => 11, 'name' => 'Returned'],           // Returned to warehouse/sender
             ];
 
             DB::table('order_statuses')->upsert($statuses, ['id'], ['name']);
