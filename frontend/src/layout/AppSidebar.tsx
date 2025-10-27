@@ -17,6 +17,7 @@ import {
   DollarLineIcon,
   TaskIcon,
   FolderIcon,
+  SettingsIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
@@ -79,6 +80,14 @@ const navItems: NavItem[] = [
     icon: <FolderIcon />,
     name: "Shipper Levels",
     path: "/shipper/levels",
+    roles: ["admin"],
+  },
+  {
+    icon: <SettingsIcon />,
+    name: "Setting",
+    subItems: [
+      { name: "Payment Setting", path: "/payment/setting" },
+    ],
     roles: ["admin"],
   },
   {

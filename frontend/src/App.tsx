@@ -37,6 +37,7 @@ import ShipperPayments from "./pages/Payments/ShipperPayments";
 import Services from "./pages/Services/Services";
 import ShipperLevels from "./pages/ShipperLevel/ShipperLevels";
 import Subscription from "./pages/Subscription/Subscription";
+import PaymentsSettings from "./pages/Settings/Payments/PaymentsSettings";
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/payments" element={<AllPayments />} />
             <Route path="/services" element={<Services />} />
             <Route path="/shipper/levels" element={<ShipperLevels />} />
+            <Route path="/payment/setting" element={<PaymentsSettings />} />
 
             {/* Shopper Routes */}
             <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />

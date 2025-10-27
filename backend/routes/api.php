@@ -12,6 +12,7 @@ use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\PaymentSettingController;
 use App\Http\Controllers\Api\Shipper\PaymentController as ShipperPaymentController;
 use App\Http\Controllers\Api\StripeController;
 use App\Http\Controllers\Api\ShipperController;
@@ -48,6 +49,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/show{id}', [ShipperLevelController::class, 'show']);
             Route::put('/update{id}', [ShipperLevelController::class, 'update']);
             Route::delete('/destroy{id}', [ShipperLevelController::class, 'destroy']);
+        });
+        
+        Route::prefix('/settings')->group(function () {
+            Route::get('/payment', [PaymentSettingController::class, 'index']);
+            Route::post('/payment', [PaymentSettingController::class, 'store']);
+            Route::get('/payment/{id}', [PaymentSettingController::class, 'show']);
+            Route::put('/payment/{id}', [PaymentSettingController::class, 'update']);
+            Route::delete('/payment/{id}', [PaymentSettingController::class, 'destroy']);
         });
     });
     Route::get('/shipping-types', [ShipperLevelController::class, 'getShippingTypes']);
