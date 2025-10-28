@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\ShipperLevelController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PaymentPlanSettingController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
@@ -142,6 +143,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index');
         Route::post('/{id}/read', 'markAsRead');
         Route::post('/read-all', 'markAllAsRead');
+    });
+    Route::prefix('plans')
+    ->controller(PaymentPlanSettingController::class)
+    ->group(function () {
+        Route::get('/', 'getPaymentPlans');
     });
 
 

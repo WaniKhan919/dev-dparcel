@@ -15,6 +15,7 @@ import { Modal } from "../../components/ui/modal";
 import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
 import { fetchServices } from "../../slices/servicesSlice";
+import { fetchPaymentPlan } from "../../slices/getPaymentSettingForRolesSlice";
 
 const steps = ["Shipping Info", "Shipping Address", "Product Details", "Additional Services"];
 
@@ -83,11 +84,10 @@ const productSchema = yup.object().shape({
     .required("Weight is required"),
 });
 
-
-
 export default function Order() {
   const dispatch = useDispatch<AppDispatch>();
   const { services, servicesLoading } = useSelector((state: any) => state.services);
+  const { data: paymentPlanData, loading: planLoading, error } = useSelector((state: any) => state.paymentPlan);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [productRequired, setProductRequired] = useState(false);
@@ -243,11 +243,18 @@ export default function Order() {
     }
   };
 
+  const handleServiceChange = (option: string, onChange: any) => {
+    onChange(option);
+    const shippingTypeId = option === "Buy For Me" ? 2 : 1;
+    dispatch(fetchPaymentPlan({ shipping_types_id: shippingTypeId }));
+  };
 
   const countries = ["USA", "Canada", "UK", "Germany", "Pakistan", "India"];
+
   useEffect(() => {
     dispatch(fetchServices());
   }, [dispatch]);
+
   return (
     <>
       <PageMeta title="Delivering Parcel | Request" description="" />
@@ -287,7 +294,7 @@ export default function Order() {
           {currentStep === 0 && (
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800">Service Type</h2>
-              <Controller
+              {/* <Controller
                 control={control}
                 name="serviceType"
                 render={({ field }) => (
@@ -306,6 +313,38 @@ export default function Order() {
                           value={option}
                           checked={field.value === option}
                           onChange={() => field.onChange(option)}
+                          className="hidden"
+                        />
+                        <span className="font-medium text-gray-700">{option}</span>
+                        {field.value === option && (
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white">
+                            ✓
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              /> */}
+              <Controller
+                control={control}
+                name="serviceType"
+                render={({ field }) => (
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {["Buy For Me", "Ship For Me"].map((option) => (
+                      <label
+                        key={option}
+                        className={`flex-1 flex items-center justify-between cursor-pointer rounded-xl border p-5 transition 
+                          ${field.value === option
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-300 bg-white hover:bg-gray-50"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          value={option}
+                          checked={field.value === option}
+                          onChange={() => handleServiceChange(option, field.onChange)}
                           className="hidden"
                         />
                         <span className="font-medium text-gray-700">{option}</span>
@@ -472,8 +511,8 @@ export default function Order() {
               <h2 className="text-xl font-semibold text-gray-800">Additional Services</h2>
 
               {/* Watch form data */}
-              {(() => {
-                const watchedValues = watch(); // <-- Add this line
+              {/* {(() => {
+                const watchedValues = watch(); 
 
                 const productTotal = products.reduce(
                   (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
@@ -497,7 +536,6 @@ export default function Order() {
 
                 return (
                   <>
-                    {/* Services Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {services
                         ?.filter((item: any) => item.status === 1)
@@ -507,7 +545,6 @@ export default function Order() {
 
                           return (
                             <div key={item.id} className="relative group">
-                              {/* Tooltip */}
                               <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-xs bg-gray-800 text-white text-sm rounded-lg px-3 py-2 shadow-lg z-10">
                                 {item.description}
                               </div>
@@ -543,7 +580,6 @@ export default function Order() {
                         })}
                     </div>
 
-                    {/* Totals Section */}
                     <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div>
                         <p className="text-gray-800 font-semibold text-lg">Totals</p>
@@ -561,7 +597,6 @@ export default function Order() {
                       </div>
                     </div>
 
-                    {/* Terms Checkbox */}
                     <div className="flex items-start gap-3">
                       <Controller
                         control={control}
@@ -589,7 +624,132 @@ export default function Order() {
                     )}
                   </>
                 );
+              })()} */}
+              {(() => {
+                const watchedValues = watch();
+
+                // Product total (already exists)
+                const productTotal = products.reduce(
+                  (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
+                  0
+                );
+
+                // Services total (already exists)
+                const activeServices = services?.filter((item: any) => item.status === 1) || [];
+                const selectedServices = activeServices.filter((item: any) => {
+                  const fieldName = item.title.replace(/\s+/g, "_").toLowerCase();
+                  const isRequired = item.is_required === 1;
+                  return isRequired || watchedValues[fieldName];
+                });
+
+                const serviceTotal = selectedServices.reduce(
+                  (sum: number, s: { price?: string }) => sum + Number(s.price || 0),
+                  0
+                );
+
+                // ✅ Calculate payment plan total
+                const paymentPlanTotal = paymentPlanData?.reduce((sum: number, plan: any) => {
+                  const amount = Number(plan.amount);
+                  if (plan.type === "percent") {
+                    return sum + (productTotal * amount) / 100;
+                  } else {
+                    return sum + amount;
+                  }
+                }, 0) || 0;
+
+                // ✅ Grand total = products + services + payment plans
+                const grandTotal = productTotal + serviceTotal + paymentPlanTotal;
+
+                return (
+                  <>
+                    {/* Services Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {services?.filter((item: any) => item.status === 1).map((item: any) => {
+                        const inputName = item.title.replace(/\s+/g, "_").toLowerCase();
+                        const isRequired = item.is_required === 1;
+
+                        return (
+                          <div key={item.id} className="relative group">
+                            {/* Tooltip */}
+                            <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-xs bg-gray-800 text-white text-sm rounded-lg px-3 py-2 shadow-lg z-10">
+                              {item.description}
+                            </div>
+
+                            <label
+                              className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md transition ${isRequired ? "bg-gray-50 cursor-not-allowed" : ""
+                                }`}
+                            >
+                              <input
+                                type="checkbox"
+                                {...register(inputName)}
+                                className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                                defaultChecked={isRequired}
+                                disabled={isRequired}
+                                required={isRequired}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium text-gray-700">
+                                  {item.title}{" "}
+                                  {isRequired && (
+                                    <span className="text-red-500 text-sm ml-1">*</span>
+                                  )}
+                                </span>
+                                {item.price && (
+                                  <span className="text-sm text-gray-500">${item.price}</span>
+                                )}
+                              </div>
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* ✅ Payment Plan Display */}
+                    {paymentPlanData?.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Payment Plans</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {paymentPlanData.map((plan: any) => (
+                            <div
+                              key={plan.id}
+                              className="p-4 border rounded-lg bg-white shadow-sm flex justify-between"
+                            >
+                              <span className="font-medium text-gray-700">{plan.title}</span>
+                              <span className="text-gray-600">
+                                {plan.type === "percent"
+                                  ? `${plan.amount}%`
+                                  : `$${plan.amount}`}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Totals Section */}
+                    <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                      <div>
+                        <p className="text-gray-800 font-semibold text-lg">Totals</p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="text-gray-700">
+                          <span className="font-medium">Products Total:</span> ${productTotal.toFixed(2)}
+                        </div>
+                        <div className="text-gray-700">
+                          <span className="font-medium">Services Total:</span> ${serviceTotal.toFixed(2)}
+                        </div>
+                        <div className="text-gray-700">
+                          <span className="font-medium">Payment Plans:</span> ${paymentPlanTotal.toFixed(2)}
+                        </div>
+                        <div className="text-gray-800 font-semibold">
+                          <span className="font-medium">Grand Total:</span> ${grandTotal.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
               })()}
+
             </div>
           )}
 

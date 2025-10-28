@@ -43,8 +43,8 @@ class PaymentSettingController extends Controller
             $validated = $request->validate([
                 'role_id' => 'required|exists:roles,id',
                 'shipping_types_id' => 'nullable|exists:shipping_types,id',
-                'key' => 'required|string|max:255',
-                'value' => 'required|numeric|min:0',
+                'title' => 'required|string|max:255',
+                'amount' => 'required|numeric|min:0',
                 'type' => 'required|in:percent,fixed',
                 'description' => 'nullable|string',
                 'active' => 'required|boolean',
@@ -101,8 +101,8 @@ class PaymentSettingController extends Controller
             $validated = $request->validate([
                 'role_id' => 'required|exists:roles,id',
                 'shipping_types_id' => 'nullable|exists:shipping_types,id',
-                'key' => 'required|string|max:255',
-                'value' => 'required|numeric|min:0',
+                'title' => 'required|string|max:255',
+                'amount' => 'required|numeric|min:0',
                 'type' => 'required|in:percent,fixed',
                 'description' => 'nullable|string',
                 'active' => 'required|boolean',

@@ -18,13 +18,15 @@ import { PencilIcon, TrashBinIcon } from "../../../icons";
 import { AppDispatch } from "../../../store";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchShippingType } from "../../../slices/shippingTypeSlice";
+import { fetchRoles } from "../../../slices/roleSlice";
+import { fetchPaymentSetting } from "../../../slices/paymentSettingSlice";
 
 export interface PaymentSettingFormData {
   id: number;
   role_id: number;
   shipping_types_id?: number | null;
-  key: string;
-  value: number;
+  title: string;
+  amount: number;
   type: string;
   description?: string;
   active: boolean;
@@ -33,8 +35,8 @@ export interface PaymentSettingFormData {
 const schema = yup.object({
   role_id: yup.number().typeError("Role is required").required("Role is required"),
   shipping_types_id: yup.number().nullable(),
-  key: yup.string().required("Key is required"),
-  value: yup.number().typeError("Value must be a number").required("Value is required"),
+  title: yup.string().required("Title is required"),
+  amount: yup.number().typeError("Amount must be a number").required("Amount is required"),
   type: yup.string().oneOf(["percent", "fixed"]).required("Type is required"),
   description: yup.string().nullable(),
   active: yup.boolean().required("Status is required"),
@@ -43,15 +45,18 @@ const schema = yup.object({
 export default function PaymentSettings() {
   
   const dispatch = useDispatch<AppDispatch>();
+  const { data:paymentSetting, meta, loading:paymentLoading } = useSelector((state: any) => state.paymentSetting);
   const { shippingType, shippingTypeLoading, error } = useSelector((state: any) => state.shippingType);
+  const { roles, loadingRole, errorRole } = useSelector((state: any) => state.roles);
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [settings, setSettings] = useState<PaymentSettingFormData[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [roles, setRoles] = useState<any[]>([]);
+
+  
+  const [page, setPage] = useState(1);
 
   const {
     register,
@@ -63,45 +68,15 @@ export default function PaymentSettings() {
     resolver: yupResolver(schema) as any,
   });
 
-  // ✅ Fetch roles
-  const fetchRoles = async () => {
-    try {
-      const res = await ApiHelper("GET", "/roles");
-      if (res.status === 200) {
-        const formatted = res.data.data.map((r: any) => ({
-          value: String(r.id),
-          text: r.name,
-        }));
-        setRoles(formatted);
-      }
-    } catch {
-      toast.error("Failed to load roles ❌");
-    }
-  };
-
-  // ✅ Fetch all payment settings
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      const res = await ApiHelper("GET", "/admin/settings/payment");
-      if (res.status === 200) {
-        setSettings(res.data.data.data || []); // since pagination used
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to load settings ❌");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSettings();
-    fetchRoles();
-  }, []);
 
   useEffect(() => {
     dispatch(fetchShippingType());
+    dispatch(fetchRoles());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchPaymentSetting({ page, per_page: 10 }));
+  }, [dispatch, page]);
 
   // ✅ Submit handler
   const onSubmit = async (data: PaymentSettingFormData) => {
@@ -115,7 +90,10 @@ export default function PaymentSettings() {
       const res = await ApiHelper(method, endpoint, data);
       if (res.status === 200 || res.status === 201) {
         toast.success(res.data.message || "Saved successfully ✅");
-        fetchSettings();
+        dispatch(fetchPaymentSetting({ page, per_page: 12 }));
+        reset();
+        setEditMode(false);
+        setSelectedId(null);
         onClose();
       } else {
         toast.error(res.data.message || "Failed to save ❌");
@@ -129,7 +107,7 @@ export default function PaymentSettings() {
 
   // ✅ Edit
   const editSetting = (id: number) => {
-    const setting = settings.find((s) => s.id === id);
+    const setting = paymentSetting.find((s:any) => s.id === id);
     if (setting) {
       reset(setting);
       setSelectedId(id);
@@ -146,7 +124,7 @@ export default function PaymentSettings() {
       const res = await ApiHelper("DELETE", `/admin/settings/payment/${deleteId}`);
       if (res.status === 200) {
         toast.success(res.data.message || "Deleted successfully ✅");
-        fetchSettings();
+        dispatch(fetchPaymentSetting({ page, per_page: 12 }));
       } else {
         toast.error(res.data.message || "Delete failed ❌");
       }
@@ -167,8 +145,8 @@ export default function PaymentSettings() {
   };
 
   const columns: any = [
-    { key: "key", header: "Key" },
-    { key: "value", header: "Value" },
+    { key: "title", header: "Title" },
+    { key: "amount", header: "Amount" },
     { key: "type", header: "Type" },
     { key: "description", header: "Description" },
     {
@@ -217,7 +195,14 @@ export default function PaymentSettings() {
               Add Setting
             </Button>
           </div>
-          <DParcelTable columns={columns} data={settings} loading={loading} />
+          <DParcelTable 
+            columns={columns} 
+            data={paymentSetting}
+            rowsPerPage={12}
+            meta={meta}
+            loading={paymentLoading}
+            onPageChange={(newPage:number) => setPage(newPage)}
+          />
         </ComponentCard>
 
         {/* Add/Edit Modal */}
@@ -232,9 +217,11 @@ export default function PaymentSettings() {
                   <Label>Role *</Label>
                   <select {...register("role_id", { valueAsNumber: true })} className="w-full border p-2 rounded-md">
                     <option value="">Select Role</option>
-                    {roles.map((r) => (
-                      <option key={r.value} value={r.value}>
-                        {r.text}
+                    {roles
+                    .filter((role: any) => role.name !== "Admin")
+                    .map((record: any) => (
+                      <option key={record.id} value={record.id}>
+                        {record.name}
                       </option>
                     ))}
                   </select>
@@ -256,15 +243,15 @@ export default function PaymentSettings() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Key *</Label>
-                  <Input placeholder="e.g. shipper_service_fee" {...register("key")} />
-                  {errors.key && <p className="text-red-500 text-sm">{errors.key.message}</p>}
+                  <Label>Title *</Label>
+                  <Input placeholder="" {...register("title")} />
+                  {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
                 </div>
 
                 <div>
-                  <Label>Value *</Label>
-                  <Input type="number" step="0.01" placeholder="Enter value" {...register("value")} />
-                  {errors.value && <p className="text-red-500 text-sm">{errors.value.message}</p>}
+                  <Label>Amount *</Label>
+                  <Input type="number" step="0.01" placeholder="Enter amount" {...register("amount")} />
+                  {errors.amount && <p className="text-red-500 text-sm">{errors.amount.message}</p>}
                 </div>
               </div>
 

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('role_id')->constrained()->onDelete('cascade');
             $table->foreignId('shipping_types_id')->nullable()->constrained()->onDelete('cascade'); //buy_for_me or ship_for_me
-            $table->string('key');
-            $table->decimal('value', 10, 2)->default(0);
+            $table->string('title');
+            $table->decimal('amount', 10, 2)->default(0);
             $table->enum('type', ['percent', 'fixed'])->default('percent');
             $table->text('description')->nullable();
             $table->boolean('active')->default(true);

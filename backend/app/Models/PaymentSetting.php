@@ -12,8 +12,8 @@ class PaymentSetting extends Model
     protected $fillable = [
         'role_id',
         'shipping_types_id',
-        'key',
-        'value',
+        'title',
+        'amount',
         'type',
         'description',
         'active',

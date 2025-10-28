@@ -16,6 +16,8 @@ import allPaymentReducer from "./slices/allPaymentSlice";
 import notificationReducer from "./slices/notificationSlice";
 import messageNotificationReducer from "./slices/messgeNotificationSlice";
 import shippingTypeReducer from "./slices/shippingTypeSlice";
+import paymentSettingReducer from "./slices/paymentSettingSlice";
+import paymentPlanReducer from "./slices/getPaymentSettingForRolesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +38,8 @@ export const store = configureStore({
     notification:notificationReducer,
     messageNotification:messageNotificationReducer,
     shippingType:shippingTypeReducer,
+    paymentSetting:paymentSettingReducer,
+    paymentPlan:paymentPlanReducer,
   },
 });
 

@@ -67,7 +67,7 @@ export default function ViewAllRequests() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    dispatch(fetchAllOrders({ page, per_page: 10, ...filters }));
+    dispatch(fetchAllOrders({ page, per_page: 12, ...filters }));
   }, [dispatch, page, filters]);
 
   const openMessage = (record: any) => {
