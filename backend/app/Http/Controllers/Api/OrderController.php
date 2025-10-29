@@ -17,6 +17,7 @@ use App\Models\Attachment;
 use App\Models\OrderOffer;
 use App\Models\OrderService;
 use App\Models\OrderStatus;
+use App\Models\PaymentSetting;
 use App\Models\Service;
 use App\Models\User;
 
@@ -35,12 +36,12 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => $orders->items(), // actual records
-                'meta'    => [
+                'data' => $orders->items(), // actual records
+                'meta' => [
                     'current_page' => $orders->currentPage(),
-                    'last_page'    => $orders->lastPage(),
-                    'per_page'     => $orders->perPage(),
-                    'total'        => $orders->total(),
+                    'last_page' => $orders->lastPage(),
+                    'per_page' => $orders->perPage(),
+                    'total' => $orders->total(),
                     'next_page_url' => $orders->nextPageUrl(),
                     'prev_page_url' => $orders->previousPageUrl(),
                 ],
@@ -49,7 +50,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get orders',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -61,76 +62,76 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => $order_statuses,
+                'data' => $order_statuses,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get orders statuses',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
 
-public function allOrders(Request $request)
-{
-    try {
-        $perPage = (int) $request->get('per_page', 10);
+    public function allOrders(Request $request)
+    {
+        try {
+            $perPage = (int) $request->get('per_page', 10);
 
-        // ✅ Capture filters individually
-        $requestNumber = $request->get('request_number');
-        $status = $request->get('status');
-        $shipFrom = $request->get('ship_from');
-        $shipTo = $request->get('ship_to');
-        $date = $request->get('date'); // Expected format: YYYY-MM-DD
+            // ✅ Capture filters individually
+            $requestNumber = $request->get('request_number');
+            $status = $request->get('status');
+            $shipFrom = $request->get('ship_from');
+            $shipTo = $request->get('ship_to');
+            $date = $request->get('date'); // Expected format: YYYY-MM-DD
 
-        $query = Order::with(['orderDetails.product', 'orderOffer.shipper', 'user','orderStatus'])
-            ->orderBy('id', 'desc');
+            $query = Order::with(['orderDetails.product', 'orderOffer.shipper', 'user', 'orderStatus'])
+                ->orderBy('id', 'desc');
 
-        // ✅ Apply filters only if present
-        if (!empty($requestNumber)) {
-            $query->where('request_number', 'like', "%{$requestNumber}%");
+            // ✅ Apply filters only if present
+            if (!empty($requestNumber)) {
+                $query->where('request_number', 'like', "%{$requestNumber}%");
+            }
+
+            if (!empty($status)) {
+                $query->where('status', $status);
+            }
+
+            if (!empty($shipFrom)) {
+                $query->where('ship_from', $shipFrom);
+            }
+
+            if (!empty($shipTo)) {
+                $query->where('ship_to', $shipTo);
+            }
+
+            if (!empty($date)) {
+                $query->whereDate('created_at', $date);
+            }
+
+            $orders = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders->items(),
+                'meta' => [
+                    'current_page' => $orders->currentPage(),
+                    'last_page' => $orders->lastPage(),
+                    'per_page' => $orders->perPage(),
+                    'total' => $orders->total(),
+                    'next_page_url' => $orders->nextPageUrl(),
+                    'prev_page_url' => $orders->previousPageUrl(),
+                ],
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get orders',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        if (!empty($status)) {
-            $query->where('status', $status);
-        }
-
-        if (!empty($shipFrom)) {
-            $query->where('ship_from', $shipFrom);
-        }
-
-        if (!empty($shipTo)) {
-            $query->where('ship_to', $shipTo);
-        }
-
-        if (!empty($date)) {
-            $query->whereDate('created_at', $date);
-        }
-
-        $orders = $query->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $orders->items(),
-            'meta'    => [
-                'current_page'   => $orders->currentPage(),
-                'last_page'      => $orders->lastPage(),
-                'per_page'       => $orders->perPage(),
-                'total'          => $orders->total(),
-                'next_page_url'  => $orders->nextPageUrl(),
-                'prev_page_url'  => $orders->previousPageUrl(),
-            ],
-        ], 200);
-
-    } catch (Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to get orders',
-            'error'   => $e->getMessage()
-        ], 500);
     }
-}
 
 
 
@@ -187,7 +188,7 @@ public function allOrders(Request $request)
 
                 $linePrice = $p['price'] * $p['quantity'];
                 $lineWeight = ($p['weight'] ?? 0) * $p['quantity'];
-
+                
                 $totalPrice += $linePrice;
                 $totalWeight += $lineWeight;
 
@@ -223,10 +224,30 @@ public function allOrders(Request $request)
                 'status_id' => 1, // pending
                 'tracking_number' => $trackingNumber,
             ]);
+        
+            $user = auth()->user();
+            $role = $user->roles()->first();
+            if($validated['service_type'] == "ship_for_me"){
+                $type = 2;
+            }else{
+                $type = 1;
+            }
+            $settings = PaymentSetting::where('role_id', $role->id)->where('active', true)->where('shipping_types_id', $type)->get();
+
+            $additionalAmount = 0;
+            foreach ($settings as $setting) {
+                if ($setting->type === 'percent') {
+                    $additionalAmount += ($totalPrice * $setting->amount) / 100;
+                } elseif ($setting->type === 'fixed') {
+                    $additionalAmount += $setting->amount;
+                }
+            }
+
+            $finalPrice = $totalPrice + $additionalAmount;
 
             // Update totals
             $order->update([
-                'total_price' => $totalPrice,
+                'total_price' => $finalPrice,
                 'total_aprox_weight' => $totalWeight,
             ]);
             NotificationService::createNotification([
@@ -278,13 +299,13 @@ public function allOrders(Request $request)
                 ->firstOrFail();
             return response()->json([
                 'success' => true,
-                'data'    => $order
+                'data' => $order
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get shipper offers',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -329,13 +350,13 @@ public function allOrders(Request $request)
             return response()->json([
                 'success' => true,
                 'message' => "Offer has been {$request->status} successfully.",
-                'data'    => $offer,
+                'data' => $offer,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update offer status',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -343,9 +364,9 @@ public function allOrders(Request $request)
     public function updateStatus(Request $request)
     {
         $request->validate([
-            'order_id'   => 'required|exists:orders,id',
-            'status_id'  => 'required|exists:order_statuses,id',
-            'remarks'    => 'nullable|string',
+            'order_id' => 'required|exists:orders,id',
+            'status_id' => 'required|exists:order_statuses,id',
+            'remarks' => 'nullable|string',
             'tracking_number' => 'nullable|string',
             'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
         ]);
@@ -355,9 +376,9 @@ public function allOrders(Request $request)
         try {
             // 1. Create order tracking entry
             $tracking = OrderTracking::create([
-                'order_id'        => $request->order_id,
-                'status_id'       => $request->status_id,
-                'remarks'         => $request->remarks,
+                'order_id' => $request->order_id,
+                'status_id' => $request->status_id,
+                'remarks' => $request->remarks,
                 'tracking_number' => $request->tracking_number,
             ]);
 
@@ -371,9 +392,9 @@ public function allOrders(Request $request)
 
                     Attachment::create([
                         'related_id' => $tracking->id,
-                        'type'       => 1,
-                        'file_path'  => $path,
-                        'file_type'  => $file->getClientMimeType(),
+                        'type' => 1,
+                        'file_path' => $path,
+                        'file_type' => $file->getClientMimeType(),
                     ]);
                 }
             }
@@ -383,14 +404,14 @@ public function allOrders(Request $request)
             return response()->json([
                 'success' => true,
                 'message' => 'Order status updated successfully',
-                'data'    => $tracking->load('attachments'),
+                'data' => $tracking->load('attachments'),
             ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update order status',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -403,18 +424,18 @@ public function allOrders(Request $request)
                 return response()->json([
                     'success' => false,
                     'message' => 'Order tracking not found',
-                    'data'    => null
+                    'data' => null
                 ], 404);
             }
             return response()->json([
                 'success' => true,
-                'data'    => $tracking,
+                'data' => $tracking,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get order tracking',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -430,18 +451,18 @@ public function allOrders(Request $request)
                 return response()->json([
                     'success' => false,
                     'message' => 'Order not found',
-                    'data'    => null
+                    'data' => null
                 ], 404);
             }
             return response()->json([
                 'success' => true,
-                'data'    => $order,
+                'data' => $order,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get order',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }

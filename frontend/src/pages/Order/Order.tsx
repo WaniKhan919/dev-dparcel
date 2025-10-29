@@ -245,7 +245,7 @@ export default function Order() {
 
   const handleServiceChange = (option: string, onChange: any) => {
     onChange(option);
-    const shippingTypeId = option === "Buy For Me" ? 2 : 1;
+    const shippingTypeId = option === "Buy For Me" ? 1 : 2;
     dispatch(fetchPaymentPlan({ shipping_types_id: shippingTypeId }));
   };
 
@@ -746,6 +746,31 @@ export default function Order() {
                         </div>
                       </div>
                     </div>
+                    <div className="flex items-start gap-3">
+                      <Controller
+                        control={control}
+                        name="terms"
+                        render={({ field }) => (
+                          <Checkbox
+                            className="w-5 h-5 mt-1"
+                            checked={field.value}
+                            onChange={() => field.onChange(!field.value)}
+                          />
+                        )}
+                      />
+                      <p className="text-sm text-gray-600">
+                        By clicking the tick button, I hereby agree and consent to the{" "}
+                        <a href="#" className="text-blue-500 underline">
+                          terms of business
+                        </a>
+                        , its policies, and the privacy policy.
+                      </p>
+                    </div>
+                    {errors.terms && (
+                      <p className="text-red-500 text-sm">
+                        {errors.terms?.message as string}
+                      </p>
+                    )}
                   </>
                 );
               })()}
