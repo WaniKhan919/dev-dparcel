@@ -28,6 +28,7 @@ class User extends Authenticatable
         'verification_code',
         'verification_code_expires_at',
         'is_verified',
+        'city_id'
     ];
 
     /**
@@ -89,6 +90,34 @@ class User extends Authenticatable
 
         $allOrders = collect();
 
+        // foreach ($subscriptions as $subscription) {
+        //     $level = $subscription->level;
+
+        //     if (!$level) continue; // safeguard
+
+        //     // Get allowed service slugs
+        //     $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
+
+        //     if (!empty($allowedServices)) {
+        //         $orders = Order::with([
+        //             'orderDetails.product',
+        //             'user',
+        //             'shipFromCountry',
+        //             'shipFromState',
+        //             'shipFromCity',
+        //             'shipToCountry',
+        //             'shipToState',
+        //             'shipToCity'
+        //         ])
+        //             ->whereNotIn('id', $excludedOrders)
+        //             ->whereIn('service_type', $allowedServices)
+        //             ->orderBy('id', 'desc')
+        //             ->get();
+
+        //         $allOrders = $allOrders->merge($orders);
+        //     }
+        // }
+
         foreach ($subscriptions as $subscription) {
             $level = $subscription->level;
 
@@ -98,9 +127,27 @@ class User extends Authenticatable
             $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
 
             if (!empty($allowedServices)) {
-                $orders = Order::with(['orderDetails.product', 'user'])
+                // Get the user's state and city
+                $userStateId = $this->city?->state_id; // Assuming relation user->city->state_id
+                $userCityId = $this->city_id;
+
+                $orders = Order::with([
+                    'orderDetails.product',
+                    'user',
+                    'shipFromCountry',
+                    'shipFromState',
+                    'shipFromCity',
+                    'shipToCountry',
+                    'shipToState',
+                    'shipToCity'
+                ])
                     ->whereNotIn('id', $excludedOrders)
                     ->whereIn('service_type', $allowedServices)
+                    ->where(function ($query) use ($userStateId, $userCityId) {
+                        // Orders must match the same state
+                        $query->where('ship_from_state_id', $userStateId)
+                            ->orWhere('ship_to_state_id', $userStateId);
+                    })
                     ->orderBy('id', 'desc')
                     ->get();
 
@@ -110,7 +157,36 @@ class User extends Authenticatable
 
         return [
             'subscriptions' => $subscriptions,
-            'orders' => $allOrders->unique('id')->values(),
+            'orders' => $allOrders->unique('id')->values()->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'user_id' => $order->user_id,
+                    'service_type' => $order->service_type,
+                    'total_aprox_weight' => $order->total_aprox_weight,
+                    'total_price' => $order->total_price,
+                    'tracking_number' => $order->tracking_number,
+                    'request_number' => $order->request_number,
+                    'status' => $order->status,
+                    'created_at' => $order->created_at,
+                    'updated_at' => $order->updated_at,
+                    'ship_from_country' => $order->shipFromCountry?->name,
+                    'ship_from_state' => $order->shipFromState?->name,
+                    'ship_from_city' => $order->shipFromCity?->name,
+                    'ship_to_country' => $order->shipToCountry?->name,
+                    'ship_to_state' => $order->shipToState?->name,
+                    'ship_to_city' => $order->shipToCity?->name,
+                    'order_details' => $order->orderDetails,
+                    'user' => $order->user,
+                ];
+            }),
         ];
+    }
+    public function stripeAccount()
+    {
+        return $this->hasOne(StripeAccount::class);
+    }
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 }

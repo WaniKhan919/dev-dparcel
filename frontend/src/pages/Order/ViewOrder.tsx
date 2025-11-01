@@ -21,12 +21,8 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 interface Request {
   id: number;
   service_type: string;
-  ship_from: string;
-  ship_to: string;
-  products: string; // comma-separated
   total_aprox_weight: string;
   total_price: string;
-  weight_per_unit: string;
   tracking_number: string;
   order_details: {
     id: number;
@@ -43,14 +39,23 @@ interface Request {
     order_id: number;
     user_id: number;
     status: string;
-  }
+  } | null;
   order_payment: {
     id: number;
     order_id: number;
     amount: string;
     status: string;
-  }
+  } | null;
+
+  // New relationships
+  ship_from_country?: { id: number; name: string };
+  ship_from_state?: { id: number; name: string };
+  ship_from_city?: { id: number; name: string };
+  ship_to_country?: { id: number; name: string };
+  ship_to_state?: { id: number; name: string };
+  ship_to_city?: { id: number; name: string };
 }
+
 
 export default function ViewOrder() {
   const dispatch = useDispatch<AppDispatch>();
@@ -63,9 +68,11 @@ export default function ViewOrder() {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
   const [openTrackOrderDrawer, setOpenTrackOrderDrawer] = useState(false)
+  const [shipperId, setShipperId] = useState(0)
 
   const openPayment = (record: Request) => {
     setSelectedOrder(record);
+    setShipperId(record.accepted_offer?.user_id ?? 0);
     setIsPaymentOpen(true);
   };
 
@@ -111,11 +118,22 @@ export default function ViewOrder() {
       key: "ship_from",
       header: "Ship From/To",
       render: (record: Request) => (
-        <div className="flex flex-col">
-          <span><strong>From:</strong> {record.ship_from}</span>
-          <span><strong>To:</strong> {record.ship_to}</span>
+        <div className="flex flex-col text-gray-700">
+          <div className="font-medium">
+            <span className="text-blue-600">From:</span>{" "}
+            {record.ship_from_city?.name
+              ? `${record.ship_from_city.name}, ${record.ship_from_state?.name}, ${record.ship_from_country?.name}`
+              : "-"}
+          </div>
+          <div className="font-medium">
+            <span className="text-green-600">To:</span>{" "}
+            {record.ship_to_city?.name
+              ? `${record.ship_to_city.name}, ${record.ship_to_state?.name}, ${record.ship_to_country?.name}`
+              : "-"}
+          </div>
         </div>
       ),
+
     },
     {
       key: "products",
@@ -172,139 +190,6 @@ export default function ViewOrder() {
         );
       }
     },
-    // {
-    //   key: "actions",
-    //   header: "Actions",
-    //   render: (record: Request) => {
-    //     const [open, setOpen] = useState(false);
-    //     const buttonRef = useRef<HTMLButtonElement>(null);
-    //     const dropdownRef = useRef<HTMLDivElement>(null);
-    //     const [position, setPosition] = useState({ top: 0, left: 0 });
-
-    //     const toggleDropdown = () => {
-    //       if (buttonRef.current) {
-    //         const rect = buttonRef.current.getBoundingClientRect();
-    //         setPosition({
-    //           top: rect.bottom + window.scrollY,
-    //           left: rect.left + window.scrollX,
-    //         });
-    //       }
-    //       setOpen((prev) => !prev);
-    //     };
-
-    //     useEffect(() => {
-    //       const handleClickOutside = (e: MouseEvent) => {
-    //         if (
-    //           buttonRef.current &&
-    //           !buttonRef.current.contains(e.target as Node) &&
-    //           dropdownRef.current &&
-    //           !dropdownRef.current.contains(e.target as Node)
-    //         ) {
-    //           setOpen(false);
-    //         }
-    //       };
-    //       document.addEventListener("mousedown", handleClickOutside);
-    //       return () => document.removeEventListener("mousedown", handleClickOutside);
-    //     }, []);
-
-    //     return (
-    //       <>
-    //         <button
-    //           ref={buttonRef}
-    //           type="button"
-    //           onClick={toggleDropdown}
-    //           className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-3 py-1 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-    //         >
-    //           Actions
-    //           <svg
-    //             className="-mr-1 ml-2 h-5 w-5"
-    //             xmlns="http://www.w3.org/2000/svg"
-    //             viewBox="0 0 20 20"
-    //             fill="currentColor"
-    //           >
-    //             <path
-    //               fillRule="evenodd"
-    //               d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"
-    //               clipRule="evenodd"
-    //             />
-    //           </svg>
-    //         </button>
-
-    //         {open &&
-    //           createPortal(
-    //             <div
-    //               ref={dropdownRef}
-    //               style={{ top: position.top, left: position.left }}
-    //               className="absolute mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-    //             >
-    //               <div className="py-1">
-    //                 {/* Existing Actions */}
-    //                 <button
-    //                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-    //                   onClick={(e) => {
-    //                     e.stopPropagation();
-    //                     viewOrderDetails(record.id);
-    //                     setOpen(false);
-    //                   }}
-    //                 >
-    //                   View Detail
-    //                 </button>
-    //                 <button
-    //                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-    //                   onClick={(e) => {
-    //                     e.stopPropagation();
-    //                     viewOffers(record);
-    //                     setOpen(false);
-    //                   }}
-    //                 >
-    //                   View Offers
-    //                 </button>
-    //                 {record?.accepted_offer?.status === "accepted" &&
-    //                   !record?.order_payment && (
-    //                     <button
-    //                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-    //                       onClick={(e) => {
-    //                         e.stopPropagation();
-    //                         openPayment(record);
-    //                         setOpen(false);
-    //                       }}
-    //                     >
-    //                       Make Payment
-    //                     </button>
-    //                   )}
-
-    //                 {/* New Actions */}
-    //                 <button
-    //                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-    //                   onClick={(e) => {
-    //                     e.stopPropagation();
-    //                     trackOrder(record);
-    //                     setOpen(false);
-    //                   }}
-    //                 >
-    //                   Track Order
-    //                 </button>
-    //                 {
-    //                 record?.accepted_offer?.status === "accepted" &&
-    //                   <button
-    //                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-    //                     onClick={(e) => {
-    //                       e.stopPropagation();
-    //                       openMessage(record);
-    //                       setOpen(false);
-    //                     }}
-    //                   >
-    //                     Conversation
-    //                   </button>
-    //                 }
-    //               </div>
-    //             </div>,
-    //             document.body
-    //           )}
-    //       </>
-    //     );
-    //   },
-    // }
     {
       key: "actions",
       header: "Actions",
@@ -352,7 +237,7 @@ export default function ViewOrder() {
                 isOpen={isPaymentOpen}
                 onClose={() => setIsPaymentOpen(false)}
                 orderId={selectedOrder.id}
-                shipperId={selectedOrder.accepted_offer.user_id}
+                shipperId={shipperId}
                 amount={parseFloat(selectedOrder.total_price)}
               />
             </Elements>

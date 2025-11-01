@@ -6,8 +6,12 @@ import { Modal } from "../../components/ui/modal";
 interface Notification {
   id: number;
   name: string;
-  ship_to: string;
-  ship_from: string;
+  ship_from_country: string;
+  ship_from_state: string;
+  ship_from_city: string;
+  ship_to_country: string;
+  ship_to_state: string;
+  ship_to_city: string;
   service_type: string;
   total_aprox_weight: number;
   total_price: number;
@@ -56,8 +60,8 @@ export default function CardToast({ notifications }: CardToastProps) {
     }
     setConfirmModal({ open: false, id: null, status: null });
   };
-  const handleViewDetails = (id:any) => {
-    
+  const handleViewDetails = (id: any) => {
+
   };
 
   return (
@@ -94,27 +98,36 @@ export default function CardToast({ notifications }: CardToastProps) {
               </div>
 
               {/* Price */}
-              <div className="flex">
-                <span className="w-1/2 p-4">
-                  <b>From: </b> {notification.ship_from}
-                </span>
-                <span className="w-1/2 p-4">
-                  <b>To: </b> {notification.ship_to}
-                </span>
-              </div>
-             <div className="flex items-center justify-between mt-4">
-              <div className="text-xl font-semibold text-blue-600">
-                {notification.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"} ${" "}
-                {notification.total_price}
+              <div className="p-4">
+                <div className="mb-2">
+                  <b>From:</b>{" "}
+                  {notification.ship_from_country || "N/A"},{" "}
+                  {notification.ship_from_state || "N/A"},{" "}
+                  {notification.ship_from_city || "N/A"}
+                </div>
+
+                <div>
+                  <b>To:</b>{" "}
+                  {notification.ship_to_country || "N/A"},{" "}
+                  {notification.ship_to_state || "N/A"},{" "}
+                  {notification.ship_to_city || "N/A"}
+                </div>
               </div>
 
-              <button
-                onClick={() => handleViewDetails(notification.id)}
-                className="text-sm text-blue-600 font-medium underline hover:text-blue-800"
-              >
-                View Details
-              </button>
-            </div>
+
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-xl font-semibold text-blue-600">
+                  {notification.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"} ${" "}
+                  {notification.total_price}
+                </div>
+
+                <button
+                  onClick={() => handleViewDetails(notification.id)}
+                  className="text-sm text-blue-600 font-medium underline hover:text-blue-800"
+                >
+                  View Details
+                </button>
+              </div>
 
 
               {/* Buttons */}
@@ -153,7 +166,7 @@ export default function CardToast({ notifications }: CardToastProps) {
           <h3 className="text-xl font-semibold mb-4 text-gray-800">Confirm Action</h3>
           <p className="mb-6 text-gray-600">
             Are you sure you want to{" "}
-            <strong className="capitalize">{confirmModal.status=="inprogress"?'Offer':confirmModal.status}</strong> this request?
+            <strong className="capitalize">{confirmModal.status == "inprogress" ? 'Offer' : confirmModal.status}</strong> this request?
           </p>
           <div className="flex justify-center gap-4">
             <button
@@ -164,11 +177,10 @@ export default function CardToast({ notifications }: CardToastProps) {
             </button>
             <button
               onClick={handleConfirm}
-              className={`px-4 py-2 rounded-lg text-white transition ${
-                confirmModal.status === "inprogress"
+              className={`px-4 py-2 rounded-lg text-white transition ${confirmModal.status === "inprogress"
                   ? "bg-blue-600 hover:bg-blue-700"
                   : "bg-red-600 hover:bg-red-700"
-              }`}
+                }`}
             >
               Confirm
             </button>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ShipperLevelController;
+use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentPlanSettingController;
 use App\Http\Controllers\Api\ServiceController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PaymentSettingController;
 use App\Http\Controllers\Api\Shipper\PaymentController as ShipperPaymentController;
+use App\Http\Controllers\Api\Shipper\StripeConnectController;
 use App\Http\Controllers\Api\StripeController;
 use App\Http\Controllers\Api\ShipperController;
 use App\Http\Controllers\Api\ProductController;
@@ -87,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/roles/{role}/permissions/{permission}', [RolePermissionController::class, 'revoke']);
 
     // User Pofile
+    Route::get('/user-profile', [UserController::class, 'userProfile']);
     Route::put('/update-profile', [UserController::class, 'updateProfile']);
     Route::put('/update-password', [UserController::class, 'updatePassword']);
 
@@ -149,6 +152,24 @@ Route::middleware('auth:sanctum')->group(function () {
     ->group(function () {
         Route::get('/', 'getPaymentPlans');
     });
+    
+    // Stripe connect routes
+    Route::prefix('stripe')
+    ->controller(StripeConnectController::class)
+    ->group(function () {
+        Route::get('/connect', 'createAccount')->name('stripe.connect');
+        Route::get('/onboard/success', 'onboardSuccess')->name('stripe.onboard.success');
+        Route::get('/onboard/refresh', 'onboardRefresh')->name('stripe.onboard.refresh');
+    });
 
+    // Location routes
+    Route::controller(LocationController::class)
+    ->group(function () {
+        Route::get('/countries', 'getCountries');
+        Route::get('/states/{country_id}', 'getStates');
+        Route::get('/cities/state/{state_id}', 'getCitiesByState');
+        Route::get('/cities/country/{country_id}', 'getCitiesByCountry');
+    });
 
+    
 });

@@ -57,6 +57,27 @@ export default function Subscription() {
         setSelectedLevel(level);
         setModalOpen(true);
     };
+
+    const handleFreePlan = async (level: ShipperLevel) => {
+        setLoading(true);
+        try {
+            await ApiHelper("POST", "/shipper/subscribe", {
+                shipper_level_id: level.id,
+                amount: 0,
+                currency: 'USD',
+                stripe_payment_intent: 'nill',
+                stripe_payment_method: 'nill',
+                status: "active",
+            });
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "Something went wrong!", {
+                style: { background: "#f44336", color: "#fff", fontWeight: "bold" },
+                icon: "⚠️",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
     const isSubscribed = (level: ShipperLevel) =>
         level.subscriptions?.some((sub) => sub.status === "active");
 
@@ -74,15 +95,15 @@ export default function Subscription() {
                                 <div
                                     key={level.id}
                                     className={`relative rounded-2xl shadow-lg flex flex-col justify-between transition transform hover:-translate-y-2 hover:shadow-2xl overflow-hidden ${level.isFeatured
-                                            ? "border-2 border-blue-500"
-                                            : "border border-gray-200 bg-white"
+                                        ? "border-2 border-blue-500"
+                                        : "border border-gray-200 bg-white"
                                         }`}
                                 >
                                     {/* Gradient Header */}
                                     <div
                                         className={`p-6 ${level.isFeatured
-                                                ? "bg-gradient-to-b from-[#003bff] to-[#0061ff] text-white"
-                                                : "bg-gray-50 text-gray-800"
+                                            ? "bg-gradient-to-b from-[#003bff] to-[#0061ff] text-white"
+                                            : "bg-gray-50 text-gray-800"
                                             }`}
                                     >
                                         {level.isFeatured && (
@@ -116,12 +137,16 @@ export default function Subscription() {
                                         <Button
                                             size="sm"
                                             disabled={subscribed || loading}
-                                            onClick={() => handleSubscribe(level)}
+                                            onClick={() =>
+                                                level.fee <= 0
+                                                    ? handleFreePlan(level)
+                                                    : handleSubscribe(level)
+                                            }
                                             className={`w-full py-2 mt-6 text-lg font-semibold ${subscribed
-                                                    ? "bg-green-500 hover:bg-green-600 cursor-not-allowed text-white"
-                                                    : level.isFeatured
-                                                        ? "bg-gradient-to-r from-[#003bff] to-[#0061ff] text-white"
-                                                        : "bg-gray-800 hover:bg-gray-900 text-white"
+                                                ? "bg-green-500 hover:bg-green-600 cursor-not-allowed text-white"
+                                                : level.isFeatured
+                                                    ? "bg-gradient-to-r from-[#003bff] to-[#0061ff] text-white"
+                                                    : "bg-gray-800 hover:bg-gray-900 text-white"
                                                 }`}
                                         >
                                             {subscribed ? "Subscribed" : "Subscribe"}
@@ -131,7 +156,7 @@ export default function Subscription() {
                             );
                         })}
                     </div>
-                    {selectedLevel && (
+                    {selectedLevel && modalOpen && (
                         <Elements stripe={stripePromise}>
                             <SubscriptionPaymentModal
                                 isOpen={modalOpen}

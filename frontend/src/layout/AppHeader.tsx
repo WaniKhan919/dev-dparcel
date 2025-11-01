@@ -12,6 +12,7 @@ import { AppDispatch } from "../store";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchNotifications } from "../slices/notificationSlice";
 import { fetchMessageNotifications } from "../slices/messgeNotificationSlice";
+import StripeConnectButton from "../components/header/StripeConnectButton";
 
 
 const AppHeader: React.FC = () => {
@@ -152,6 +153,11 @@ const AppHeader: React.FC = () => {
                 <span>Create an order</span>
               </Link>
             )}
+            {
+              userHasPermission('connect_with_stripe') &&
+                <StripeConnectButton/>
+            }
+
             {/* <!-- Dark Mode Toggler --> */}
             {/* <SettingsDropdown /> */}
             {/* <!-- Notification Menu Area --> */}

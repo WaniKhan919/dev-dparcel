@@ -16,6 +16,9 @@ import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
 import { fetchServices } from "../../slices/servicesSlice";
 import { fetchPaymentPlan } from "../../slices/getPaymentSettingForRolesSlice";
+import { fetchCountries } from "../../slices/countriesSlice";
+import { fetchStates } from "../../slices/statesSlice";
+import { fetchCities } from "../../slices/citiesSlice";
 
 const steps = ["Shipping Info", "Shipping Address", "Product Details", "Additional Services"];
 
@@ -36,8 +39,53 @@ const stepSchemas = [
 
   // Step 2: Shipping Address
   yup.object().shape({
-    shipFrom: yup.string().required("Ship From is required"),
-    shipTo: yup.string().required("Ship To is required"),
+    ship_from_country_id: yup
+      .number()
+      .typeError("Country is required")
+      .transform((value, originalValue) =>
+        String(originalValue).trim() === "" ? undefined : value
+      )
+      .required("Country is required"),
+
+    ship_from_state_id: yup
+      .number()
+      .typeError("State is required")
+      .transform((value, originalValue) =>
+        String(originalValue).trim() === "" ? undefined : value
+      )
+      .required("State is required"),
+
+    ship_from_city_id: yup
+      .number()
+      .typeError("City is required")
+      .transform((value, originalValue) =>
+        String(originalValue).trim() === "" ? undefined : value
+      )
+      .required("City is required"),
+
+    ship_to_country_id: yup
+      .number()
+      .typeError("Country is required")
+      .transform((value, originalValue) =>
+        String(originalValue).trim() === "" ? undefined : value
+      )
+      .required("Country is required"),
+
+    ship_to_state_id: yup
+      .number()
+      .typeError("State is required")
+      .transform((value, originalValue) =>
+        String(originalValue).trim() === "" ? undefined : value
+      )
+      .required("State is required"),
+
+    ship_to_city_id: yup
+      .number()
+      .typeError("City is required")
+      .transform((value, originalValue) =>
+        String(originalValue).trim() === "" ? undefined : value
+      )
+      .required("City is required"),
   }),
 
   // Step 3: Product Validation (handled separately)
@@ -92,13 +140,18 @@ export default function Order() {
   const [loading, setLoading] = useState(false);
   const [productRequired, setProductRequired] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [shipTypeId, setShipTypeId] = useState(0);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
+  const { data: countries, loading: countriesLoading } = useSelector((state: any) => state.countries);
+  const { data: states, loading: statesLoading } = useSelector((state: any) => state.states);
+  const { data: cities, loading: citiesLoading } = useSelector((state: any) => state.cities);
 
   // main step form
   const {
     register,
     handleSubmit,
+    setValue,
     trigger,
     control,
     watch,
@@ -215,13 +268,15 @@ export default function Order() {
       // 2️⃣ Create final payload
       const payload = {
         service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
-        ship_from: data.shipFrom,
-        ship_to: data.shipTo,
+        ship_from_country_id: data.ship_from_country_id,
+        ship_from_state_id: data.ship_from_state_id,
+        ship_from_city_id: data.ship_from_city_id,
+        ship_to_country_id: data.ship_to_country_id,
+        ship_to_state_id: data.ship_to_state_id,
+        ship_to_city_id: data.ship_to_city_id,
         products, // from your products state
         services: servicePayload, // selected service IDs
       };
-
-      console.log("📦 Final Payload:", payload);
 
       // 3️⃣ Send to backend
       const res = await ApiHelper("POST", "/order/store", payload);
@@ -246,13 +301,13 @@ export default function Order() {
   const handleServiceChange = (option: string, onChange: any) => {
     onChange(option);
     const shippingTypeId = option === "Buy For Me" ? 1 : 2;
+    setShipTypeId(shippingTypeId)
     dispatch(fetchPaymentPlan({ shipping_types_id: shippingTypeId }));
   };
 
-  const countries = ["USA", "Canada", "UK", "Germany", "Pakistan", "India"];
-
   useEffect(() => {
     dispatch(fetchServices());
+    dispatch(fetchCountries());
   }, [dispatch]);
 
   return (
@@ -368,40 +423,145 @@ export default function Order() {
           {currentStep === 1 && (
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800">Shipping Address</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <Label>Ship From <span className="text-red-500">*</span></Label>
-                  <select
-                    {...register("shipFrom")}
-                    className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Country</option>
-                    {countries.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  {errors.shipFrom && (
-                    <p className="text-red-500 text-sm">{errors.shipFrom?.message as string}</p>
-                  )}
+
+              {/* SHIP FROM SECTION */}
+              <div className="border p-4 rounded-xl bg-gray-50">
+                <h3 className="font-semibold mb-2">Ship From</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {/* Country */}
+                  <div>
+                    <Label>Country <span className="text-red-500">*</span></Label>
+                    <select
+                      value={watch("ship_from_country_id") || ""}
+                      {...register("ship_from_country_id")}
+                      onChange={(e) => {
+                        const countryId = Number(e.target.value);
+                        setValue("ship_from_country_id", countryId);
+                        setValue("ship_from_state_id", "");
+                        setValue("ship_from_city_id", "");
+                        if (countryId) dispatch(fetchStates(countryId));
+                      }}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Country</option>
+                      {countries?.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    {errors.ship_from_country_id && <p className="text-red-500 text-sm">{errors.ship_from_country_id.message as string}</p>}
+                  </div>
+
+                  {/* State */}
+                  <div>
+                    <Label>State <span className="text-red-500">*</span></Label>
+                    <select
+                      value={watch("ship_from_state_id") || ""}
+                      {...register("ship_from_state_id")}
+                      onChange={(e) => {
+                        const stateId = Number(e.target.value);
+                        setValue("ship_from_state_id", stateId);
+                        setValue("ship_from_city_id", "");
+                        if (stateId) dispatch(fetchCities(stateId));
+                      }}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select State</option>
+                      {states?.map((s: any) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    {errors.ship_from_state_id && <p className="text-red-500 text-sm">{errors.ship_from_state_id.message as string}</p>}
+                  </div>
+
+                  {/* City */}
+                  <div>
+                    <Label>City <span className="text-red-500">*</span></Label>
+                    <select
+                      value={watch("ship_from_city_id") || ""}
+                      {...register("ship_from_city_id")}
+                      onChange={(e) => setValue("ship_from_city_id", Number(e.target.value))}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select City</option>
+                      {cities?.map((city: any) => (
+                        <option key={city.id} value={city.id}>{city.name}</option>
+                      ))}
+                    </select>
+                    {errors.ship_from_city_id && <p className="text-red-500 text-sm">{errors.ship_from_city_id.message as string}</p>}
+                  </div>
                 </div>
-                <div>
-                  <Label>Ship To <span className="text-red-500">*</span></Label>
-                  <select
-                    {...register("shipTo")}
-                    className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Country</option>
-                    {countries.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  {errors.shipTo && (
-                    <p className="text-red-500 text-sm">{errors.shipTo?.message as string}</p>
-                  )}
+              </div>
+
+              {/* SHIP TO SECTION */}
+              <div className="border p-4 rounded-xl bg-gray-50">
+                <h3 className="font-semibold mb-2">Ship To</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {/* Country */}
+                  <div>
+                    <Label>Country <span className="text-red-500">*</span></Label>
+                    <select
+                      value={watch("ship_to_country_id") || ""}
+                      {...register("ship_to_country_id")}
+                      onChange={(e) => {
+                        const countryId = Number(e.target.value);
+                        setValue("ship_to_country_id", countryId);
+                        setValue("ship_to_state_id", "");
+                        setValue("ship_to_city_id", "");
+                        if (countryId) dispatch(fetchStates(countryId));
+                      }}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Country</option>
+                      {countries?.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    {errors.ship_to_country_id && <p className="text-red-500 text-sm">{errors.ship_to_country_id.message as string}</p>}
+                  </div>
+
+                  {/* State */}
+                  <div>
+                    <Label>State <span className="text-red-500">*</span></Label>
+                    <select
+                      value={watch("ship_to_state_id") || ""}
+                      {...register("ship_to_state_id")}
+                      onChange={(e) => {
+                        const stateId = Number(e.target.value);
+                        setValue("ship_to_state_id", stateId);
+                        setValue("ship_to_city_id", "");
+                        if (stateId) dispatch(fetchCities(stateId));
+                      }}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select State</option>
+                      {states?.map((s: any) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    {errors.ship_to_state_id && <p className="text-red-500 text-sm">{errors.ship_to_state_id.message as string}</p>}
+                  </div>
+
+                  {/* City */}
+                  <div>
+                    <Label>City <span className="text-red-500">*</span></Label>
+                    <select
+                      value={watch("ship_to_city_id") || ""}
+                      {...register("ship_to_city_id")}
+                      onChange={(e) => setValue("ship_to_city_id", Number(e.target.value))}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select City</option>
+                      {cities?.map((city: any) => (
+                        <option key={city.id} value={city.id}>{city.name}</option>
+                      ))}
+                    </select>
+                    {errors.ship_to_city_id && <p className="text-red-500 text-sm">{errors.ship_to_city_id.message as string}</p>}
+                  </div>
                 </div>
               </div>
             </div>
           )}
+
 
           {/* Step 2 */}
           {currentStep === 2 && (
@@ -428,7 +588,7 @@ export default function Order() {
                         key={index}
                         className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-5 flex flex-col border border-gray-100"
                       >
-                        {product.product_url ? (
+                        {/* {product.product_url ? (
                           <div className="relative w-full h-44 mb-4 overflow-hidden rounded-xl">
                             <img
                               src={product.product_url}
@@ -440,7 +600,12 @@ export default function Order() {
                           <div className="flex items-center justify-center h-44 mb-4 bg-gray-50 rounded-xl text-gray-400 text-sm">
                             No image available
                           </div>
-                        )}
+                        )} */}
+                        <div className=" w-full h-44 bg-gray-400 flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">
+                            {product.title.charAt(0)}
+                          </span>
+                        </div>
 
                         <h4 className="text-lg font-semibold text-gray-800 mb-1">{product.title}</h4>
                         <p className="text-sm text-gray-500 mb-3 line-clamp-2">{product.description}</p>
@@ -509,132 +674,17 @@ export default function Order() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800">Additional Services</h2>
-
               {/* Watch form data */}
-              {/* {(() => {
-                const watchedValues = watch(); 
-
-                const productTotal = products.reduce(
-                  (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
-                  0
-                );
-
-                const activeServices = services?.filter((item: any) => item.status === 1) || [];
-
-                const selectedServices = activeServices.filter((item: any) => {
-                  const fieldName = item.title.replace(/\s+/g, "_").toLowerCase();
-                  const isRequired = item.is_required === 1;
-                  return isRequired || watchedValues[fieldName];
-                });
-
-                const serviceTotal = selectedServices.reduce(
-                  (sum: number, s: { price?: string }) => sum + Number(s.price || 0),
-                  0
-                );
-
-                const grandTotal = productTotal + serviceTotal;
-
-                return (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {services
-                        ?.filter((item: any) => item.status === 1)
-                        .map((item: any) => {
-                          const inputName = item.title.replace(/\s+/g, "_").toLowerCase();
-                          const isRequired = item.is_required === 1;
-
-                          return (
-                            <div key={item.id} className="relative group">
-                              <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-xs bg-gray-800 text-white text-sm rounded-lg px-3 py-2 shadow-lg z-10">
-                                {item.description}
-                              </div>
-
-                              <label
-                                className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md transition ${isRequired ? "bg-gray-50 cursor-not-allowed" : ""
-                                  }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  {...register(inputName)}
-                                  className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
-                                  defaultChecked={isRequired}
-                                  disabled={isRequired}
-                                  required={isRequired}
-                                />
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-gray-700">
-                                    {item.title}{" "}
-                                    {isRequired && (
-                                      <span className="text-red-500 text-sm ml-1">*</span>
-                                    )}
-                                  </span>
-                                  {item.price && (
-                                    <span className="text-sm text-gray-500">
-                                      ${item.price}
-                                    </span>
-                                  )}
-                                </div>
-                              </label>
-                            </div>
-                          );
-                        })}
-                    </div>
-
-                    <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                      <div>
-                        <p className="text-gray-800 font-semibold text-lg">Totals</p>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="text-gray-700">
-                          <span className="font-medium">Products Total:</span> ${productTotal.toFixed(2)}
-                        </div>
-                        <div className="text-gray-700">
-                          <span className="font-medium">Services Total:</span> ${serviceTotal.toFixed(2)}
-                        </div>
-                        <div className="text-gray-800 font-semibold">
-                          <span className="font-medium">Grand Total:</span> ${grandTotal.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <Controller
-                        control={control}
-                        name="terms"
-                        render={({ field }) => (
-                          <Checkbox
-                            className="w-5 h-5 mt-1"
-                            checked={field.value}
-                            onChange={() => field.onChange(!field.value)}
-                          />
-                        )}
-                      />
-                      <p className="text-sm text-gray-600">
-                        By clicking the tick button, I hereby agree and consent to the{" "}
-                        <a href="#" className="text-blue-500 underline">
-                          terms of business
-                        </a>
-                        , its policies, and the privacy policy.
-                      </p>
-                    </div>
-                    {errors.terms && (
-                      <p className="text-red-500 text-sm">
-                        {errors.terms?.message as string}
-                      </p>
-                    )}
-                  </>
-                );
-              })()} */}
               {(() => {
                 const watchedValues = watch();
 
-                // Product total (already exists)
+                // 🧮 1. Product total
                 const productTotal = products.reduce(
                   (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
                   0
                 );
 
-                // Services total (already exists)
+                // 🧮 2. Service total
                 const activeServices = services?.filter((item: any) => item.status === 1) || [];
                 const selectedServices = activeServices.filter((item: any) => {
                   const fieldName = item.title.replace(/\s+/g, "_").toLowerCase();
@@ -647,18 +697,26 @@ export default function Order() {
                   0
                 );
 
-                // ✅ Calculate payment plan total
-                const paymentPlanTotal = paymentPlanData?.reduce((sum: number, plan: any) => {
-                  const amount = Number(plan.amount);
-                  if (plan.type === "percent") {
-                    return sum + (productTotal * amount) / 100;
-                  } else {
-                    return sum + amount;
-                  }
-                }, 0) || 0;
+                // 🧮 3. Base total depends on shipTypeId
+                const baseTotal =
+                  shipTypeId === 1
+                    ? productTotal + serviceTotal
+                    : serviceTotal;
 
-                // ✅ Grand total = products + services + payment plans
-                const grandTotal = productTotal + serviceTotal + paymentPlanTotal;
+                // 🧮 4. Payment plan total calculated on baseTotal
+                const paymentPlanTotal =
+                  paymentPlanData?.reduce((sum: number, plan: any) => {
+                    const amount = Number(plan.amount);
+                    if (plan.type === "percent") {
+                      return sum + (baseTotal * amount) / 100;
+                    } else {
+                      return sum + amount;
+                    }
+                  }, 0) || 0;
+
+                // 🧮 5. Final grand total
+                const grandTotal = baseTotal + paymentPlanTotal;
+
 
                 return (
                   <>
@@ -777,7 +835,6 @@ export default function Order() {
 
             </div>
           )}
-
 
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-6 border-t">

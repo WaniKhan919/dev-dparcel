@@ -30,7 +30,18 @@ class OrderController extends Controller
 
             $perPage = (int) $request->get('per_page', 10);
 
-            $orders = Order::with(['orderDetails.product', 'acceptedOffer', 'orderPayment'])->where('user_id', $userId)
+            $orders = Order::with([
+                'orderDetails.product',
+                'acceptedOffer',
+                'orderPayment',
+                'shipFromCountry:id,name',
+                'shipFromState:id,name',
+                'shipFromCity:id,name',
+                'shipToCountry:id,name',
+                'shipToState:id,name',
+                'shipToCity:id,name'
+            ])
+                ->where('user_id', $userId)
                 ->orderBy('id', 'desc')
                 ->paginate($perPage);
 
@@ -123,7 +134,6 @@ class OrderController extends Controller
                     'prev_page_url' => $orders->previousPageUrl(),
                 ],
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -143,8 +153,12 @@ class OrderController extends Controller
 
             $validated = $request->validate([
                 'service_type' => 'required|in:buy_for_me,ship_for_me',
-                'ship_from' => 'required|string|max:255',
-                'ship_to' => 'required|string|max:255',
+                'ship_from_country_id' => 'required|exists:countries,id',
+                'ship_from_state_id'   => 'required|exists:states,id',
+                'ship_from_city_id'    => 'required|exists:cities,id',
+                'ship_to_country_id'   => 'required|exists:countries,id',
+                'ship_to_state_id'     => 'required|exists:states,id',
+                'ship_to_city_id'      => 'required|exists:cities,id',
                 'products' => 'required|array|min:1',
                 'products.*.title' => 'required|string|max:255',
                 'products.*.product_url' => 'required|string',
@@ -155,7 +169,7 @@ class OrderController extends Controller
                 'services.*.service_id' => 'required|exists:services,id',
             ]);
 
-            // Generate tracking number
+            // Generate unique tracking number
             do {
                 $trackingNumber = 'TRK-' . strtoupper(Str::random(10));
             } while (Order::where('tracking_number', $trackingNumber)->exists());
@@ -164,17 +178,22 @@ class OrderController extends Controller
             $order = Order::create([
                 'user_id' => $userId,
                 'service_type' => $validated['service_type'],
-                'ship_from' => $validated['ship_from'],
-                'ship_to' => $validated['ship_to'],
+                'ship_from_country_id' => $validated['ship_from_country_id'],
+                'ship_from_state_id' => $validated['ship_from_state_id'],
+                'ship_from_city_id' => $validated['ship_from_city_id'],
+                'ship_to_country_id' => $validated['ship_to_country_id'],
+                'ship_to_state_id' => $validated['ship_to_state_id'],
+                'ship_to_city_id' => $validated['ship_to_city_id'],
                 'total_aprox_weight' => 0,
                 'total_price' => 0,
                 'tracking_number' => $trackingNumber,
             ]);
 
+            $type = $validated['service_type'] === "ship_for_me" ? 2 : 1;
             $totalPrice = 0;
             $totalWeight = 0;
 
-            // Store Products and Order Details
+            // Store products
             foreach ($validated['products'] as $index => $p) {
                 $product = Product::create([
                     'user_id' => $userId,
@@ -188,11 +207,12 @@ class OrderController extends Controller
 
                 $linePrice = $p['price'] * $p['quantity'];
                 $lineWeight = ($p['weight'] ?? 0) * $p['quantity'];
-                
-                $totalPrice += $linePrice;
+
+                if($type == 1){
+                    $totalPrice += $linePrice;
+                }
                 $totalWeight += $lineWeight;
 
-                // Unique request_details_number (e.g. REQ-20251011-ABC12-1)
                 $requestDetailsNumber = $order->request_number . '-' . ($index + 1);
 
                 OrderDetail::create([
@@ -205,7 +225,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Attach selected services
+            // Attach optional services
             if (!empty($validated['services'])) {
                 foreach ($validated['services'] as $s) {
                     OrderService::create([
@@ -213,26 +233,26 @@ class OrderController extends Controller
                         'service_id' => $s['service_id'],
                     ]);
 
-                    // Optionally include service price in total
                     $service = Service::find($s['service_id']);
                     $totalPrice += $service->price ?? 0;
                 }
             }
-            // store first tracking record
+
+            // Track order
             OrderTracking::create([
                 'order_id' => $order->id,
-                'status_id' => 1, // pending
+                'status_id' => 1, // Pending
                 'tracking_number' => $trackingNumber,
             ]);
-        
+
+            // Payment logic
             $user = auth()->user();
             $role = $user->roles()->first();
-            if($validated['service_type'] == "ship_for_me"){
-                $type = 2;
-            }else{
-                $type = 1;
-            }
-            $settings = PaymentSetting::where('role_id', $role->id)->where('active', true)->where('shipping_types_id', $type)->get();
+
+            $settings = PaymentSetting::where('role_id', $role->id)
+                ->where('active', true)
+                ->where('shipping_types_id', $type)
+                ->get();
 
             $additionalAmount = 0;
             foreach ($settings as $setting) {
@@ -250,6 +270,8 @@ class OrderController extends Controller
                 'total_price' => $finalPrice,
                 'total_aprox_weight' => $totalWeight,
             ]);
+
+            // Notifications
             NotificationService::createNotification([
                 'user_id' => $userId,
                 'sender_id' => null,
@@ -258,9 +280,9 @@ class OrderController extends Controller
                 'title' => 'Order Request Placed',
                 'message' => 'Your order request # ' . $order->request_number . ' has been placed successfully.',
             ]);
-            $shippers = User::whereHas('roles', function ($query) {
-                $query->where('name', 'shipper');
-            })->get();
+
+            $shippers = User::whereHas('roles', fn($q) => $q->where('name', 'shipper'))->get();
+
             foreach ($shippers as $shipper) {
                 NotificationService::createNotification([
                     'user_id' => $shipper->id,
@@ -288,6 +310,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
 
     public function getShipperOffers($orderId)
     {

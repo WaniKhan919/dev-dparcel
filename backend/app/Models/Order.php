@@ -10,8 +10,12 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'service_type',
-        'ship_from',
-        'ship_to',
+        'ship_from_country_id',
+        'ship_from_state_id',
+        'ship_from_city_id',
+        'ship_to_country_id',
+        'ship_to_state_id',
+        'ship_to_city_id',
         'total_aprox_weight',
         'total_price',
         'tracking_number',
@@ -55,7 +59,7 @@ class Order extends Model
     }
     public function orderPayment()
     {
-        return $this->hasOne(OrderPayment::class,'order_id','id');
+        return $this->hasOne(OrderPayment::class, 'order_id', 'id');
     }
     public function orderServices()
     {
@@ -67,6 +71,35 @@ class Order extends Model
     }
     public function orderStatus()
     {
-        return $this->belongsTo(OrderStatus::class,'status_id','id');
+        return $this->belongsTo(OrderStatus::class, 'status_id', 'id');
+    }
+    public function shipFromCountry()
+    {
+        return $this->belongsTo(Country::class, 'ship_from_country_id');
+    }
+
+    public function shipFromState()
+    {
+        return $this->belongsTo(State::class, 'ship_from_state_id');
+    }
+
+    public function shipFromCity()
+    {
+        return $this->belongsTo(City::class, 'ship_from_city_id');
+    }
+
+    public function shipToCountry()
+    {
+        return $this->belongsTo(Country::class, 'ship_to_country_id');
+    }
+
+    public function shipToState()
+    {
+        return $this->belongsTo(State::class, 'ship_to_state_id');
+    }
+
+    public function shipToCity()
+    {
+        return $this->belongsTo(City::class, 'ship_to_city_id');
     }
 }

@@ -9,13 +9,44 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function userProfile(Request $request)
+    {
+        try {
+            $user = $request->user()->load([
+                'city.state.country'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile fetched successfully',
+                'data'    => [
+                    'id'         => $user->id,
+                    'name'       => $user->name,
+                    'email'      => $user->email,
+                    'phone'      => $user->phone,
+                    'status'     => $user->status,
+                    'city'       => $user->city?->only(['id', 'name']),
+                    'state'      => $user->city?->state?->only(['id', 'name']),
+                    'country'    => $user->city?->state?->country?->only(['id', 'name']),
+                ],
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function updateProfile(Request $request)
     {
         try {
             $validated = $request->validate([
                 'name'  => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email,' . $request->user()->id, 
+                'email' => 'required|email|unique:users,email,' . $request->user()->id,
                 'phone' => 'nullable|string|max:20',
+                'city_id'   => 'nullable|exists:cities,id',
             ]);
 
             $user = $request->user();
@@ -26,7 +57,6 @@ class UserController extends Controller
                 'message' => 'Profile updated successfully',
                 'data'    => $user->only(['name', 'email', 'phone', 'status']),
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -61,7 +91,6 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'Password updated successfully',
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -70,5 +99,4 @@ class UserController extends Controller
             ], 500);
         }
     }
-
 }

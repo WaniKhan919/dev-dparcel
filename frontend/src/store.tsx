@@ -18,6 +18,9 @@ import messageNotificationReducer from "./slices/messgeNotificationSlice";
 import shippingTypeReducer from "./slices/shippingTypeSlice";
 import paymentSettingReducer from "./slices/paymentSettingSlice";
 import paymentPlanReducer from "./slices/getPaymentSettingForRolesSlice";
+import countriesReducer from "./slices/countriesSlice"
+import statesReducer from "./slices/statesSlice"
+import citiesReducer from "./slices/citiesSlice"
 
 export const store = configureStore({
   reducer: {
@@ -40,6 +43,9 @@ export const store = configureStore({
     shippingType:shippingTypeReducer,
     paymentSetting:paymentSettingReducer,
     paymentPlan:paymentPlanReducer,
+    countries:countriesReducer,
+    states:statesReducer,
+    cities:citiesReducer,
   },
 });
 
