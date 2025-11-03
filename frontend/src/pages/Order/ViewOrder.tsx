@@ -15,6 +15,7 @@ import ShopperOrderMessages from "../../utils/Drawers/Order/ShopperOrderMessages
 import TrackOrderDrawer from "../../utils/Drawers/Order/TrackOrderDrawer";
 import ViewOrderDetailDrawer from "../../utils/Drawers/Offers/ViewOrderDetailDrawer";
 import ShopperTableAction from "../../components/tables/ShopperTableAction";
+import { useNavigate } from "react-router";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
@@ -58,6 +59,7 @@ interface Request {
 
 
 export default function ViewOrder() {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { data, meta, loading } = useSelector((state: any) => state.order);
   const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false)
@@ -79,6 +81,11 @@ export default function ViewOrder() {
   const openMessage = (record: any) => {
     setOrderData(record)
     setOpenMessageDrawer(true)
+  }
+  const handleCustomDeclaration = (record: any) => {
+    navigate("/custom/declaration", {
+      state: { order_id: record.id }, // 👈 Pass order_id invisibly
+    });
   }
 
   useEffect(() => {
@@ -201,6 +208,7 @@ export default function ViewOrder() {
           openPayment={openPayment}
           trackOrder={trackOrder}
           openMessage={openMessage}
+          handleCustomDeclaration={handleCustomDeclaration}
         />
       ),
     }

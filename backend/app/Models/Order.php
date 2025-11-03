@@ -102,4 +102,9 @@ class Order extends Model
     {
         return $this->belongsTo(City::class, 'ship_to_city_id');
     }
+
+    public function customDeclaration()
+    {
+        return $this->hasOne(CustomDeclaration::class, 'order_id');
+    }
 }

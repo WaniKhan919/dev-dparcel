@@ -38,6 +38,7 @@ import Services from "./pages/Services/Services";
 import ShipperLevels from "./pages/ShipperLevel/ShipperLevels";
 import Subscription from "./pages/Subscription/Subscription";
 import PaymentsSettings from "./pages/Settings/Payments/PaymentsSettings";
+import CustomDeclaration from "./pages/Order/CustomDeclaration";
 
 export default function App() {
   return (
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="/request" element={<Order />} />
             <Route path="/view/request" element={<ViewOrder />} />
             <Route path="/shopper/payment" element={<ShopperPayments />} />
+            <Route path="/custom/declaration" element={<CustomDeclaration />} />
 
             {/* Shipper Routes */}
             <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />

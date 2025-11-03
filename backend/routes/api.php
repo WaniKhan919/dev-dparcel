@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ShipperLevelController;
+use App\Http\Controllers\Api\CustomDeclarationController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentPlanSettingController;
@@ -171,5 +172,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/cities/country/{country_id}', 'getCitiesByCountry');
     });
 
+    Route::prefix('custom-declaration')->controller(CustomDeclarationController::class)->group(function () {
+        Route::get('/{order_id}', 'index');
+        Route::post('/store', 'store');
+        Route::put('/update/{id}', 'update');
+    });
     
 });

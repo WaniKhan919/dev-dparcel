@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\State;
 use App\Models\City;
 use Exception;
+use Illuminate\Support\Facades\Auth;
 
 class LocationController extends Controller
 {
@@ -17,7 +18,7 @@ class LocationController extends Controller
     public function getCountries(Request $request)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
 
             if (!$user) {
                 return response()->json([
@@ -48,7 +49,7 @@ class LocationController extends Controller
     public function getStates(Request $request, $country_id)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
 
             if (!$user) {
                 return response()->json([
@@ -88,7 +89,7 @@ class LocationController extends Controller
     public function getCitiesByState(Request $request, $state_id)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
 
             if (!$user) {
                 return response()->json([
@@ -128,7 +129,7 @@ class LocationController extends Controller
     public function getCitiesByCountry(Request $request, $country_id)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
 
             if (!$user) {
                 return response()->json([
