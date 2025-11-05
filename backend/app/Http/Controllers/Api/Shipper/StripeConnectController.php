@@ -51,7 +51,7 @@ class StripeConnectController extends Controller
             $accountLink = AccountLink::create([
                 'account' => $stripeAccount->stripe_account_id,
                 'refresh_url' => route('stripe.onboard.refresh'),
-                'return_url' => route('stripe.onboard.success'),
+                'return_url' => env('REACT_APP').'/shipper/dashboard',
                 'type' => 'account_onboarding',
             ]);
 

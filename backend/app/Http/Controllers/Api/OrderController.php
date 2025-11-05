@@ -468,7 +468,8 @@ class OrderController extends Controller
             $order = Order::with([
                 'orderDetails.product',
                 'orderServices.service',
-                'orderTrackings.status'
+                'orderTrackings.status',
+                'customDeclaration',
             ])->findOrFail($id);
             if (!$order) {
                 return response()->json([
