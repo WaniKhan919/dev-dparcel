@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentPlanSettingController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\Api\MessageController;
@@ -126,6 +127,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [ShipperPaymentController::class, 'index']);
         Route::get('/levels', [SubscriptionController::class, 'index']);
         Route::post('/subscribe', [SubscriptionController::class, 'subscribe']);
+        Route::get('/get-wallet', [WalletController::class, 'shipperWallet']);
     });
     Route::prefix('shopper')->group(function () {
         Route::get('/payments', [PaymentController::class, 'index']);

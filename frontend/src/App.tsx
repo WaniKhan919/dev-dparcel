@@ -39,6 +39,7 @@ import ShipperLevels from "./pages/ShipperLevel/ShipperLevels";
 import Subscription from "./pages/Subscription/Subscription";
 import PaymentsSettings from "./pages/Settings/Payments/PaymentsSettings";
 import CustomDeclaration from "./pages/Order/CustomDeclaration";
+import ShipperWallet from "./pages/Payments/Wallet/ShipperWallet";
 
 export default function App() {
   return (
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="/shopper/requests" element={<ShopperRequests />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/shipper/payment" element={<ShipperPayments />} />
+            <Route path="shipper/wallet" element={<ShipperWallet />} />
 
             {/* Common Routes */}
             <Route path="/profile" element={<UserProfiles />} />

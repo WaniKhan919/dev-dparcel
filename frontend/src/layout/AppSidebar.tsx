@@ -161,6 +161,13 @@ const navItems: NavItem[] = [
     roles: ["shipper"],
     permissions: ["shipper_payment"],
   },
+  {
+    name: "Wallet",
+    icon: <PageIcon />,
+    path: "/shipper/wallet",
+    roles: ["shipper"],
+    permissions: ["shipper_payment"],
+  },
 ];
 
 const AppSidebar: React.FC = () => {
