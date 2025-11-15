@@ -17,18 +17,32 @@ class WalletController extends Controller
     {
         try {
             $user = Auth::user();
+
             if (!$user->hasRole('admin')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized. Only admin can access this data.'
                 ], 403);
             }
+
+            // All transactions (pagination can be added later)
             $transactions = WalletTransaction::with(['user', 'order'])
                 ->orderBy('id', 'desc')
                 ->get();
+
+            // 1. Total Commission (only from completed transactions)
+            $totalCommission = WalletTransaction::where('status', 'completed')
+                ->sum('commission');
+
+            // 2. Total Master Account Amount (pending + reversed amounts)
+            $masterAmount = WalletTransaction::whereIn('status', ['pending', 'reversed'])
+                ->sum('amount');
+
             return response()->json([
                 'success' => true,
                 'total_records' => $transactions->count(),
+                'total_commission' => number_format($totalCommission, 2),
+                'master_account_amount' => number_format($masterAmount, 2),
                 'data' => $transactions
             ]);
         } catch (Exception $e) {
@@ -67,7 +81,7 @@ class WalletController extends Controller
             ], 500);
         }
     }
-    
+
     public function releaseShipperPayment(Request $request)
     {
         try {
@@ -88,15 +102,15 @@ class WalletController extends Controller
             // Get specific wallet transaction
             $wallet = WalletTransaction::find($validated['wallet_transaction_id']);
 
-            if ($wallet->status !== 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This transaction is not pending or already processed.'
-                ], 400);
-            }
+            // if ($wallet->status !== 'pending') {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'This transaction is not pending or already processed.'
+            //     ], 400);
+            // }
 
             // Get shipper
-            $shipper = User::find($wallet->user_id);
+            $shipper = User::with('stripeAccount')->find($wallet->user_id);
 
             if (!$shipper) {
                 return response()->json([
@@ -104,11 +118,20 @@ class WalletController extends Controller
                     'message' => 'Shipper not found.'
                 ], 404);
             }
-
-            if (!$shipper->stripe_account_id) {
+            
+            if (!$shipper->stripeAccount->stripe_account_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Shipper has not connected their Stripe account.'
+                ], 400);
+            }
+
+            $account = \Stripe\Account::retrieve($shipper->stripeAccount->stripe_account_id);
+
+            if (!isset($account->capabilities->transfers) || $account->capabilities->transfers !== 'active') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Shipper Stripe account cannot receive transfers. Please complete Stripe onboarding.',
                 ], 400);
             }
 
@@ -118,7 +141,7 @@ class WalletController extends Controller
             $transfer = Transfer::create([
                 'amount' => intval($wallet->amount * 100),
                 'currency' => 'usd',
-                'destination' => $shipper->stripe_account_id,
+                'destination' => $shipper->stripeAccount->stripe_account_id,
                 'description' => 'Manual payout for order #' . $wallet->order_id,
             ]);
 
@@ -165,37 +188,43 @@ class WalletController extends Controller
         try {
             $wallet = WalletTransaction::findOrFail($walletTransactionId);
 
-            // Only pending or completed credits can be reversed
-            if ($wallet->transaction_type !== 'credit' || $wallet->status === 'reversed') {
+            // Only credit transactions that are pending or completed can be reversed
+            if ($wallet->transaction_type !== 'credit') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'This transaction cannot be reversed.'
+                    'message' => 'Only credit transactions can be reversed.'
                 ], 400);
             }
 
-            $shipper = User::findOrFail($wallet->user_id);
-
-            // If payment was captured via Stripe, refund it
-            if ($wallet->status === 'completed' && $wallet->stripe_payment_intent) {
-                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-                \Stripe\PaymentIntent::cancel($wallet->stripe_payment_intent); // or refund if captured
+            if ($wallet->status === 'reversed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This transaction is already reversed.'
+                ], 400);
             }
 
-            // Update original wallet entry
+            // If payment was completed and captured via Stripe, refund/cancel it
+            if ($wallet->status === 'completed' && $wallet->stripe_payment_intent) {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+                // Try to cancel the payment intent
+                try {
+                    \Stripe\PaymentIntent::cancel($wallet->stripe_payment_intent);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to reverse Stripe payment.',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+
+            // Update the original wallet entry to mark as reversed
             $wallet->update([
                 'status' => 'reversed',
-                'description' => 'Transaction reversed due to order cancellation or timeout'
-            ]);
-
-            // Create reversal entry
-            WalletTransaction::create([
-                'user_id' => $wallet->user_id,
-                'order_id' => $wallet->order_id,
-                'shipping_type_id' => $wallet->shipping_type_id,
-                'transaction_type' => 'debit',
-                'amount' => $wallet->amount,
-                'status' => 'completed',
-                'description' => 'Reversal of previously credited amount'
+                'description' => 'Transaction reversed due to order cancellation or timeout',
+                // Optional: you can set amount = 0 if needed
+                // 'amount' => 0,
             ]);
 
             return response()->json([

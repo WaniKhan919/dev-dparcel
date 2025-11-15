@@ -63,6 +63,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/payment/{id}', [PaymentSettingController::class, 'update']);
             Route::delete('/payment/{id}', [PaymentSettingController::class, 'destroy']);
         });
+
+        Route::get('/get-wallet', [WalletController::class, 'adminWallet']);
+        Route::post('/release-payment', [WalletController::class, 'releaseShipperPayment']);
+        Route::get('/reverse-transaction/{id}', [WalletController::class, 'reverseWalletTransaction']);
     });
     Route::get('/shipping-types', [ShipperLevelController::class, 'getShippingTypes']);
     Route::prefix('service')->group(function () {
@@ -161,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     ->controller(StripeConnectController::class)
     ->group(function () {
         Route::get('/connect', 'createAccount')->name('stripe.connect');
+        Route::get('/status', 'getStripeStatus');
         Route::get('/onboard/success', 'onboardSuccess')->name('stripe.onboard.success');
         Route::get('/onboard/refresh', 'onboardRefresh')->name('stripe.onboard.refresh');
     });

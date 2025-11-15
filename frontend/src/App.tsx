@@ -40,6 +40,8 @@ import Subscription from "./pages/Subscription/Subscription";
 import PaymentsSettings from "./pages/Settings/Payments/PaymentsSettings";
 import CustomDeclaration from "./pages/Order/CustomDeclaration";
 import ShipperWallet from "./pages/Payments/Wallet/ShipperWallet";
+import AdminWallet from "./pages/Payments/Wallet/AdminWallet";
+import StripeConnect from "./pages/Payments/Stripe/StripeConnect";
 
 export default function App() {
   return (
@@ -66,6 +68,7 @@ export default function App() {
             <Route index path="/permissions" element={<Permissions />} />
             <Route path="/view/requests" element={<ViewAllRequests />} />
             <Route path="/payments" element={<AllPayments />} />
+            <Route path="/admin/wallet" element={<AdminWallet />} />
             <Route path="/services" element={<Services />} />
             <Route path="/shipper/levels" element={<ShipperLevels />} />
             <Route path="/payment/setting" element={<PaymentsSettings />} />
@@ -84,6 +87,7 @@ export default function App() {
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/shipper/payment" element={<ShipperPayments />} />
             <Route path="shipper/wallet" element={<ShipperWallet />} />
+            <Route path="/shipper/stripe-connect" element={<StripeConnect />} />
 
             {/* Common Routes */}
             <Route path="/profile" element={<UserProfiles />} />

@@ -21,6 +21,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
+import { BanknotesIcon, LinkIcon, WalletIcon } from "@heroicons/react/24/outline";
 
 type SubNavItem = {
   name: string;
@@ -68,6 +69,12 @@ const navItems: NavItem[] = [
     icon: <DollarLineIcon />,
     name: "Payments",
     path: "/payments",
+    roles: ["admin"],
+  },
+  {
+    name: "Wallet",
+    icon: <PageIcon />,
+    path: "/admin/wallet",
     roles: ["admin"],
   },
   {
@@ -156,15 +163,22 @@ const navItems: NavItem[] = [
   },
   {
     name: "Payments",
-    icon: <PageIcon />,
+    icon: <BanknotesIcon className="w-4 h-4" />,
     path: "/shipper/payment",
     roles: ["shipper"],
     permissions: ["shipper_payment"],
   },
   {
     name: "Wallet",
-    icon: <PageIcon />,
+    icon: <WalletIcon className="w-4 h-4" />,
     path: "/shipper/wallet",
+    roles: ["shipper"],
+    permissions: ["shipper_payment"],
+  },
+  {
+    name: "Stripe",
+    icon: <LinkIcon className="w-4 h-4" />,
+    path: "/shipper/stripe-connect",
     roles: ["shipper"],
     permissions: ["shipper_payment"],
   },

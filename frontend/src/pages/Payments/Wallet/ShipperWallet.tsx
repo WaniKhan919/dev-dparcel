@@ -53,10 +53,6 @@ export default function ShipperWallet() {
             header: "Stripe Fee",
         },
         {
-            key: "commission",
-            header: "Commission",
-        },
-        {
             key: "description",
             header: "Description",
         },

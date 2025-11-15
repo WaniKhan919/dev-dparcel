@@ -100,6 +100,32 @@ class StripeConnectController extends Controller
         }
     }
 
+    public function onboardRefresh()
+    {
+        try {
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+            $user = Auth::user();
+            $stripeAccount = $user->stripeAccount;
+
+            if (!$stripeAccount || !$stripeAccount->stripe_account_id) {
+                return redirect()->route('dashboard')->with('error', 'Stripe account not found.');
+            }
+
+            $accountLink = AccountLink::create([
+                'account' => $stripeAccount->stripe_account_id,
+                'refresh_url' => route('stripe.onboard.refresh'),
+                'return_url' => env('REACT_APP') . '/shipper/dashboard',
+                'type' => 'account_onboarding',
+            ]);
+
+            return redirect($accountLink->url);
+
+        } catch (Exception $e) {
+            return redirect()->route('dashboard')->with('error', 'Failed to refresh onboarding: ' . $e->getMessage());
+        }
+    }
+
+
     public function getStripeStatus()
     {
         try {
