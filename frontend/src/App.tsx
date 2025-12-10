@@ -42,6 +42,8 @@ import CustomDeclaration from "./pages/Order/CustomDeclaration";
 import ShipperWallet from "./pages/Payments/Wallet/ShipperWallet";
 import AdminWallet from "./pages/Payments/Wallet/AdminWallet";
 import StripeConnect from "./pages/Payments/Stripe/StripeConnect";
+import ShopperCustomDeclaration from "./pages/Requests/ShopperCustomDeclaration";
+import ShipperMessages from "./pages/Shipper/ShipperMessages";
 
 export default function App() {
   return (
@@ -83,8 +85,10 @@ export default function App() {
 
             {/* Shipper Routes */}
             <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />
-            <Route path="/shopper/requests" element={<ShopperRequests />} />
-            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/shipper/requests" element={<ShopperRequests />} />
+            <Route path="/shipper/messages" element={<ShipperMessages />} />
+            <Route path="/custom-declaration" element={<ShopperCustomDeclaration />} />
+            <Route path="/shipper/subscription" element={<Subscription />} />
             <Route path="/shipper/payment" element={<ShipperPayments />} />
             <Route path="shipper/wallet" element={<ShipperWallet />} />
             <Route path="/shipper/stripe-connect" element={<StripeConnect />} />

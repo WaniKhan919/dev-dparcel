@@ -51,6 +51,7 @@ class ShipperController extends Controller
                 'user_id'  => Auth::id(),            // logged in user id
                 'message'  => $request->message ?? null, // optional message
                 'status'   => $request->status,           // fixed status
+                'offer_price'   => $request->offerPrice,           // fixed status
             ]);
 
             return response()->json([

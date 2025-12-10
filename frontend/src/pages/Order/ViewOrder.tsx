@@ -113,6 +113,10 @@ export default function ViewOrder() {
 
   const columns = [
     {
+      key: "request_number",
+      header: "Request No",
+    },
+    {
       key: "service_type",
       header: "Ship Type",
       render: (record: Request) => {
@@ -169,33 +173,6 @@ export default function ViewOrder() {
           ))}
         </div>
       ),
-    },
-    {
-      key: "payment_status",
-      header: "Payment Status",
-      render: (record: Request) => {
-        const status = record?.order_payment?.status;
-
-        const statusColors: Record<string, string> = {
-          captured: "bg-green-100 text-green-800",
-          succeeded: "bg-green-100 text-green-800",
-          processing: "bg-yellow-100 text-yellow-800",
-          requires_action: "bg-blue-100 text-blue-800",
-          requires_capture: "bg-orange-100 text-orange-800",
-          failed: "bg-red-100 text-red-800",
-          canceled: "bg-gray-200 text-gray-800",
-        };
-
-        const colorClass = status ? statusColors[status] || "bg-gray-100 text-gray-800" : "bg-gray-100 text-gray-800";
-
-        return (
-          <span
-            className={`px-2 py-1 text-m font-medium rounded-full ${colorClass}`}
-          >
-            {status || "-"}
-          </span>
-        );
-      }
     },
     {
       key: "actions",

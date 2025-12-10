@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import ViewShopperOffersDrawer from "../../utils/Drawers/Offers/ViewShopperOffersDrawer";
 import ManageOrderTrackingDrawer from "../../utils/Drawers/Order/ManageOrderTrackingDrawer";
 import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
+import { useNavigate } from "react-router";
 
 interface Request {
   id: number;
@@ -33,11 +34,15 @@ interface Request {
 
 export default function ShopperRequests() {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { data, meta, loading } = useSelector((state: any) => state.shipperOffers);
   const [openOfferDrawer, setOpenOfferDrawer] = useState(false)
   const [openManageOfferDrawer, setOpenManageOfferDrawer] = useState(false)
   const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
   const [orderData, setOrderData] = useState([])
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+
 
   useEffect(() => {
     dispatch(fetchOffers({ page: 1, per_page: 10 }));
@@ -56,6 +61,12 @@ export default function ShopperRequests() {
       order:offer.order
     }));
   }, [data]);
+
+  const handleCustomDecleration = (id: number) => {
+    navigate("/custom-declaration", {
+      state: { order_id: id },
+    });
+  }
 
   const columns = [
     {
@@ -129,44 +140,18 @@ export default function ShopperRequests() {
       key: "actions",
       header: "Actions",
       render: (record: Request) => {
-        const [open, setOpen] = useState(false);
-        const buttonRef = useRef<HTMLButtonElement>(null);
-        const dropdownRef = useRef<HTMLDivElement>(null);
-        const [position, setPosition] = useState({ top: 0, left: 0 });
-
-        const toggleDropdown = () => {
-          if (buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            setPosition({
-              top: rect.bottom + window.scrollY,
-              left: rect.left + window.scrollX,
-            });
-          }
-          setOpen((prev) => !prev);
+        const toggleDropdown = (e: React.MouseEvent<HTMLButtonElement>) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setDropdownPosition({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+          setOpenDropdownId(openDropdownId === record.id ? null : record.id);
         };
-
-        useEffect(() => {
-          const handleClickOutside = (e: MouseEvent) => {
-            if (
-              buttonRef.current &&
-              !buttonRef.current.contains(e.target as Node) &&
-              dropdownRef.current &&
-              !dropdownRef.current.contains(e.target as Node)
-            ) {
-              setOpen(false);
-            }
-          };
-          document.addEventListener("mousedown", handleClickOutside);
-          return () => document.removeEventListener("mousedown", handleClickOutside);
-        }, []);
 
         return (
           <>
             <button
-              ref={buttonRef}
               type="button"
               onClick={toggleDropdown}
-              className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-3 py-1 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+              className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-3 py-1 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Actions
               <svg
@@ -183,47 +168,50 @@ export default function ShopperRequests() {
               </svg>
             </button>
 
-            {open &&
+            {openDropdownId === record.id &&
               createPortal(
                 <div
-                  ref={dropdownRef}
-                  style={{ top: position.top, left: position.left }}
+                  style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
                   className="absolute mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
                 >
                   <div className="py-1">
-                    {/* Existing Actions */}
                     <button
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       onClick={(e) => {
                         e.stopPropagation();
                         viewOffers(record);
-                        setOpen(false);
+                        setOpenDropdownId(null);
                       }}
                     >
                       View Offers
                     </button>
-
-                    {/* New Actions */}
                     <button
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       onClick={(e) => {
                         e.stopPropagation();
                         manageOrder(record);
-                        setOpen(false);
+                        setOpenDropdownId(null);
                       }}
                     >
                       Manage Order
                     </button>
-
                     <button
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       onClick={(e) => {
                         e.stopPropagation();
                         openMessage(record);
-                        setOpen(false);
+                        setOpenDropdownId(null);
                       }}
                     >
                       Conversation
+                    </button>
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={(e) => {
+                        handleCustomDecleration(record.order_details[0].id)
+                      }}
+                    >
+                      Custom Decleraion
                     </button>
                   </div>
                 </div>,
@@ -232,7 +220,7 @@ export default function ShopperRequests() {
           </>
         );
       },
-    },
+    }
   ];
   const viewOffers = (record: any) => {
     setOrderData(record)

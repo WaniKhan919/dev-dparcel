@@ -11,6 +11,7 @@ class OrderOffer extends Model
         'user_id',
         'message',
         'status',
+        'offer_price',
     ];
 
     // Relationships

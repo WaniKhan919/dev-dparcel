@@ -18,6 +18,7 @@ import {
   TaskIcon,
   FolderIcon,
   SettingsIcon,
+  ChatIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
@@ -149,15 +150,22 @@ const navItems: NavItem[] = [
     icon: <UserIcon />,
     name: "Shopper Request",
     subItems: [
-      { name: "View Request", path: "/shopper/requests" },
+      { name: "View Request", path: "/shipper/requests" },
     ],
+    roles: ["shipper"],
+    permissions: ["view_shopper_request"],
+  },
+  {
+    icon: <ChatIcon />,
+    name: "Messages",
+    path: "/shipper/messages",
     roles: ["shipper"],
     permissions: ["view_shopper_request"],
   },
   {
     icon: <GridIcon />,
     name: "Subscription",
-    path: "/subscription",
+    path: "/shipper/subscription",
     roles: ["shipper"],
     permissions: ["subscription"],
   },

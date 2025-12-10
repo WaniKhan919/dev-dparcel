@@ -469,15 +469,14 @@ class OrderController extends Controller
                 'orderDetails.product',
                 'orderServices.service',
                 'orderTrackings.status',
-                'customDeclaration',
+                'customDeclaration.fromCountry',
+                'customDeclaration.fromState',
+                'customDeclaration.fromCity',
+                'customDeclaration.toCountry',
+                'customDeclaration.toState',
+                'customDeclaration.toCity',
             ])->findOrFail($id);
-            if (!$order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order not found',
-                    'data' => null
-                ], 404);
-            }
+
             return response()->json([
                 'success' => true,
                 'data' => $order,
@@ -490,4 +489,5 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
 }

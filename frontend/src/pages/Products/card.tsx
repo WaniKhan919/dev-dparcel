@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ApiHelper } from "../../utils/ApiHelper";
 import toast from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
+import Input from "../../components/form/input/InputField";
 
 interface Notification {
   id: number;
@@ -28,10 +29,13 @@ export default function CardToast({ notifications }: CardToastProps) {
     id: number | null;
     status: "inprogress" | "cancelled" | null;
   }>({ open: false, id: null, status: null });
+  const [offerPrice, setOfferPrice] = useState("");
+  const [error, setError] = useState("");
+
 
   const confirmRequest = async (id: number, status: "inprogress" | "cancelled") => {
     try {
-      const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status });
+      const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status,offerPrice });
 
       if (response.status === 200) {
         setVisibleIds(prev => prev.filter(d => d !== id));
@@ -55,11 +59,17 @@ export default function CardToast({ notifications }: CardToastProps) {
   };
 
   const handleConfirm = () => {
+    if(confirmModal.status == "inprogress" && offerPrice == ""){
+      setError("Price is required");
+      return;
+    }
+    setError("");
     if (confirmModal.id && confirmModal.status) {
       confirmRequest(confirmModal.id, confirmModal.status);
     }
     setConfirmModal({ open: false, id: null, status: null });
   };
+  
   const handleViewDetails = (id: any) => {
 
   };
@@ -160,33 +170,69 @@ export default function CardToast({ notifications }: CardToastProps) {
       <Modal
         isOpen={confirmModal.open}
         onClose={() => setConfirmModal({ open: false, id: null, status: null })}
-        className="max-w-md m-4"
+        className="max-w-md w-full m-4"
       >
-        <div className="bg-white p-6 rounded-2xl text-center">
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">Confirm Action</h3>
-          <p className="mb-6 text-gray-600">
-            Are you sure you want to{" "}
-            <strong className="capitalize">{confirmModal.status == "inprogress" ? 'Offer' : confirmModal.status}</strong> this request?
+        <div className="bg-white p-7 rounded-2xl shadow-xl">
+          {/* Header */}
+          <h3 className="text-2xl font-semibold mb-2 text-gray-900">
+            {confirmModal.status == "inprogress" ? "Send Your Offer": "Cancel This Offer"}
+          </h3>
+
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            You're about to{" "}
+            <strong className="capitalize text-brand-600">
+              {confirmModal.status == "inprogress" ? "Offer" : confirmModal.status}
+            </strong>{" "}
+            on this request.
+            {confirmModal.status == "inprogress" ? "Please enter your price below.":" Are you sure to cancel this?"}
           </p>
+          {/* PRICE BOX */}
+          {
+            confirmModal.status == "inprogress" ?
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 shadow-inner">
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Your Offer Price ($)
+              </label>
+
+              <Input
+                type="number"
+                placeholder="Enter your price"
+                className="!h-12 !text-base"
+                value={offerPrice}
+                onChange={(e) => setOfferPrice(e.target.value)}
+              />
+              {
+                error &&
+                <span className="text-red-600">{error}</span>
+              }
+            </div>
+            :""
+          }
+
+          {/* ACTION BUTTONS */}
           <div className="flex justify-center gap-4">
             <button
               onClick={() => setConfirmModal({ open: false, id: null, status: null })}
-              className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 transition"
+              className="px-5 py-2.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition"
             >
               Cancel
             </button>
+
             <button
               onClick={handleConfirm}
-              className={`px-4 py-2 rounded-lg text-white transition ${confirmModal.status === "inprogress"
+              className={`px-5 py-2.5 rounded-lg text-white font-medium shadow-md transition 
+          ${confirmModal.status === "inprogress"
                   ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-red-600 hover:bg-red-700"
-                }`}
+                  : "bg-red-700 hover:bg-red-800"
+                }
+        `}
             >
-              Confirm
+              {confirmModal.status == "inprogress" ?"Send Offer":"Confirm"}
             </button>
           </div>
         </div>
       </Modal>
+
     </>
   );
 }

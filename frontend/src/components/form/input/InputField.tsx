@@ -16,6 +16,15 @@ const Input: FC<InputProps> = ({
   hint,
   ...rest // ✅ includes id, name, value, onChange, ref, etc.
 }) => {
+  if (type === "checkbox") {
+    return (
+      <input
+        type="checkbox"
+        className={`h-5 w-5 cursor-pointer ${className}`}
+        {...rest}
+      />
+    );
+  }
   let inputClasses = `h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 ${className}`;
 
   if (disabled) {

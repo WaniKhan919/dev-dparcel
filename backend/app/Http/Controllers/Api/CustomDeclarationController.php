@@ -17,7 +17,19 @@ class CustomDeclarationController extends Controller
     public function index($order_id)
     {
         try {
-            $declaration = CustomDeclaration::with(['user', 'order', 'shippingType', 'country', 'state', 'city'])
+            $declaration = CustomDeclaration::with(
+                [
+                    'user',
+                    'order',
+                    'shippingType',
+                    'fromCountry',
+                    'fromState',
+                    'fromCity',
+                    'toCountry',
+                    'toState',
+                    'toCity'
+                ]
+            )
                 ->where('order_id', $order_id)
                 ->first();
 
@@ -50,40 +62,73 @@ class CustomDeclarationController extends Controller
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
             'shipping_type_id' => 'required|exists:shipping_types,id',
-            'export_reason' => 'nullable|string',
-            'purpose_of_shipment' => 'nullable|string',
+
+            // FROM
+            'from_name' => 'required|string',
+            'from_business' => 'required|string',
+            'from_street' => 'required|string',
+            'from_postcode' => 'required|string',
+            'from_country' => 'required|string',
+            'from_state' => 'required|string',
+            'from_city' => 'required|string',
+
+            // TO
+            'to_name' => 'required|string',
+            'to_business' => 'required|string',
+            'to_street' => 'required|string',
+            'to_postcode' => 'required|string',
+            'to_country' => 'required|string',
+            'to_state' => 'required|string',
+            'to_city' => 'required|string',
+
+            // Importer info
+            'importer_reference' => 'nullable|string',
+            'importer_contact' => 'nullable|string',
+
+            // Categories
+            'category_commercial_sample' => 'boolean',
+            'category_gift' => 'boolean',
+            'category_returned_goods' => 'boolean',
+            'category_documents' => 'boolean',
+            'category_other' => 'boolean',
+
+            // Text fields
+            'explanation' => 'nullable|string',
+            'comments' => 'nullable|string',
+            'office_origin_posting' => 'nullable|string',
+
+            // Documents
+            'doc_licence' => 'boolean',
+            'doc_certificate' => 'boolean',
+            'doc_invoice' => 'boolean',
+
+            // Totals
             'total_declared_value' => 'nullable|numeric',
-            'currency' => 'nullable|string|max:10',
             'total_weight' => 'nullable|numeric',
-            'unit_of_weight' => 'nullable|string|max:10',
-            'country_id' => 'nullable|exists:countries,id',
-            'state_id' => 'nullable|exists:states,id',
-            'city_id' => 'nullable|exists:cities,id',
-            'receiver_name' => 'nullable|string',
-            'receiver_phone' => 'nullable|string',
-            'receiver_address' => 'nullable|string',
-            'postal_code' => 'nullable|string',
+
+            // Flags
             'contains_prohibited_items' => 'boolean',
             'contains_liquids' => 'boolean',
             'contains_batteries' => 'boolean',
             'is_fragile' => 'boolean',
-            'is_dutiable' => 'boolean',
-            'additional_info' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
 
         try {
-            $validated['user_id'] = Auth::id();;
+            $validated['user_id'] = Auth::id();
+            $validated['status'] = 'pending';
+            $validated['submitted_at'] = now();
 
-            $declaration = CustomDeclaration::create($validated);
+            CustomDeclaration::create($validated);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Custom declaration created successfully.',
-            ], 201);
+            ], 200);
+
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -95,6 +140,7 @@ class CustomDeclarationController extends Controller
         }
     }
 
+
     /**
      * Update existing custom declaration
      */
@@ -102,25 +148,57 @@ class CustomDeclarationController extends Controller
     {
         $validated = $request->validate([
             'shipping_type_id' => 'sometimes|exists:shipping_types,id',
-            'export_reason' => 'nullable|string',
-            'purpose_of_shipment' => 'nullable|string',
+
+            // FROM
+            'from_name' => 'sometimes|string',
+            'from_business' => 'sometimes|string',
+            'from_street' => 'sometimes|string',
+            'from_postcode' => 'sometimes|string',
+            'from_country' => 'sometimes|string',
+            'from_state' => 'sometimes|string',
+            'from_city' => 'sometimes|string',
+
+            // TO
+            'to_name' => 'sometimes|string',
+            'to_business' => 'sometimes|string',
+            'to_street' => 'sometimes|string',
+            'to_postcode' => 'sometimes|string',
+            'to_country' => 'sometimes|string',
+            'to_state' => 'sometimes|string',
+            'to_city' => 'sometimes|string',
+
+            // Importer info
+            'importer_reference' => 'nullable|string',
+            'importer_contact' => 'nullable|string',
+
+            // Categories
+            'category_commercial_sample' => 'boolean',
+            'category_gift' => 'boolean',
+            'category_returned_goods' => 'boolean',
+            'category_documents' => 'boolean',
+            'category_other' => 'boolean',
+
+            // Extra info
+            'explanation' => 'nullable|string',
+            'comments' => 'nullable|string',
+            'office_origin_posting' => 'nullable|string',
+
+            // Documents
+            'doc_licence' => 'boolean',
+            'doc_certificate' => 'boolean',
+            'doc_invoice' => 'boolean',
+
+            // Total values
             'total_declared_value' => 'nullable|numeric',
-            'currency' => 'nullable|string|max:10',
             'total_weight' => 'nullable|numeric',
-            'unit_of_weight' => 'nullable|string|max:10',
-            'country_id' => 'nullable|exists:countries,id',
-            'state_id' => 'nullable|exists:states,id',
-            'city_id' => 'nullable|exists:cities,id',
-            'receiver_name' => 'nullable|string',
-            'receiver_phone' => 'nullable|string',
-            'receiver_address' => 'nullable|string',
-            'postal_code' => 'nullable|string',
+
+            // Flags
             'contains_prohibited_items' => 'boolean',
             'contains_liquids' => 'boolean',
             'contains_batteries' => 'boolean',
             'is_fragile' => 'boolean',
-            'is_dutiable' => 'boolean',
-            'additional_info' => 'nullable|string',
+
+            // Status optional (admin use)
             'status' => 'nullable|string',
         ]);
 
@@ -137,6 +215,7 @@ class CustomDeclarationController extends Controller
                 'success' => true,
                 'message' => 'Custom declaration updated successfully.',
             ], 200);
+
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -147,4 +226,5 @@ class CustomDeclarationController extends Controller
             ], 500);
         }
     }
+
 }
