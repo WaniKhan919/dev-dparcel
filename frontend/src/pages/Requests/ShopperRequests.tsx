@@ -20,6 +20,7 @@ interface Request {
   total_aprox_weight: string;
   total_price: string;
   status: string;
+  request_number: string;
   order_details: {
     id: number;
     quantity: number;
@@ -52,13 +53,18 @@ export default function ShopperRequests() {
     return data.map((offer: any) => ({
       id: offer.order_id,
       service_type: offer.order?.service_type ?? "",
-      ship_from: offer.order?.ship_from ?? "",
-      ship_to: offer.order?.ship_to ?? "",
+      ship_from: offer.order
+        ? `${offer.order.ship_from_country?.name ?? ""}, ${offer.order.ship_from_state?.name ?? ""}, ${offer.order.ship_from_city?.name ?? ""}`
+        : "",
+      ship_to: offer.order
+        ? `${offer.order.ship_to_country?.name ?? ""}, ${offer.order.ship_to_state?.name ?? ""}, ${offer.order.ship_to_city?.name ?? ""}`
+        : "",
       total_aprox_weight: offer.order?.total_aprox_weight ?? "",
       total_price: offer.order?.total_price ?? "",
       status: offer.status,
+      request_number:offer.order?.request_number,
       order_details: offer.order?.order_details ?? [],
-      order:offer.order
+      order: offer.order
     }));
   }, [data]);
 
@@ -73,7 +79,13 @@ export default function ShopperRequests() {
       key: "service_type",
       header: "Ship Type",
       render: (record: Request) =>
-        record.service_type === "ship_for_me" ? "Ship For Me" : "Shop For Me",
+      (
+        <>
+        <span>{record.service_type === "ship_for_me" ? "Ship For Me" : "Shop For Me"}</span>
+        <br />
+        <span>{record.request_number}</span>
+        </>
+      )
     },
     {
       key: "ship_from",
@@ -118,12 +130,12 @@ export default function ShopperRequests() {
       header: "Status",
       render: (record: Request) => {
         const statusColors: Record<string, string> = {
-          pending: "bg-yellow-100 text-yellow-800",      // waiting
-          inprogress: "bg-blue-100 text-blue-800",      // active work
-          accepted: "bg-green-100 text-green-800",      // success
-          rejected: "bg-red-100 text-red-800",          // failure
-          cancelled: "bg-gray-200 text-gray-800",       // neutral
-          ignored: "bg-purple-100 text-purple-800",     // dismissed
+          pending: "bg-yellow-100 text-yellow-800",
+          inprogress: "bg-blue-100 text-blue-800",
+          accepted: "bg-green-100 text-green-800",
+          rejected: "bg-red-100 text-red-800",
+          cancelled: "bg-gray-200 text-gray-800",
+          ignored: "bg-purple-100 text-purple-800",
         };
 
         return (
@@ -198,16 +210,6 @@ export default function ShopperRequests() {
                     <button
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       onClick={(e) => {
-                        e.stopPropagation();
-                        openMessage(record);
-                        setOpenDropdownId(null);
-                      }}
-                    >
-                      Conversation
-                    </button>
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={(e) => {
                         handleCustomDecleration(record.order_details[0].id)
                       }}
                     >
@@ -220,8 +222,26 @@ export default function ShopperRequests() {
           </>
         );
       },
+    },
+    {
+      key: "message",
+      header: "Message",
+      render: (record: Request) =>
+        record.status === "accepted" ? (
+          <button
+            className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm"
+            onClick={() =>
+              navigate("/shipper/messages", { state: { orderId: record.id } })
+            }
+          >
+            Message
+          </button>
+        ) : null,
     }
+
   ];
+
+
   const viewOffers = (record: any) => {
     setOrderData(record)
     setOpenOfferDrawer(true)

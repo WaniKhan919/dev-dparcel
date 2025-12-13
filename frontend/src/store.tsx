@@ -21,6 +21,8 @@ import paymentPlanReducer from "./slices/getPaymentSettingForRolesSlice";
 import countriesReducer from "./slices/countriesSlice"
 import statesReducer from "./slices/statesSlice"
 import citiesReducer from "./slices/citiesSlice"
+import chatContactsReducer from "./slices/chatContactsSlice"
+import messagesReducer from "./slices/messagesSlice"
 
 export const store = configureStore({
   reducer: {
@@ -46,6 +48,8 @@ export const store = configureStore({
     countries:countriesReducer,
     states:statesReducer,
     cities:citiesReducer,
+    chatContacts:chatContactsReducer,
+    messages:messagesReducer,
   },
 });
 

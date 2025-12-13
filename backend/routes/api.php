@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PaymentSettingController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\Shipper\PaymentController as ShipperPaymentController;
 use App\Http\Controllers\Api\Shipper\StripeConnectController;
 use App\Http\Controllers\Api\StripeController;
@@ -183,6 +184,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{order_id}', 'index');
         Route::post('/store', 'store');
         Route::put('/update/{id}', 'update');
+    });
+
+    Route::prefix('chat')->controller(ChatController::class)->group(function(){
+        Route::get('/contacts','chatContacts');
+        Route::get('/messages/{order_id}','messages');
     });
     
 });

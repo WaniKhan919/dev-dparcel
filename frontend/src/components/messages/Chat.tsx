@@ -3,9 +3,11 @@ import React from "react";
 export interface ChatItem {
   id: number;
   name: string;
+  request_number: string;
   avatar?: string;
   lastMessage: string;
   time: string;
+  receiver_id: number;
   unread?: number;
   online?: boolean;
 }
@@ -46,6 +48,7 @@ const Chat: React.FC<ChatProps> = ({ chats, activeChat, onChatClick }) => {
 
               <div className="overflow-hidden">
                 <p className="font-medium text-gray-800">{chat.name}</p>
+                <p className="text-sm text-gray-600">{chat.request_number}</p>
                 <p className="text-xs text-gray-500 line-clamp-2 w-40">
                   {chat.lastMessage}
                 </p>

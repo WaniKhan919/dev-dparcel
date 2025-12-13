@@ -44,6 +44,7 @@ import AdminWallet from "./pages/Payments/Wallet/AdminWallet";
 import StripeConnect from "./pages/Payments/Stripe/StripeConnect";
 import ShopperCustomDeclaration from "./pages/Requests/ShopperCustomDeclaration";
 import ShipperMessages from "./pages/Shipper/ShipperMessages";
+import RoleRedirect from "./context/RoleRedirect";
 
 export default function App() {
   return (
@@ -57,6 +58,14 @@ export default function App() {
           <Route path="/verify" element={<VerifyOtp />} />
 
           {/* Dashboard Layout */}
+
+          <Route
+            path="/"
+            element={
+              <RoleRedirect />
+            }
+          />
+
           <Route
             element={
               <PrivateRoute>
@@ -65,7 +74,12 @@ export default function App() {
             }
           >
             {/* Admin Routes */}
-            <Route index path="/" element={<Home />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <Home />
+              }
+            />
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
             <Route path="/view/requests" element={<ViewAllRequests />} />

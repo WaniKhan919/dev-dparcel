@@ -74,10 +74,19 @@ class ShipperController extends Controller
 
             $perPage = (int) $request->get('per_page', 10);
 
-            $orderOffers = OrderOffer::with(['order.orderDetails.product'])
-                ->where('user_id', $userId)
-                ->orderBy('id', 'desc')
-                ->paginate($perPage);
+            $orderOffers = OrderOffer::with([
+                                'order.orderDetails.product',
+                                'order.shipFromCountry:id,name',
+                                'order.shipFromState:id,name',
+                                'order.shipFromCity:id,name',
+                                'order.shipToCountry:id,name',
+                                'order.shipToState:id,name',
+                                'order.shipToCity:id,name',
+                            ])
+                            ->where('user_id', $userId)
+                            ->orderBy('id', 'desc')
+                            ->paginate($perPage);
+
 
             return response()->json([
                 'success' => true,

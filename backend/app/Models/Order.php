@@ -107,4 +107,8 @@ class Order extends Model
     {
         return $this->hasOne(CustomDeclaration::class, 'order_id');
     }
+    public function messages()
+    {
+        return $this->hasMany(OrderMessage::class, 'order_id');
+    }
 }
