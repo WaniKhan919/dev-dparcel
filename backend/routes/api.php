@@ -189,6 +189,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('chat')->controller(ChatController::class)->group(function(){
         Route::get('/contacts','chatContacts');
         Route::get('/messages/{order_id}','messages');
+        Route::get('/latest-messages','unreadChatContacts');
     });
     
 });

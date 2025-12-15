@@ -5,24 +5,38 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderMessage;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
-    public function chatContacts(Request $request){
+    public function chatContacts(Request $request)
+    {
         try {
             $shipperId = Auth::id();
 
             $orders = Order::whereHas('offers', function ($q) use ($shipperId) {
-                $q->where('user_id', $shipperId)         // shipper id
-                ->where('status', 'accepted');        // shopper accepted
-            })
-            ->with(['messages' => function ($q) {
-                $q->where('status', 'approved')->latest();
-            }])
-            ->get();
+                    $q->where('user_id', $shipperId)
+                    ->where('status', 'accepted');
+                })
+                ->with([
+                    // last approved message
+                    'messages' => function ($q) {
+                        $q->where('status', 'approved')->latest();
+                    },
+                    'user:id,name'
+                ])
+                ->withCount([
+                    // ✅ unread count
+                    'messages as unread_count' => function ($q) use ($shipperId) {
+                        $q->where('receiver_id', $shipperId)
+                        ->where('status', 'approved')
+                        ->where('is_read', false);
+                    }
+                ])
+                ->get();
 
             $orders = $orders->map(function ($order) {
                 $lastMessage = $order->messages->first();
@@ -33,11 +47,17 @@ class ChatController extends Controller
                     'service_type'   => $order->service_type,
                     'status'         => $order->status,
                     'receiver_id'    => $order->user->id,
+                    'shopper_name'   => $order->user?->name,
+
+                    // last message
                     'last_message'   => $lastMessage?->message_text,
                     'last_time'      => $lastMessage?->created_at?->format('g:i A'),
-                    'shopper_name'   => $order->user?->name,
+
+                    // 🔴 unread badge count
+                    'unread_count'   => $order->unread_count,
                 ];
             });
+
             return response()->json([
                 'success' => true,
                 'data'    => $orders,
@@ -51,6 +71,7 @@ class ChatController extends Controller
             ], 500);
         }
     }
+
     public function messages($orderId){
         try {
             $userId = Auth::id();
@@ -78,6 +99,15 @@ class ChatController extends Controller
                     'data' => []
                 ], 200);
             }
+
+            // 🔴 MARK UNREAD → READ
+            OrderMessage::where('order_id', $orderId)
+                ->where('receiver_id', $userId)
+                ->where('status', 'approved')
+                ->where('is_read', false)
+                ->update([
+                    'is_read' => true
+                ]);
 
             // ✅ CORE FIX IS HERE
             $messages = OrderMessage::where('order_id', $orderId)
@@ -115,5 +145,47 @@ class ChatController extends Controller
             ], 500);
         }
     }
+    public function unreadChatContacts()
+    {
+        try {
+            $userId = Auth::id();
+
+            $unreadContacts = OrderMessage::where('receiver_id', $userId)
+                                ->where('status', 'approved')
+                                ->where('is_read', 0)
+                                ->with('sender:id,name')
+                                ->selectRaw('
+                                    sender_id,
+                                    message_text,
+                                    order_id,
+                                    COUNT(*) as unread_count,
+                                    MAX(created_at) as last_message_time
+                                ')
+                                ->groupBy('sender_id', 'order_id','message_text')
+                                ->orderByDesc('last_message_time')
+                                ->get()
+                                ->map(function ($item) {
+                                    return [
+                                        'order_id'          => $item->order_id,
+                                        'message_text'          => $item->message_text,
+                                        'username'          => $item->sender->name,
+                                        'unread_count'      => $item->unread_count,
+                                        'last_message_time' => Carbon::parse($item->last_message_time)->diffForHumans(),
+                                    ];
+                                });
+
+            return response()->json([
+                'success' => true,
+                'data'    => $unreadContacts,
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+            ], 500);
+        }
+    }
+
 
 }

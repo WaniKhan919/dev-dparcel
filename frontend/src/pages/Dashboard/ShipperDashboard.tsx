@@ -4,7 +4,9 @@ import Card from "../Products/Card";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchRequests } from "../../slices/shopperRequestSlice";
+import { fetchLatestMessages } from "../../slices/latestChatsSlice";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 
 interface Notification {
   id: number;
@@ -20,9 +22,12 @@ export default function ShipperDashboard() {
 
   const dispatch = useDispatch<AppDispatch>();
   const { requests, loading, error } = useSelector((state: any) => state.shopperRequest);
+  const { data: latestChats, loading:latestChatLoading } = useSelector((state: any) => state.latestChats);
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(fetchRequests());
+    dispatch(fetchLatestMessages());
   }, [dispatch]);
 
   const notification: Notification[] = useMemo(() => {
@@ -142,47 +147,60 @@ export default function ShipperDashboard() {
       <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 
         {/* LEFT: Latest Chats */}
-        <div className="bg-white shadow-md rounded-2xl p-4">
-          <h2 className="text-lg font-semibold mb-3">Latest Chats</h2>
+          <div className="bg-white shadow-md rounded-2xl p-4">
+            <h2 className="text-lg font-semibold mb-3">Latest Chats</h2>
 
-          <div className="space-y-3">
+            <div className="space-y-3">
+              {latestChats && latestChats.length > 0 ? (
+                latestChats.map((chat: any) => {
+                  const initials = chat.username
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .toUpperCase();
 
-            {/* Chat Item 1 */}
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-200 hover:bg-blue-100 transition">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                  A
-                </div>
+                  return (
+                    <div
+                      key={chat.order_id}
+                       onClick={() =>
+                          navigate("/shipper/messages", { state: { orderId: chat.order_id } })
+                        }
+                      className={`flex items-center justify-between p-3 rounded-xl border transition
+                        ${chat.unread_count > 0 ? "bg-blue-50 border-blue-200 hover:bg-blue-100" : "bg-gray-50 border-gray-200 hover:bg-gray-100"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                            ${chat.unread_count > 0 ? "bg-blue-500 text-white" : "bg-gray-400 text-white"}`}
+                        >
+                          {initials}
+                        </div>
 
-                <div>
-                  <p className="font-medium text-gray-800">Ahmad</p>
-                  <p className="text-xs text-gray-500">“Where is my package?”</p>
-                </div>
-              </div>
+                        {/* Username & Last Message */}
+                        <div>
+                          <p className="font-medium text-gray-800">{chat.username}</p>
+                          <p className="text-xs text-gray-500">{chat.message_text || "No messages yet"}</p>
+                        </div>
+                      </div>
 
-              <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                NEW
-              </span>
+                      {/* Time / Unread badge */}
+                      {chat.unread_count > 0 ? (
+                        <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
+                          {chat.unread_count}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">{chat.last_message_time}</span>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-gray-500">No recent chats</p>
+              )}
             </div>
-
-            {/* Chat Item 2 */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border hover:bg-gray-100 transition">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-400 text-white flex items-center justify-center text-sm font-bold">
-                  S
-                </div>
-
-                <div>
-                  <p className="font-medium text-gray-800">Sarah</p>
-                  <p className="text-xs text-gray-500">“Thanks for the update!”</p>
-                </div>
-              </div>
-
-              <span className="text-xs text-gray-400">2h ago</span>
-            </div>
-
           </div>
-        </div>
+
 
         {/* RIGHT: New Requests */}
         <div className="bg-white shadow-md rounded-2xl p-4">

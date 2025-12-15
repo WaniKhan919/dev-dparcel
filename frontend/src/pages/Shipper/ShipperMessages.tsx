@@ -40,7 +40,8 @@ export default function ShipperMessages() {
   // Fetch messages whenever activeChatId changes
  useEffect(() => {
     if (activeChatId) {
-      dispatch(fetchChatMessages(activeChatId));
+      dispatch(fetchChatMessages(activeChatId)); 
+      dispatch(fetchChatContacts());
     } else {
       dispatch(clearMessages());
     }
@@ -55,6 +56,7 @@ export default function ShipperMessages() {
     request_number: item.request_number,
     lastMessage: item.last_message || "No messages yet",
     time: item.last_time,
+    unread: item.unread_count>0?item.unread_count:null,
     online: true,
   }));
 
@@ -70,6 +72,7 @@ export default function ShipperMessages() {
         })
       : "",
     status: msg.status,
+    unread: msg.unread_count>0?msg.unread_count:null,
     attachments: msg.attachments || [],
   }));
 
