@@ -4,9 +4,11 @@ import Card from "../Products/Card";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchRequests } from "../../slices/shopperRequestSlice";
+import { fetchNewOffers } from "../../slices/shipperNewOffersSlice";
 import { fetchLatestMessages } from "../../slices/latestChatsSlice";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { Modal } from "../../components/ui/modal";
 
 interface Notification {
   id: number;
@@ -22,11 +24,15 @@ export default function ShipperDashboard() {
 
   const dispatch = useDispatch<AppDispatch>();
   const { requests, loading, error } = useSelector((state: any) => state.shopperRequest);
+  const { data:newOffers, loading:loadingOffers, errorOffers } = useSelector((state: any) => state.shipperNewOffers);
   const { data: latestChats, loading:latestChatLoading } = useSelector((state: any) => state.latestChats);
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   useEffect(() => {
     dispatch(fetchRequests());
+    dispatch(fetchNewOffers());
     dispatch(fetchLatestMessages());
   }, [dispatch]);
 
@@ -147,111 +153,245 @@ export default function ShipperDashboard() {
       <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 
         {/* LEFT: Latest Chats */}
-          <div className="bg-white shadow-md rounded-2xl p-4">
-            <h2 className="text-lg font-semibold mb-3">Latest Chats</h2>
+        <div className="bg-white shadow-md rounded-2xl p-4">
+          <h2 className="text-lg font-semibold mb-3">Latest Chats</h2>
 
-            <div className="space-y-3">
-              {latestChats && latestChats.length > 0 ? (
-                latestChats.map((chat: any) => {
-                  const initials = chat.username
-                    .split(" ")
-                    .map((n: string) => n[0])
-                    .join("")
-                    .toUpperCase();
+          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            {latestChatLoading ? (
+               <div className="flex justify-center py-6">
+                <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : latestChats && latestChats.length > 0 ? (
+              latestChats.map((chat: any) => {
+                const initials = chat.username
+                  .split(" ")
+                  .map((n: string) => n[0])
+                  .join("")
+                  .toUpperCase();
 
-                  return (
-                    <div
-                      key={chat.order_id}
-                       onClick={() =>
-                          navigate("/shipper/messages", { state: { orderId: chat.order_id } })
-                        }
-                      className={`flex items-center justify-between p-3 rounded-xl border transition
-                        ${chat.unread_count > 0 ? "bg-blue-50 border-blue-200 hover:bg-blue-100" : "bg-gray-50 border-gray-200 hover:bg-gray-100"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* Avatar */}
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
-                            ${chat.unread_count > 0 ? "bg-blue-500 text-white" : "bg-gray-400 text-white"}`}
-                        >
-                          {initials}
-                        </div>
-
-                        {/* Username & Last Message */}
-                        <div>
-                          <p className="font-medium text-gray-800">{chat.username}</p>
-                          <p className="text-xs text-gray-500">{chat.message_text || "No messages yet"}</p>
-                        </div>
+                return (
+                  <div
+                    key={chat.order_id}
+                    onClick={() =>
+                      navigate("/shipper/messages", {
+                        state: { orderId: chat.order_id },
+                      })
+                    }
+                    className={`flex items-center justify-between p-3 rounded-xl border transition
+                      ${
+                        chat.unread_count > 0
+                          ? "bg-blue-50 border-blue-200 hover:bg-blue-100"
+                          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                          ${
+                            chat.unread_count > 0
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-400 text-white"
+                          }`}
+                      >
+                        {initials}
                       </div>
 
-                      {/* Time / Unread badge */}
-                      {chat.unread_count > 0 ? (
-                        <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                          {chat.unread_count}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">{chat.last_message_time}</span>
-                      )}
+                      <div>
+                        <p className="font-medium text-gray-800">{chat.username}</p>
+                        <p className="text-xs text-gray-500">
+                          {chat.message_text || "No messages yet"}
+                        </p>
+                      </div>
                     </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-gray-500">No recent chats</p>
-              )}
-            </div>
+
+                    {chat.unread_count > 0 ? (
+                      <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
+                        {chat.unread_count}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        {chat.last_message_time}
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-6">
+                No recent chats
+              </p>
+            )}
           </div>
+        </div>
+
 
 
         {/* RIGHT: New Requests */}
         <div className="bg-white shadow-md rounded-2xl p-4">
           <h2 className="text-lg font-semibold mb-3">New Requests</h2>
 
-          <div className="space-y-4">
+          {/* Scrollable Area */}
+          <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+            {loadingOffers && (
+               <div className="flex justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            )}
 
-            {/* Request Card 1 */}
-            <div className="border rounded-xl p-4 bg-green-50 border-green-300 hover:bg-green-100 transition">
-              <div className="flex justify-between">
-                <p className="font-bold text-gray-800">From USA → Germany</p>
-                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">NEW</span>
-              </div>
+            {newOffers?.map((order: any) => (
+                <div
+                  key={order.id}
+                  className="border rounded-xl p-4 bg-green-50 border-green-300 hover:bg-green-100 transition"
+                >
+                  <div className="flex justify-between">
+                    <p className="font-bold text-gray-800 text-sm">
+                      From {order.ship_from_country}, {order.ship_from_state},{" "}
+                      {order.ship_from_city}
+                      {" "}→{" "}
+                      {order.ship_to_country}, {order.ship_to_state},{" "}
+                      {order.ship_to_city}
+                    </p>
 
-              <p className="text-sm text-gray-600 mt-1">
-                Service: Express | Weight: 3.5kg
-              </p>
+                    <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full h-fit">
+                      NEW
+                    </span>
+                  </div>
 
-              <div className="flex justify-between mt-2">
-                <p className="text-gray-700 font-medium">€45.00</p>
-                <button className="text-blue-600 text-sm font-medium hover:underline">
-                  View details
-                </button>
-              </div>
-            </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Shipping Type:{" "}
+                    {order.service_type === "buy_for_me"
+                      ? "Buy For Me"
+                      : "Ship For Me"}{" "}
+                    | Weight: {order.total_aprox_weight}kg
+                  </p>
 
-            {/* Request Card 2 */}
-            <div className="border rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition">
-              <div className="flex justify-between">
-                <p className="font-bold text-gray-800">From UK → France</p>
-                <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded-full">
-                  Pending
-                </span>
-              </div>
+                  <div className="flex justify-between mt-2">
+                    <p className="text-gray-700 font-medium">
+                      ${order.total_price}
+                    </p>
 
-              <p className="text-sm text-gray-600 mt-1">
-                Service: Standard | Weight: 1.2kg
-              </p>
+                    <button
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setIsModalOpen(true);
+                      }}
+                      className="text-blue-600 text-sm font-medium hover:underline"
+                    >
+                      View details
+                    </button>
 
-              <div className="flex justify-between mt-2">
-                <p className="text-gray-700 font-medium">€18.00</p>
-                <button className="text-blue-600 text-sm font-medium hover:underline">
-                  View details
-                </button>
-              </div>
-            </div>
-
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
 
+
       </div>
+      {
+        isModalOpen &&
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedOrder(null);
+          }}
+          className="max-w-2xl p-6"
+        >
+          {selectedOrder && (
+            <div className="space-y-4">
+              {/* Header */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Order Details
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Request #: {selectedOrder.request_number}
+                </p>
+              </div>
+
+              {/* From → To */}
+              <div className="border rounded-xl p-4 bg-gray-50">
+                <p className="font-medium text-gray-700 mb-1">Route</p>
+                <p className="text-sm text-gray-600">
+                  <strong>From:</strong>{" "}
+                  {selectedOrder.ship_from_country},{" "}
+                  {selectedOrder.ship_from_state},{" "}
+                  {selectedOrder.ship_from_city}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>To:</strong>{" "}
+                  {selectedOrder.ship_to_country},{" "}
+                  {selectedOrder.ship_to_state},{" "}
+                  {selectedOrder.ship_to_city}
+                </p>
+              </div>
+
+              {/* Service Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border rounded-xl p-4">
+                  <p className="text-sm text-gray-500">Shipping Type</p>
+                  <p className="font-medium">
+                    {selectedOrder.service_type === "buy_for_me"
+                      ? "Buy For Me"
+                      : "Ship For Me"}
+                  </p>
+                </div>
+
+                <div className="border rounded-xl p-4">
+                  <p className="text-sm text-gray-500">Weight</p>
+                  <p className="font-medium">
+                    {selectedOrder.total_aprox_weight} kg
+                  </p>
+                </div>
+
+                <div className="border rounded-xl p-4">
+                  <p className="text-sm text-gray-500">Total Price</p>
+                  <p className="font-medium">
+                    ${selectedOrder.total_price}
+                  </p>
+                </div>
+
+                <div className="border rounded-xl p-4">
+                  <p className="text-sm text-gray-500">Shopper</p>
+                  <p className="font-medium">
+                    {selectedOrder.user.name}
+                  </p>
+                </div>
+              </div>
+
+              {/* Products */}
+              <div className="border rounded-xl p-4">
+                <p className="font-medium text-gray-700 mb-2">
+                  Order Items
+                </p>
+
+                <div className="space-y-2">
+                  {selectedOrder.order_details.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex justify-between text-sm border-b pb-2"
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {item.product.title}
+                        </p>
+                        <p className="text-gray-500">
+                          Qty: {item.quantity} | Weight: {item.weight}kg
+                        </p>
+                      </div>
+
+                      <p className="font-medium">
+                        €{item.price}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal>
+      }
 
     </>
   );

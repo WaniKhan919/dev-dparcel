@@ -127,6 +127,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/get/requests', 'getRequests');
             Route::post('/confirm/request', 'confirmRequest');
             Route::get('/get/offers', 'getMyOffers');
+            Route::get('/get/new-offers', 'getNewOffers');
 
         });
         Route::get('/payments', [ShipperPaymentController::class, 'index']);

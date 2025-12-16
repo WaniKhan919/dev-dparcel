@@ -137,13 +137,14 @@ export default function ShopperRequests() {
           cancelled: "bg-gray-200 text-gray-800",
           ignored: "bg-purple-100 text-purple-800",
         };
-
+        const status = record.status;
         return (
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[record.status] || "bg-gray-100 text-gray-800"
-              }`}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              statusColors[status] || "bg-gray-100 text-gray-800"
+            }`}
           >
-            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
         );
       },

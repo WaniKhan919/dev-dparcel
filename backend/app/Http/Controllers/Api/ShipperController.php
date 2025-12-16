@@ -108,4 +108,70 @@ class ShipperController extends Controller
             ], 500);
         }
     }
+    public function getNewOffers(Request $request){
+        try {
+            $user = Auth::user();
+
+            $orderIds = OrderOffer::where('user_id', $user->id)
+                ->whereIn('status', ['pending', 'inprogress', 'accepted'])
+                ->pluck('order_id');
+
+            if ($orderIds->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'No active orders found.'
+                ], 200);
+            }
+
+            $orders = Order::with([
+                    'orderDetails.product',
+                    'user',
+                    'shipFromCountry',
+                    'shipFromState',
+                    'shipFromCity',
+                    'shipToCountry',
+                    'shipToState',
+                    'shipToCity'
+                ])
+                ->whereIn('id', $orderIds)
+                ->orderBy('id', 'desc')
+                ->get()
+                ->map(function ($order) {
+                    return [
+                        'id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'service_type' => $order->service_type,
+                        'total_aprox_weight' => $order->total_aprox_weight,
+                        'total_price' => $order->total_price,
+                        'tracking_number' => $order->tracking_number,
+                        'request_number' => $order->request_number,
+                        'status' => $order->status,
+                        'created_at' => $order->created_at,
+                        'updated_at' => $order->updated_at,
+                        'ship_from_country' => $order->shipFromCountry?->name,
+                        'ship_from_state' => $order->shipFromState?->name,
+                        'ship_from_city' => $order->shipFromCity?->name,
+                        'ship_to_country' => $order->shipToCountry?->name,
+                        'ship_to_state' => $order->shipToState?->name,
+                        'ship_to_city' => $order->shipToCity?->name,
+                        'order_details' => $order->orderDetails,
+                        'user' => $order->user,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders,
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get active requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

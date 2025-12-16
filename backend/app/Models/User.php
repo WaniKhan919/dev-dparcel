@@ -85,7 +85,7 @@ class User extends Authenticatable
 
         // Orders that are already processed for this shipper
         $excludedOrders = OrderOffer::where('user_id', $this->id)
-            ->whereIn('status', ['accepted', 'rejected', 'cancelled', 'ignored'])
+            ->whereIn('status', ['inprogress','accepted', 'rejected', 'cancelled', 'ignored'])
             ->pluck('order_id');
 
         $allOrders = collect();
