@@ -45,6 +45,7 @@ import StripeConnect from "./pages/Payments/Stripe/StripeConnect";
 import ShopperCustomDeclaration from "./pages/Requests/ShopperCustomDeclaration";
 import ShipperMessages from "./pages/Shipper/ShipperMessages";
 import RoleRedirect from "./context/RoleRedirect";
+import ManageMultipleLocations from "./pages/Shipper/ManageLocations/ManageMultipleLocations";
 
 export default function App() {
   return (
@@ -103,6 +104,7 @@ export default function App() {
             <Route path="/shipper/messages" element={<ShipperMessages />} />
             <Route path="/custom-declaration" element={<ShopperCustomDeclaration />} />
             <Route path="/shipper/subscription" element={<Subscription />} />
+            <Route path="/shipper/service-areas" element={<ManageMultipleLocations />} />
             <Route path="/shipper/payment" element={<ShipperPayments />} />
             <Route path="shipper/wallet" element={<ShipperWallet />} />
             <Route path="/shipper/stripe-connect" element={<StripeConnect />} />

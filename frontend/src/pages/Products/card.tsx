@@ -23,6 +23,7 @@ interface CardToastProps {
 }
 
 export default function CardToast({ notifications }: CardToastProps) {
+  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
   const [visibleIds, setVisibleIds] = useState<number[]>(notifications.map(d => d.id));
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
@@ -31,6 +32,10 @@ export default function CardToast({ notifications }: CardToastProps) {
   }>({ open: false, id: null, status: null });
   const [offerPrice, setOfferPrice] = useState("");
   const [error, setError] = useState("");
+
+  const handleHide = (id: number) => {
+    setHiddenIds((prev) => [...prev, id]);
+  };
 
 
   const confirmRequest = async (id: number, status: "inprogress" | "cancelled") => {
@@ -79,13 +84,22 @@ export default function CardToast({ notifications }: CardToastProps) {
       {/* Toast Cards */}
       <div className="fixed bottom-4 right-4 z-[100000] flex flex-col gap-3 max-h-[100vh] overflow-y-auto scroll-hidden">
         {notifications
-          .filter(notification => visibleIds.includes(notification.id))
+          .filter((notification) => !hiddenIds.includes(notification.id))
           .map((notification, index) => (
             <div
               key={notification.id}
               className="w-80 bg-white rounded-3xl p-4 shadow-lg animate-slide-up animate-toast-pop"
               style={{ animationDelay: `${index * 0.2}s` }}
             >
+              {/* Close / Hide button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => handleHide(notification.id)}
+                  className="text-gray-400 hover:text-gray-600 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
               <div className="flex justify-between items-center">
                 {/* Left Section */}
                 <div className="flex items-center gap-3">

@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\ShipperController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RolePermissionController;
+use App\Http\Controllers\Api\Shipper\ManageMultipleLocationController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -133,7 +134,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [ShipperPaymentController::class, 'index']);
         Route::get('/levels', [SubscriptionController::class, 'index']);
         Route::post('/subscribe', [SubscriptionController::class, 'subscribe']);
+        Route::get('/subscription', [SubscriptionController::class, 'shipperActiveSubscription']);
         Route::get('/get-wallet', [WalletController::class, 'shipperWallet']);
+
+        Route::post('/service-area/store',[ManageMultipleLocationController::class,'store']);
     });
     Route::prefix('shopper')->group(function () {
         Route::get('/payments', [PaymentController::class, 'index']);

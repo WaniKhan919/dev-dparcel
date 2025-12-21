@@ -90,4 +90,30 @@ class SubscriptionController extends Controller
             ], 500);
         }
     }
+    public function shipperActiveSubscription()
+    {
+        try {
+            $user = Auth::user();
+            $activeSubscription = $user->activeSubscription()->first();
+
+            if ($activeSubscription) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $activeSubscription,
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active subscription found.',
+                ]);
+            }
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Something went wrong while fetching subscriptions.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

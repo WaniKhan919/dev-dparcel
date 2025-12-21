@@ -224,8 +224,6 @@ export default function ShipperDashboard() {
           </div>
         </div>
 
-
-
         {/* RIGHT: New Requests */}
         <div className="bg-white shadow-md rounded-2xl p-4">
           <h2 className="text-lg font-semibold mb-3">New Requests</h2>

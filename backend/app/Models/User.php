@@ -67,6 +67,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(Product::class);
     }
+    public function serviceAreas()
+    {
+        return $this->hasMany(ShipperServiceArea::class, 'shipper_id');
+    }
+
     public function subscriptions()
     {
         return $this->hasMany(ShipperSubscription::class, 'shipper_id')
@@ -120,16 +125,12 @@ class User extends Authenticatable
 
         foreach ($subscriptions as $subscription) {
             $level = $subscription->level;
+            if (!$level) continue;
 
-            if (!$level) continue; // safeguard
-
-            // Get allowed service slugs
             $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
-
             if (!empty($allowedServices)) {
-                // Get the user's state and city
-                $userStateId = $this->city?->state_id; // Assuming relation user->city->state_id
-                $userCityId = $this->city_id;
+
+                $serviceCityIds = $this->serviceAreas()->pluck('city_id')->toArray(); // NEW
 
                 $orders = Order::with([
                     'orderDetails.product',
@@ -141,15 +142,14 @@ class User extends Authenticatable
                     'shipToState',
                     'shipToCity'
                 ])
-                    ->whereNotIn('id', $excludedOrders)
-                    ->whereIn('service_type', $allowedServices)
-                    ->where(function ($query) use ($userStateId, $userCityId) {
-                        // Orders must match the same state
-                        $query->where('ship_from_state_id', $userStateId)
-                            ->orWhere('ship_to_state_id', $userStateId);
-                    })
-                    ->orderBy('id', 'desc')
-                    ->get();
+                ->whereNotIn('id', $excludedOrders)
+                ->whereIn('service_type', $allowedServices)
+                ->where(function ($query) use ($serviceCityIds) {
+                    $query->whereIn('ship_from_city_id', $serviceCityIds)
+                        ->orWhereIn('ship_to_city_id', $serviceCityIds);
+                })
+                ->orderBy('id', 'desc')
+                ->get();
 
                 $allOrders = $allOrders->merge($orders);
             }
@@ -188,5 +188,12 @@ class User extends Authenticatable
     public function city()
     {
         return $this->belongsTo(City::class);
+    }
+    public function activeSubscription()
+    {
+        return $this->hasOne(ShipperSubscription::class, 'shipper_id')
+                    ->with('level')
+                    ->where('status', 'active')
+                    ->orderBy('start_date', 'desc');
     }
 }

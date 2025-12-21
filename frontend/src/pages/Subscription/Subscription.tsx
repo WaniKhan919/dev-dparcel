@@ -9,6 +9,7 @@ import { CurrencyDollarIcon, ShoppingBagIcon, MapPinIcon } from "@heroicons/reac
 import SubscriptionPaymentModal from "../../utils/SubscriptionPaymentModal";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
+import { Link } from "react-router";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
@@ -87,7 +88,17 @@ export default function Subscription() {
             <PageBreadcrumb pageTitle="Subscription" />
 
             <div className="space-y-6">
-                <ComponentCard title="Subscription Plans">
+                <ComponentCard 
+                    title="Subscription Plans"
+                    actions={
+                        <Link
+                            to="/shipper/service-areas"
+                            className="px-6 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 inline-block text-center"
+                            >
+                            Add Service Areas
+                        </Link>
+                    }
+                >
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {levels.map((level) => {
                             const subscribed = isSubscribed(level);
