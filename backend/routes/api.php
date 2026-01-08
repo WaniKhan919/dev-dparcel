@@ -141,9 +141,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/service-area/store',[ManageMultipleLocationController::class,'store']);
     });
     Route::prefix('shopper')->group(function () {
-       Route::prefix('chat')->controller(ShopperMessageController::class)->group(function(){
+       Route::prefix('messages')->controller(ShopperMessageController::class)->group(function(){
             Route::get('/contacts','chatContacts');
-            Route::get('/messages/{order_id}','messages');
+            Route::get('/{order_id}','messages');
             Route::get('/latest-messages','unreadChatContacts');
         });
         Route::get('/payments', [PaymentController::class, 'index']);
