@@ -16,6 +16,7 @@ import TrackOrderDrawer from "../../utils/Drawers/Order/TrackOrderDrawer";
 import ViewOrderDetailDrawer from "../../utils/Drawers/Offers/ViewOrderDetailDrawer";
 import ShopperTableAction from "../../components/tables/ShopperTableAction";
 import { useNavigate } from "react-router";
+import { ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon, CreditCardIcon, DocumentTextIcon, EyeIcon, MapPinIcon } from "@heroicons/react/24/outline";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
@@ -119,58 +120,24 @@ export default function ViewOrder() {
     {
       key: "service_type",
       header: "Ship Type",
-      render: (record: Request) => {
-        return record.service_type == "ship_for_me"
+      render: (record: Request) =>
+        record.service_type === "ship_for_me"
           ? "Ship For Me"
-          : "Buy For Me";
-      },
+          : "Buy For Me",
     },
     {
       key: "ship_from",
-      header: "Ship From/To",
+      header: "Ship From / To",
       render: (record: Request) => (
-        <div className="flex flex-col text-gray-700">
-          <div className="font-medium">
-            <span className="text-blue-600">From:</span>{" "}
-            {record.ship_from_city?.name
-              ? `${record.ship_from_city.name}, ${record.ship_from_state?.name}, ${record.ship_from_country?.name}`
-              : "-"}
-          </div>
-          <div className="font-medium">
-            <span className="text-green-600">To:</span>{" "}
-            {record.ship_to_city?.name
-              ? `${record.ship_to_city.name}, ${record.ship_to_state?.name}, ${record.ship_to_country?.name}`
-              : "-"}
-          </div>
-        </div>
-      ),
-
-    },
-    {
-      key: "products",
-      header: "Products",
-      render: (record: Request) => (
-        <div className="flex flex-col gap-1">
-          {record.order_details?.map((detail) => (
-            <span key={detail.id} className="text-gray-700">
-              {detail.product?.title} (x{detail.quantity})
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    { key: "total_aprox_weight", header: "Approx Weight (g)" },
-    { key: "total_price", header: "Total Price" },
-    {
-      key: "weight_per_unit",
-      header: "Weight Per Unit (Gram)",
-      render: (record: Request) => (
-        <div className="flex flex-col gap-1">
-          {record.order_details?.map((detail) => (
-            <span key={detail.id}>
-              {detail.product?.title}: {detail.product?.weight ?? "N/A"} g
-            </span>
-          ))}
+        <div className="flex flex-col text-sm">
+          <span>
+            <b className="text-blue-600">From:</b>{" "}
+            {record.ship_from_city?.name}, {record.ship_from_state?.name}
+          </span>
+          <span>
+            <b className="text-green-600">To:</b>{" "}
+            {record.ship_to_city?.name}, {record.ship_to_state?.name}
+          </span>
         </div>
       ),
     },
@@ -178,20 +145,72 @@ export default function ViewOrder() {
       key: "actions",
       header: "Actions",
       render: (record: Request) => (
-        <ShopperTableAction
-          record={record}
-          viewOrderDetails={viewOrderDetails}
-          viewOffers={viewOffers}
-          openPayment={openPayment}
-          trackOrder={trackOrder}
-          openMessage={openMessage}
-          handleCustomDeclaration={handleCustomDeclaration}
-        />
+        <div className="flex items-center gap-2">
+          
+          {/* View Details */}
+          <button
+            title="View Details"
+            onClick={() => viewOrderDetails(record.id)}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
+          >
+            <EyeIcon className="h-5 w-5 text-gray-800 stroke-2" />
+          </button>
+
+
+          {/* View Offers */}
+          <button
+            title="View Offers"
+            onClick={() => viewOffers(record)}
+            className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100"
+          >
+            <DocumentTextIcon className="h-5 w-5 text-blue-700" />
+          </button>
+
+          {/* Payment */}
+          {record.accepted_offer && !record.order_payment && (
+            <button
+              title="Make Payment"
+              onClick={() => openPayment(record)}
+              className="p-2 rounded-lg bg-green-50 hover:bg-green-100"
+            >
+              <CreditCardIcon className="h-5 w-5 text-green-700" />
+            </button>
+          )}
+
+          {/* Track Order */}
+          <button
+            title="Track Order"
+            onClick={() => trackOrder(record)}
+            className="p-2 rounded-lg bg-purple-50 hover:bg-purple-100"
+          >
+            <MapPinIcon className="h-5 w-5 text-purple-700" />
+          </button>
+
+          {/* Messages */}
+          {record.accepted_offer && (
+            <button
+              title="Messages"
+              onClick={() => openMessage(record)}
+              className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100"
+            >
+              <ChatBubbleLeftRightIcon className="h-5 w-5 text-indigo-700" />
+            </button>
+          )}
+
+          {/* Custom Declaration */}
+          <button
+            title="Custom Declaration"
+            onClick={() => handleCustomDeclaration(record)}
+            className="p-2 rounded-lg bg-orange-50 hover:bg-orange-100"
+          >
+            <ClipboardDocumentCheckIcon className="h-5 w-5 text-orange-700" />
+          </button>
+        </div>
       ),
     }
 
-
   ];
+
 
   return (
     <>

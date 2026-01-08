@@ -2,15 +2,18 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchOffers } from "../../slices/shipperOffersSlice";
-import { createPortal } from "react-dom";
 import ViewShopperOffersDrawer from "../../utils/Drawers/Offers/ViewShopperOffersDrawer";
 import ManageOrderTrackingDrawer from "../../utils/Drawers/Order/ManageOrderTrackingDrawer";
 import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
 import { useNavigate } from "react-router";
+import { EyeIcon } from "../../icons";
+import { ChatBubbleLeftRightIcon, Cog6ToothIcon, DocumentTextIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import Tooltip from "../../components/ui/tooltip/Tooltip";
+import { Modal } from "../../components/ui/modal";
 
 interface Request {
   id: number;
@@ -41,8 +44,8 @@ export default function ShopperRequests() {
   const [openManageOfferDrawer, setOpenManageOfferDrawer] = useState(false)
   const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
   const [orderData, setOrderData] = useState([])
-  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export default function ShopperRequests() {
       total_aprox_weight: offer.order?.total_aprox_weight ?? "",
       total_price: offer.order?.total_price ?? "",
       status: offer.status,
-      request_number:offer.order?.request_number,
+      request_number: offer.order?.request_number,
       order_details: offer.order?.order_details ?? [],
       order: offer.order
     }));
@@ -76,75 +79,55 @@ export default function ShopperRequests() {
 
   const columns = [
     {
+      key: "request_number",
+      header: "Request #",
+      render: (record: any) => (
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500">
+            {record.request_number}
+          </span>
+        </div>
+      ),
+    },
+    {
       key: "service_type",
       header: "Ship Type",
-      render: (record: Request) =>
-      (
-        <>
-        <span>{record.service_type === "ship_for_me" ? "Ship For Me" : "Shop For Me"}</span>
-        <br />
-        <span>{record.request_number}</span>
-        </>
-      )
-    },
-    {
-      key: "ship_from",
-      header: "Ship From/To",
-      render: (record: Request) => (
+      render: (record: any) => (
         <div className="flex flex-col">
-          <span><strong>From:</strong> {record.ship_from}</span>
-          <span><strong>To:</strong> {record.ship_to}</span>
+          <span className="font-medium">
+            {record.service_type === "ship_for_me"
+              ? "Ship For Me"
+              : "Shop For Me"}
+          </span>
         </div>
       ),
     },
     {
-      key: "products",
-      header: "Products",
-      render: (record: Request) => (
-        <div className="flex flex-col gap-1">
-          {record.order_details?.map((detail) => (
-            <span key={detail.id} className="text-gray-700">
-              {detail.product?.title} (x{detail.quantity})
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    { key: "total_aprox_weight", header: "Approx Weight (g)" },
-    { key: "total_price", header: "Total Price" },
-    {
-      key: "weight_per_unit",
-      header: "Weight Per Unit (Gram)",
-      render: (record: Request) => (
-        <div className="flex flex-col gap-1">
-          {record.order_details?.map((detail) => (
-            <span key={detail.id}>
-              {detail.product?.title}: {detail.product?.weight ?? "N/A"} g
-            </span>
-          ))}
+      key: "ship_from_to",
+      header: "Ship From / To",
+      render: (record: any) => (
+        <div className="text-sm">
+          <div><strong>From:</strong> {record.order.ship_from_country?.name}, {record.order.ship_from_state?.name}, {record.order.ship_from_city?.name}</div>
+          <div><strong>To:</strong> {record.order.ship_to_country?.name}, {record.order.ship_to_state?.name}, {record.order.ship_to_city?.name}</div>
         </div>
       ),
     },
     {
       key: "status",
       header: "Status",
-      render: (record: Request) => {
-        const statusColors: Record<string, string> = {
+      render: (record: any) => {
+        const colors: any = {
           pending: "bg-yellow-100 text-yellow-800",
           inprogress: "bg-blue-100 text-blue-800",
           accepted: "bg-green-100 text-green-800",
           rejected: "bg-red-100 text-red-800",
-          cancelled: "bg-gray-200 text-gray-800",
-          ignored: "bg-purple-100 text-purple-800",
         };
-        const status = record.status;
+
         return (
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              statusColors[status] || "bg-gray-100 text-gray-800"
-            }`}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${colors[record.status]}`}
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {record.status}
           </span>
         );
       },
@@ -152,95 +135,74 @@ export default function ShopperRequests() {
     {
       key: "actions",
       header: "Actions",
-      render: (record: Request) => {
-        const toggleDropdown = (e: React.MouseEvent<HTMLButtonElement>) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          setDropdownPosition({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
-          setOpenDropdownId(openDropdownId === record.id ? null : record.id);
-        };
+      render: (record: any) => (
+        <div className="flex items-center gap-2">
 
-        return (
-          <>
+          {/* View Details Modal */}
+          <Tooltip text="View Details">
             <button
-              type="button"
-              onClick={toggleDropdown}
-              className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-3 py-1 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => {
+                setSelectedRecord(record);
+                setIsDetailsOpen(true);
+              }}
+              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
             >
-              Actions
-              <svg
-                className="-mr-1 ml-2 h-5 w-5"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <EyeIcon className="h-5 w-5 text-gray-700" />
             </button>
+          </Tooltip>
 
-            {openDropdownId === record.id &&
-              createPortal(
-                <div
-                  style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
-                  className="absolute mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                >
-                  <div className="py-1">
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        viewOffers(record);
-                        setOpenDropdownId(null);
-                      }}
-                    >
-                      View Offers
-                    </button>
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        manageOrder(record);
-                        setOpenDropdownId(null);
-                      }}
-                    >
-                      Manage Order
-                    </button>
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={(e) => {
-                        handleCustomDecleration(record.order_details[0].id)
-                      }}
-                    >
-                      Custom Decleraion
-                    </button>
-                  </div>
-                </div>,
-                document.body
-              )}
-          </>
-        );
-      },
-    },
-    {
-      key: "message",
-      header: "Message",
-      render: (record: Request) =>
-        record.status === "accepted" ? (
-          <button
-            className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm"
-            onClick={() =>
-              navigate("/shipper/messages", { state: { orderId: record.id } })
-            }
-          >
-            Message
-          </button>
-        ) : null,
+          {/* View Offers */}
+          <Tooltip text="View Offers">
+            <button
+              onClick={() => viewOffers(record)}
+              className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100"
+            >
+              <Squares2X2Icon className="h-5 w-5 text-blue-700" />
+            </button>
+          </Tooltip>
+
+
+          {/* Manage Order */}
+          <Tooltip text="Manage Order">
+            <button
+              onClick={() => manageOrder(record)}
+              className="p-2 rounded-lg bg-green-50 hover:bg-green-100"
+            >
+              <Cog6ToothIcon className="h-5 w-5 text-green-700" />
+            </button>
+          </Tooltip>
+
+          {/* Custom Declaration */}
+          {record.order_details?.[0]?.id && (
+            <Tooltip text="Custom Declaration">
+              <button
+                onClick={() => handleCustomDecleration(record.order_details[0].id)}
+                className="p-2 rounded-lg bg-purple-50 hover:bg-purple-100"
+              >
+                <DocumentTextIcon className="h-5 w-5 text-purple-700" />
+              </button>
+            </Tooltip>
+          )}
+
+          {/* Message (if accepted) */}
+          {record.status === "accepted" && (
+            <Tooltip text="Message">
+              <button
+                onClick={() =>
+                  navigate("/shipper/messages", { state: { orderId: record.id } })
+                }
+                className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100"
+              >
+                <ChatBubbleLeftRightIcon className="h-5 w-5 text-indigo-700" />
+              </button>
+            </Tooltip>
+          )}
+
+        </div>
+      ),
     }
-
   ];
+
 
 
   const viewOffers = (record: any) => {
@@ -294,6 +256,49 @@ export default function ShopperRequests() {
           }
         </ComponentCard>
       </div>
+      {
+        isDetailsOpen &&
+          <Modal
+            isOpen={isDetailsOpen}
+            onClose={() => {
+              setIsDetailsOpen(false);
+              setSelectedRecord(null);
+            }}
+            className="max-w-2xl p-6"
+          >
+            {selectedRecord?.order && (
+              <>
+                <h2 className="text-xl font-semibold mb-4">
+                  Order Details
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+                  <div><strong>Request Number:</strong> {selectedRecord.order.request_number}</div>
+                  <div><strong>Service Type:</strong> {selectedRecord.order.service_type === "ship_for_me" ? "Ship For Me" : "Shop For Me"}</div>
+                  <div><strong>Total Price:</strong> ${selectedRecord.order.total_price}</div>
+                  <div><strong>Approx Weight:</strong> {selectedRecord.order.total_aprox_weight} g</div>
+                  <div><strong>Ship From:</strong> {selectedRecord?.order?.ship_from_city?.name}, {selectedRecord?.order?.ship_from_state?.name}, {selectedRecord?.order?.ship_from_country?.name}</div>
+                  <div><strong>Ship To:</strong> {selectedRecord?.order?.ship_to_city?.name}, {selectedRecord?.order?.ship_to_state?.name}, {selectedRecord?.order?.ship_to_country?.name}</div>
+                </div>
+
+                <h3 className="font-medium mb-2">Products</h3>
+                <div className="space-y-2">
+                  {selectedRecord.order.order_details?.map((item: any) => (
+                    <div key={item.id} className="border rounded-lg p-3 text-sm">
+                      <div className="font-medium">{item.product?.title}</div>
+                      <div>Qty: {item.quantity}</div>
+                      <div>Weight: {item.weight} g</div>
+                      <div>Price: ${item.price}</div>
+                      <div>Request Details #: {item.request_details_number}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </Modal>
+
+      }
+
     </>
   );
 }

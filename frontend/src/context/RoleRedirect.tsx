@@ -17,7 +17,7 @@ const RoleRedirect = () => {
   }
 
   if (user.roles.includes("shopper")) {
-    return <Navigate to="/request" replace />;
+    return <Navigate to="/shopper/request" replace />;
   }
 
   return <Navigate to="/signin" replace />;

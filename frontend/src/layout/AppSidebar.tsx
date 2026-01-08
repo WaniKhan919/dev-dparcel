@@ -124,9 +124,16 @@ const navItems: NavItem[] = [
     icon: <PlusIcon />,
     name: "Request",
     subItems: [
-      { name: "Create Request", path: "/request" },
-      { name: "View Request", path: "/view/request" },
+      { name: "Create Request", path: "/shopper/request" },
+      { name: "View Request", path: "/shopper/view/request" },
     ],
+    roles: ["shopper"],
+    permissions: ["create_request"],
+  },
+  {
+    icon: <ChatIcon />,
+    name: "Messages",
+    path: "/shopper/messages",
     roles: ["shopper"],
     permissions: ["create_request"],
   },

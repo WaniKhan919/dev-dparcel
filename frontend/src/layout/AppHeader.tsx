@@ -146,7 +146,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center gap-2 2xsm:gap-3">
             {userHasPermission("create_request") && (
               <Link
-                to="/request"
+                to="/shopper/request"
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg"
               >
                 <span className="text-lg font-bold">+</span>

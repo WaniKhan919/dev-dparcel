@@ -41,7 +41,7 @@ export default function DParcelTable<T extends { id: number }>({
     return (
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
-          <Table>
+          <Table className="min-w-full">
             {/* Table Header */}
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
@@ -49,7 +49,7 @@ export default function DParcelTable<T extends { id: number }>({
                   <TableCell
                     key={String(col.key)}
                     isHeader
-                    className={`px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 ${col.className || ""}`}
+                    className={`px-4 py-3 font-medium text-gray-500 text-start text-xs whitespace-nowrap dark:text-gray-400 ${col.className || ""}`}
                   >
                     {col.header}
                   </TableCell>
@@ -74,9 +74,11 @@ export default function DParcelTable<T extends { id: number }>({
                     {columns.map((col) => (
                       <TableCell
                         key={String(col.key)}
-                        className={`px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 ${col.className || ""}`}
+                        className={`px-4 py-3 text-gray-700 text-start text-sm align-top dark:text-gray-400 ${col.className || ""}`}
                       >
-                        {col.render ? col.render(row) : (row as any)[col.key]}
+                        <div className="max-w-xs break-words">
+                          {col.render ? col.render(row) : (row as any)[col.key]}
+                        </div>
                       </TableCell>
                     ))}
                   </TableRow>
@@ -105,14 +107,14 @@ export default function DParcelTable<T extends { id: number }>({
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <div className="max-w-full overflow-x-auto">
-        <Table>
+        <Table className="min-w-full">
           <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
             <TableRow>
               {columns.map((col) => (
                 <TableCell
                   key={String(col.key)}
                   isHeader
-                  className={`px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 ${col.className || ""}`}
+                  className={`px-4 py-3 font-medium text-gray-500 text-start text-xs whitespace-nowrap dark:text-gray-400 ${col.className || ""}`}
                 >
                   {col.header}
                 </TableCell>
@@ -149,16 +151,17 @@ export default function DParcelTable<T extends { id: number }>({
                   {columns.map((col) => (
                     <TableCell
                       key={String(col.key)}
-                      className={`px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 ${col.className || ""}`}
+                      className={`px-4 py-3 text-gray-700 text-start text-sm align-top dark:text-gray-400 ${col.className || ""}`}
                     >
-                      {col.render ? col.render(row) : (row as any)[col.key]}
+                      <div className="max-w-xs break-words">
+                        {col.render ? col.render(row) : (row as any)[col.key]}
+                      </div>
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             )}
           </TableBody>
-
         </Table>
       </div>
 
@@ -172,20 +175,22 @@ export default function DParcelTable<T extends { id: number }>({
             <button
               onClick={handlePrev}
               disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${currentPage === 1
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                currentPage === 1
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
+              }`}
             >
               Previous
             </button>
             <button
               onClick={handleNext}
               disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${currentPage === totalPages
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                currentPage === totalPages
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
+              }`}
             >
               Next
             </button>

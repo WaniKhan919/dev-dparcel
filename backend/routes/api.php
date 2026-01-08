@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentPlanSettingController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\Shopper\ShopperMessageController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -140,6 +141,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/service-area/store',[ManageMultipleLocationController::class,'store']);
     });
     Route::prefix('shopper')->group(function () {
+       Route::prefix('chat')->controller(ShopperMessageController::class)->group(function(){
+            Route::get('/contacts','chatContacts');
+            Route::get('/messages/{order_id}','messages');
+            Route::get('/latest-messages','unreadChatContacts');
+        });
         Route::get('/payments', [PaymentController::class, 'index']);
     });
     Route::post('/create-payment-intent', [StripeController::class, 'createPaymentIntent']);
@@ -150,7 +156,6 @@ Route::middleware('auth:sanctum')->group(function () {
     ->group(function () {
         Route::get('/', 'index');
         Route::post('/send', 'store');
-
     });
 
     Route::prefix('notifications')

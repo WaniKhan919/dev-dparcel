@@ -46,6 +46,7 @@ import ShopperCustomDeclaration from "./pages/Requests/ShopperCustomDeclaration"
 import ShipperMessages from "./pages/Shipper/ShipperMessages";
 import RoleRedirect from "./context/RoleRedirect";
 import ManageMultipleLocations from "./pages/Shipper/ManageLocations/ManageMultipleLocations";
+import ShopperMessages from "./pages/Shopper/ShopperMessages";
 
 export default function App() {
   return (
@@ -93,8 +94,9 @@ export default function App() {
             {/* Shopper Routes */}
             <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
             <Route path="/products" element={<Products />} />
-            <Route path="/request" element={<Order />} />
-            <Route path="/view/request" element={<ViewOrder />} />
+            <Route path="/shopper/request" element={<Order />} />
+            <Route path="/shopper/messages" element={<ShopperMessages />} />
+            <Route path="/shopper/view/request" element={<ViewOrder />} />
             <Route path="/shopper/payment" element={<ShopperPayments />} />
             <Route path="/custom/declaration" element={<CustomDeclaration />} />
 
