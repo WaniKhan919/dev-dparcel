@@ -25,6 +25,7 @@ import citiesReducer from "./slices/citiesSlice"
 import chatContactsReducer from "./slices/chatContactsSlice"
 import messagesReducer from "./slices/messagesSlice"
 import latestChatsReducer from "./slices/latestChatsSlice"
+import shopperChatContactsReducer from "./slices/shopper/shopperChatContactsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -54,6 +55,8 @@ export const store = configureStore({
     chatContacts:chatContactsReducer,
     messages:messagesReducer,
     latestChats:latestChatsReducer,
+    //shopper
+    shopperChatContacts:shopperChatContactsReducer,
   },
 });
 

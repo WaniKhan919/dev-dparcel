@@ -122,7 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/get-order-tracking/{id}',  'getOrderTracking');
         Route::get('/get-order-detail/{id}',  'getOrderDetail');
     });
-    
+    // Shipper Routes
     Route::prefix('shipper')->group(function () {
         Route::controller(ShipperController::class)
         ->group(function () {
@@ -140,12 +140,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('/service-area/store',[ManageMultipleLocationController::class,'store']);
     });
+
+    // Shopper Routes
     Route::prefix('shopper')->group(function () {
+        //Shopper Messages
        Route::prefix('messages')->controller(ShopperMessageController::class)->group(function(){
             Route::get('/contacts','chatContacts');
             Route::get('/{order_id}','messages');
             Route::get('/latest-messages','unreadChatContacts');
         });
+
         Route::get('/payments', [PaymentController::class, 'index']);
     });
     Route::post('/create-payment-intent', [StripeController::class, 'createPaymentIntent']);

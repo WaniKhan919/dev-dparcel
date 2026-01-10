@@ -10,8 +10,7 @@ import ViewShopperOffersDrawer from "../../utils/Drawers/Offers/ViewShopperOffer
 import ManageOrderTrackingDrawer from "../../utils/Drawers/Order/ManageOrderTrackingDrawer";
 import OrderMessages from "../../utils/Drawers/Order/OrderMessages";
 import { useNavigate } from "react-router";
-import { EyeIcon } from "../../icons";
-import { ChatBubbleLeftRightIcon, Cog6ToothIcon, DocumentTextIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftRightIcon, Cog6ToothIcon, DocumentTextIcon, Squares2X2Icon,EyeIcon } from "@heroicons/react/24/outline";
 import Tooltip from "../../components/ui/tooltip/Tooltip";
 import { Modal } from "../../components/ui/modal";
 
@@ -53,6 +52,8 @@ export default function ShopperRequests() {
   }, [dispatch]);
 
   const requests: Request[] = useMemo(() => {
+    if (!data || data.length === 0) return [];
+
     return data.map((offer: any) => ({
       id: offer.order_id,
       service_type: offer.order?.service_type ?? "",

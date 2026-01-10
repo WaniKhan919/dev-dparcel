@@ -4,7 +4,7 @@ import Chat, { ChatItem } from "../../components/messages/Chat";
 import ChatWindow from "../../components/messages/ChatWindow";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
-import { fetchChatContacts } from "../../slices/chatContactsSlice";
+import { fetchShopperChatContacts } from "../../slices/shopper/shopperChatContactsSlice";
 import { fetchChatMessages, clearMessages } from "../../slices/messagesSlice";
 import { getUser } from "../../utils/DparcelHelper";
 import { ApiHelper } from "../../utils/ApiHelper";
@@ -16,7 +16,7 @@ export default function ShopperMessages() {
 
   const dispatch = useDispatch<AppDispatch>();
 
-  const { data: contacts } = useSelector((state: any) => state.chatContacts);
+  const { data: contacts } = useSelector((state: any) => state.shopperChatContacts);
   const { data: messages } = useSelector((state: any) => state.messages);
 
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
@@ -34,14 +34,14 @@ export default function ShopperMessages() {
 
   // Fetch contacts on mount
   useEffect(() => {
-    dispatch(fetchChatContacts());
+    dispatch(fetchShopperChatContacts());
   }, [dispatch]);
 
   // Fetch messages whenever activeChatId changes
  useEffect(() => {
     if (activeChatId) {
       dispatch(fetchChatMessages(activeChatId)); 
-      dispatch(fetchChatContacts());
+      dispatch(fetchShopperChatContacts());
     } else {
       dispatch(clearMessages());
     }
@@ -51,8 +51,8 @@ export default function ShopperMessages() {
   // Map contacts to ChatItem for sidebar
   const chats: ChatItem[] = contacts.map((item: any) => ({
     id: item.order_id,
-    name: item.shopper_name,
-    receiver_id: item.receiver_id,
+    name: item.shipper_name,
+    receiver_id: item.shipper_id,
     request_number: item.request_number,
     lastMessage: item.last_message || "No messages yet",
     time: item.last_time,
@@ -82,13 +82,12 @@ export default function ShopperMessages() {
   const sendMessage = async (type: "text" | "image", content: string, file?: File) => {
     if (!content && !file) return;
     if (!activeChat) return;
-
     try {
       setIsSending(true);
 
       const formData = new FormData();
       formData.append("order_id", activeChat.id.toString());
-      formData.append("receiver_id", activeChat.receiver_id.toString()); // receiver_id required by backend
+      formData.append("receiver_id", activeChat.receiver_id.toString()); // sender_id required by backend
 
       if (type === "text" && content.trim() !== "") {
         formData.append("message_text", content.trim());

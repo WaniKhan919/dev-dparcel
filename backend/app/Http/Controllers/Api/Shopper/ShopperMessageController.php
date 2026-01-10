@@ -15,45 +15,53 @@ class ShopperMessageController extends Controller
     public function chatContacts(Request $request)
     {
         try {
-            $shipperId = Auth::id();
+            $shopperId = Auth::id();
 
-            $orders = Order::whereHas('offers', function ($q) use ($shipperId) {
-                $q->where('user_id', $shipperId)
-                    ->where('status', 'accepted');
-            })
+            $orders = Order::where('user_id', $shopperId) // shopper ka order
+                ->whereHas('orderOffer', function ($q) {
+                    $q->where('status', 'accepted'); // sirf accepted offer
+                })
                 ->with([
                     // last approved message
                     'messages' => function ($q) {
                         $q->where('status', 'approved')->latest();
                     },
-                    'user:id,name'
+
+                    // accepted offer + shipper
+                    'orderOffer' => function ($q) {
+                        $q->where('status', 'accepted')
+                        ->with('shipper:id,name');
+                    }
                 ])
                 ->withCount([
-                    // ✅ unread count
-                    'messages as unread_count' => function ($q) use ($shipperId) {
-                        $q->where('receiver_id', $shipperId)
-                            ->where('status', 'approved')
-                            ->where('is_read', false);
+                    // unread messages for shopper
+                    'messages as unread_count' => function ($q) use ($shopperId) {
+                        $q->where('receiver_id', $shopperId)
+                        ->where('status', 'approved')
+                        ->where('is_read', false);
                     }
                 ])
                 ->get();
 
             $orders = $orders->map(function ($order) {
-                $lastMessage = $order->messages->first();
+                $lastMessage   = $order->messages->first();
+                $acceptedOffer = $order->orderOffer;
 
                 return [
                     'order_id'       => $order->id,
                     'request_number' => $order->request_number,
                     'service_type'   => $order->service_type,
                     'status'         => $order->status,
-                    'receiver_id'    => $order->user->id,
-                    'shopper_name'   => $order->user?->name,
+
+                    // shipper info
+                    'shipper_id'     => $acceptedOffer?->shipper?->id,
+                    'shipper_name'   => $acceptedOffer?->shipper?->name,
 
                     // last message
                     'last_message'   => $lastMessage?->message_text,
                     'last_time'      => $lastMessage?->created_at?->format('g:i A'),
 
-                    // 🔴 unread badge count
+                    // unread badge
                     'unread_count'   => $order->unread_count,
                 ];
             });
@@ -62,6 +70,7 @@ class ShopperMessageController extends Controller
                 'success' => true,
                 'data'    => $orders,
             ], 200);
+
         } catch (Exception $ex) {
             return response()->json([
                 'success' => false,
@@ -70,6 +79,7 @@ class ShopperMessageController extends Controller
             ], 500);
         }
     }
+
 
     public function messages($orderId)
     {
