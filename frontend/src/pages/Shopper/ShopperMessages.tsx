@@ -23,6 +23,10 @@ export default function ShopperMessages() {
   const [inputMessage, setInputMessage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSending, setIsSending] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "unread" | "ship_for_me" | "buy_for_me"
+  >("all");
 
   const user = getUser();
 
@@ -58,6 +62,7 @@ export default function ShopperMessages() {
     time: item.last_time,
     unread: item.unread_count>0?item.unread_count:null,
     online: true,
+    service_type: item.service_type, 
   }));
 
   // Map messages to ChatWindow format
@@ -109,6 +114,23 @@ export default function ShopperMessages() {
       setIsSending(false);
     }
   };
+  
+  const filteredChats = chats.filter((chat) => {
+    // 🔍 Search filter
+    const searchMatch =
+      chat.name.toLowerCase().includes(search.toLowerCase()) ||
+      chat.request_number.toLowerCase().includes(search.toLowerCase());
+
+    // 📌 Tabs filter
+    const filterMatch =
+      activeFilter === "all"
+        ? true
+        : activeFilter === "unread"
+        ? chat.unread && chat.unread > 0
+        : chat.service_type === activeFilter;
+
+    return searchMatch && filterMatch;
+  });
 
   return (
     <>
@@ -117,9 +139,13 @@ export default function ShopperMessages() {
         {/* Sidebar */}
         <div className="col-span-12 md:col-span-5 lg:col-span-4">
           <Chat
-            chats={chats}
+            chats={filteredChats}
             activeChat={activeChatId}
             onChatClick={setActiveChatId}
+            search={search}
+            setSearch={setSearch}
+            activeFilter={activeFilter}
+            setActiveFilter={setActiveFilter}
           />
         </div>
 

@@ -9,12 +9,19 @@ import { fetchLatestMessages } from "../../slices/latestChatsSlice";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { Modal } from "../../components/ui/modal";
+import { ApiHelper } from "../../utils/ApiHelper";
+import toast from "react-hot-toast";
+import Input from "../../components/form/input/InputField";
 
 interface Notification {
   id: number;
   name: string;
-  ship_to: string;
-  ship_from: string;
+  ship_from_country: string;
+  ship_from_state: string;
+  ship_from_city: string;
+  ship_to_country: string;
+  ship_to_state: string;
+  ship_to_city: string;
   service_type: string;
   total_aprox_weight: number;
   total_price: number;
@@ -23,12 +30,67 @@ interface Notification {
 export default function ShipperDashboard() {
 
   const dispatch = useDispatch<AppDispatch>();
-  const { requests, loading, error } = useSelector((state: any) => state.shopperRequest);
-  const { data:newOffers, loading:loadingOffers, errorOffers } = useSelector((state: any) => state.shipperNewOffers);
-  const { data: latestChats, loading:latestChatLoading } = useSelector((state: any) => state.latestChats);
+  const { requests, loading, error: requestError } = useSelector((state: any) => state.shopperRequest);
+  const { data: newOffers, loading: loadingOffers, errorOffers } = useSelector((state: any) => state.shipperNewOffers);
+  const { data: latestChats, loading: latestChatLoading } = useSelector((state: any) => state.latestChats);
   const navigate = useNavigate();
+  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Notification | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    id: number | null;
+    status: "inprogress" | "cancelled" | null;
+  }>({ open: false, id: null, status: null });
+  const [offerPrice, setOfferPrice] = useState("");
+  const [error, setError] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const handleHide = (id: number) => {
+    setHiddenIds((prev) => [...prev, id]);
+  };
+
+
+  const confirmRequest = async (id: number, status: "inprogress" | "cancelled") => {
+    try {
+      const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status, offerPrice });
+
+      if (response.status === 200) {
+        toast.success(response.data.message, {
+          duration: 3000,
+          position: "top-right",
+          // style: {
+          //   background: "#4caf50",
+          //   color: "#fff",
+          //   fontWeight: "bold",
+          // },
+          icon: "🎉",
+        });
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("API Error!");
+    }
+  };
+
+  const handleConfirm = () => {
+    if (confirmModal.status == "inprogress" && offerPrice == "") {
+      setError("Price is required");
+      return;
+    }
+    setError("");
+    if (confirmModal.id && confirmModal.status) {
+      confirmRequest(confirmModal.id, confirmModal.status);
+    }
+    setConfirmModal({ open: false, id: null, status: null });
+  };
+
+  const handleViewDetails = (notification: Notification) => {
+    setSelectedOrder(notification);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     dispatch(fetchRequests());
@@ -142,12 +204,12 @@ export default function ShipperDashboard() {
             </div>
           </div>
         </div>
-        <div className="col-span-4">
+        {/* <div className="col-span-4">
           {
             notification.length > 0 &&
             <Card notifications={notification} />
           }
-        </div>
+        </div> */}
       </div>
       {/* 🔥 Messages + Requests Grid Container */}
       <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -158,7 +220,7 @@ export default function ShipperDashboard() {
 
           <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
             {latestChatLoading ? (
-               <div className="flex justify-center py-6">
+              <div className="flex justify-center py-6">
                 <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : latestChats && latestChats.length > 0 ? (
@@ -178,19 +240,17 @@ export default function ShipperDashboard() {
                       })
                     }
                     className={`flex items-center justify-between p-3 rounded-xl border transition
-                      ${
-                        chat.unread_count > 0
-                          ? "bg-blue-50 border-blue-200 hover:bg-blue-100"
-                          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                      ${chat.unread_count > 0
+                        ? "bg-blue-50 border-blue-200 hover:bg-blue-100"
+                        : "bg-gray-50 border-gray-200 hover:bg-gray-100"
                       }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
-                          ${
-                            chat.unread_count > 0
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-400 text-white"
+                          ${chat.unread_count > 0
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-400 text-white"
                           }`}
                       >
                         {initials}
@@ -231,12 +291,104 @@ export default function ShipperDashboard() {
           {/* Scrollable Area */}
           <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
             {loadingOffers && (
-               <div className="flex justify-center py-6">
-                  <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                </div>
+              <div className="flex justify-center py-6">
+                <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
             )}
 
-            {newOffers?.map((order: any) => (
+            {notification?.map((order: any) => (
+              <div
+                key={order.id}
+                className="bg-white rounded-3xl p-4 shadow-md border transition hover:shadow-lg"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center">
+                      <span className="text-white font-bold">
+                        {order.name?.charAt(0)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm">
+                        {order.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {order.service_type === "ship_for_me"
+                          ? "Ship For Me"
+                          : "Buy For Me"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                    NEW
+                  </span>
+                </div>
+
+                {/* Route */}
+                <div className="mt-3 text-sm text-gray-600">
+                  <b>From:</b> {order.ship_from_country}, {order.ship_from_state}, {order.ship_from_city}
+                  <br />
+                  <b>To:</b> {order.ship_to_country}, {order.ship_to_state}, {order.ship_to_city}
+                </div>
+
+                {/* Price + Weight */}
+                <div className="flex justify-between items-center mt-4">
+                  <div>
+                    <p className="text-blue-600 font-semibold">
+                      ${order.total_price}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Weight: {order.total_aprox_weight} kg
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleViewDetails(order)}
+                    className="text-sm text-blue-600 font-medium underline hover:text-blue-800"
+                  >
+                    View Details
+                  </button>
+                </div>
+
+                {/* 🔥 ACTION BUTTONS */}
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() =>
+                      setConfirmModal({
+                        open: true,
+                        id: order.id,          // ✅ correct
+                        status: "cancelled",
+                      })
+                    }
+                    className="w-1/2 py-2.5 rounded-full bg-gray-200 hover:bg-gray-300 text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setConfirmModal({
+                        open: true,
+                        id: order.id,          // ✅ correct
+                        status: "inprogress",
+                      })
+                    }
+                    style={{
+                      backgroundImage: "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
+                    }}
+                    className="w-1/2 py-2.5 rounded-full text-white text-sm font-medium shadow-md"
+                  >
+                    Send Offer
+                  </button>
+                </div>
+              </div>
+            ))}
+
+
+            {/* {newOffers?.map((order: any) => (
                 <div
                   key={order.id}
                   className="border rounded-xl p-4 bg-green-50 border-green-300 hover:bg-green-100 transition"
@@ -280,13 +432,148 @@ export default function ShipperDashboard() {
 
                   </div>
                 </div>
-              ))}
+              ))} */}
           </div>
         </div>
 
 
       </div>
-      {
+      <div className="mt-3 min-h-screen">
+        {/* Table Card */}
+        <div className="bg-white rounded-3xl shadow-lg border overflow-x-auto p-6">
+          {/* Heading */}
+          <div className="flex items-center justify-between mb-6">
+            {/* Heading */}
+            <h2 className="text-lg font-semibold text-gray-800">
+              Recent Offers
+            </h2>
+
+            {/* Filter */}
+            <div className="w-64">
+              <label className="sr-only">Filter by Status</label> {/* for accessibility */}
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition"
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="awaiting_payment">Awaiting Payment</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+                {/* Add more statuses here */}
+              </select>
+            </div>
+          </div>
+
+
+
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 uppercase text-xs tracking-wide">
+                <th className="px-5 py-4 text-left">Request #</th>
+                <th className="px-5 py-4 text-left">Service</th>
+                <th className="px-5 py-4 text-left">Route</th>
+                <th className="px-5 py-4 text-left">Weight</th>
+                <th className="px-5 py-4 text-left">Price</th>
+                <th className="px-5 py-4 text-left">Status</th>
+                <th className="px-5 py-4 text-center">Details</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {newOffers?.length > 0 ? (
+                newOffers
+                  .filter((order: any) => {
+                    if (filterStatus === "all") return true;
+                    // check if any of the order_details match the selected filter
+                    return order.order_details.some(
+                      (item: any) => item.status === filterStatus
+                    );
+                  })
+                  .map((order: any) => (
+                    <tr
+                      key={order.id}
+                      className="border-b last:border-none hover:bg-blue-50/40 transition"
+                    >
+                      {/* Request */}
+                      <td className="px-5 py-4 font-medium text-gray-900">
+                        {order.request_number}
+                      </td>
+
+                      {/* Service */}
+                      <td className="px-5 py-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold
+                    ${order.service_type === "buy_for_me"
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-green-100 text-green-700"
+                            }`}
+                        >
+                          {order.service_type === "buy_for_me"
+                            ? "Buy For Me"
+                            : "Ship For Me"}
+                        </span>
+                      </td>
+
+                      {/* Route */}
+                      <td className="px-5 py-4 text-gray-600">
+                        <div className="leading-tight">
+                          <p className="font-medium">
+                            {order.ship_from_city} → {order.ship_to_city}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {order.ship_from_state}, {order.ship_to_state}
+                          </p>
+                        </div>
+                      </td>
+
+                      {/* Weight */}
+                      <td className="px-5 py-4">{order.total_aprox_weight} kg</td>
+
+                      {/* Price */}
+                      <td className="px-5 py-4 font-semibold text-blue-600">
+                        ${order.total_price}
+                      </td>
+
+                      {/* Statuses */}
+                      <td className="px-5 py-4 flex flex-wrap gap-1">
+                        {order.order_details.map((item: any) => (
+                          <span
+                            key={item.id}
+                            className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-medium"
+                          >
+                            {item.status}
+                          </span>
+                        ))}
+                      </td>
+
+                      {/* View */}
+                      <td className="px-5 py-4 text-center">
+                        <button
+                          onClick={() => handleViewDetails(order)}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+                    bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-gray-500">
+                    No new requests available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+      {/* {
         isModalOpen &&
         <Modal
           isOpen={isModalOpen}
@@ -298,7 +585,6 @@ export default function ShipperDashboard() {
         >
           {selectedOrder && (
             <div className="space-y-4">
-              {/* Header */}
               <div>
                 <h2 className="text-xl font-semibold text-gray-800">
                   Order Details
@@ -308,7 +594,6 @@ export default function ShipperDashboard() {
                 </p>
               </div>
 
-              {/* From → To */}
               <div className="border rounded-xl p-4 bg-gray-50">
                 <p className="font-medium text-gray-700 mb-1">Route</p>
                 <p className="text-sm text-gray-600">
@@ -324,8 +609,6 @@ export default function ShipperDashboard() {
                   {selectedOrder.ship_to_city}
                 </p>
               </div>
-
-              {/* Service Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="border rounded-xl p-4">
                   <p className="text-sm text-gray-500">Shipping Type</p>
@@ -358,7 +641,6 @@ export default function ShipperDashboard() {
                 </div>
               </div>
 
-              {/* Products */}
               <div className="border rounded-xl p-4">
                 <p className="font-medium text-gray-700 mb-2">
                   Order Items
@@ -389,7 +671,126 @@ export default function ShipperDashboard() {
             </div>
           )}
         </Modal>
-      }
+      } */}
+      <Modal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal({ open: false, id: null, status: null })}
+        className="max-w-md w-full m-4"
+      >
+        <div className="bg-white p-7 rounded-2xl shadow-xl">
+          {/* Header */}
+          <h3 className="text-2xl font-semibold mb-2 text-gray-900">
+            {confirmModal.status == "inprogress" ? "Send Your Offer" : "Cancel This Offer"}
+          </h3>
+
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            You're about to{" "}
+            <strong className="capitalize text-brand-600">
+              {confirmModal.status == "inprogress" ? "Offer" : confirmModal.status}
+            </strong>{" "}
+            on this request.
+            {confirmModal.status == "inprogress" ? "Please enter your price below." : " Are you sure to cancel this?"}
+          </p>
+          {/* PRICE BOX */}
+          {
+            confirmModal.status == "inprogress" ?
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 shadow-inner">
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Your Offer Price ($)
+                </label>
+
+                <Input
+                  type="number"
+                  placeholder="Enter your price"
+                  className="!h-12 !text-base"
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(e.target.value)}
+                />
+                {
+                  error &&
+                  <span className="text-red-600">{error}</span>
+                }
+              </div>
+              : ""
+          }
+
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => setConfirmModal({ open: false, id: null, status: null })}
+              className="px-5 py-2.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleConfirm}
+              className={`px-5 py-2.5 rounded-lg text-white font-medium shadow-md transition 
+                  ${confirmModal.status === "inprogress"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-red-700 hover:bg-red-800"
+                }
+                `}
+            >
+              {confirmModal.status == "inprogress" ? "Send Offer" : "Confirm"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedOrder(null);
+        }}
+        className="max-w-2xl p-6"
+      >
+        {selectedOrder && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Order Details
+              </h2>
+            </div>
+
+            {/* From → To */}
+            <div className="border rounded-xl p-4 bg-gray-50">
+              <p className="font-medium text-gray-700 mb-1">Route</p>
+              <p className="text-sm text-gray-600">
+                <strong>From:</strong> {selectedOrder.ship_from_country}, {selectedOrder.ship_from_state}, {selectedOrder.ship_from_city}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>To:</strong> {selectedOrder.ship_to_country}, {selectedOrder.ship_to_state}, {selectedOrder.ship_to_city}
+              </p>
+            </div>
+
+            {/* Service Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border rounded-xl p-4">
+                <p className="text-sm text-gray-500">Shipping Type</p>
+                <p className="font-medium">
+                  {selectedOrder.service_type === "buy_for_me" ? "Buy For Me" : "Ship For Me"}
+                </p>
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <p className="text-sm text-gray-500">Weight</p>
+                <p className="font-medium">{selectedOrder.total_aprox_weight} kg</p>
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <p className="text-sm text-gray-500">Total Price</p>
+                <p className="font-medium">${selectedOrder.total_price}</p>
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <p className="text-sm text-gray-500">Name</p>
+                <p className="font-medium">{selectedOrder.name}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
     </>
   );

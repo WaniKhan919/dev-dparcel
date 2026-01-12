@@ -10,17 +10,67 @@ export interface ChatItem {
   receiver_id: number;
   unread?: number;
   online?: boolean;
+  service_type?: string;
 }
 
 interface ChatProps {
   chats: ChatItem[];
   activeChat: number | null;
   onChatClick: (id: number) => void;
+  search: string;
+  setSearch: (v: string) => void;
+  activeFilter: string;
+  setActiveFilter: (v: any) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ chats, activeChat, onChatClick }) => {
+const Chat: React.FC<ChatProps> = ({  
+  chats,
+  activeChat,
+  onChatClick,
+  search,
+  setSearch,
+  activeFilter,
+  setActiveFilter, }) => {
   return (
     <div className="bg-white shadow-md rounded-2xl border overflow-hidden">
+      {/* 🔍 Search */}
+      <div className="p-3 border-b">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or request..."
+          className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring"
+        />
+      </div>
+
+      {/* 🔘 Filters */}
+      <div className="px-3 py-2 border-b">
+        {/* <div className="flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap"> */}
+        <div className="flex flex-wrap gap-2 px-3 py-2 border-b text-sm">
+          {[
+            { key: "all", label: "All" },
+            { key: "unread", label: "Unread" },
+            { key: "ship_for_me", label: "Ship For Me" },
+            { key: "buy_for_me", label: "Buy For Me" },
+          ].map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setActiveFilter(f.key)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full border text-sm transition
+                ${
+                  activeFilter === f.key
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+
       <div className="px-4 py-3 border-b">
         <h2 className="text-lg font-semibold">Messages</h2>
       </div>
