@@ -5,6 +5,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   success?: boolean;
   error?: boolean;
   hint?: string;
+  label?: string; // ✅ label added
 }
 
 const Input: FC<InputProps> = ({
@@ -14,17 +15,24 @@ const Input: FC<InputProps> = ({
   success = false,
   error = false,
   hint,
-  ...rest // ✅ includes id, name, value, onChange, ref, etc.
+  label,
+  ...rest
 }) => {
+  // Special case for checkbox
   if (type === "checkbox") {
     return (
-      <input
-        type="checkbox"
-        className={`h-5 w-5 cursor-pointer ${className}`}
-        {...rest}
-      />
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          className={`h-5 w-5 cursor-pointer ${className}`}
+          {...rest}
+        />
+        {label && <span className="text-sm text-gray-700 dark:text-white/90">{label}</span>}
+      </div>
     );
   }
+
+  // Input styles
   let inputClasses = `h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 ${className}`;
 
   if (disabled) {
@@ -39,21 +47,21 @@ const Input: FC<InputProps> = ({
 
   return (
     <div className="relative">
-      <input
-        type={type}
-        disabled={disabled}
-        className={inputClasses}
-        {...rest}
-      />
+      {/* Label */}
+      {label && (
+        <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-white/90">
+          {label}
+        </label>
+      )}
 
+      {/* Input field */}
+      <input type={type} disabled={disabled} className={inputClasses} {...rest} />
+
+      {/* Hint / error message */}
       {hint && (
         <p
           className={`mt-1.5 text-xs ${
-            error
-              ? "text-error-500"
-              : success
-              ? "text-success-500"
-              : "text-gray-500"
+            error ? "text-error-500" : success ? "text-success-500" : "text-gray-500"
           }`}
         >
           {hint}

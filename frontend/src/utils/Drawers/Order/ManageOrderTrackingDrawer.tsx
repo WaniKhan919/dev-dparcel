@@ -226,7 +226,7 @@ export default function ViewShopperOffersDrawer({
           </form>
 
           {/* Order History */}
-          <div>
+          {/* <div>
             <h3 className="text-md font-semibold mb-3">Order History</h3>
             <ol className="relative border-l border-gray-300">
               {orderTracking.map((item: any) => (
@@ -249,7 +249,43 @@ export default function ViewShopperOffersDrawer({
                 </li>
               ))}
             </ol>
-          </div>
+          </div> */}
+          {/* Modern Courier-style Vertical Tracker */}
+<div className="p-4">
+  <h3 className="text-lg font-semibold mb-6">Order Tracking</h3>
+
+  <div className="relative">
+    {/* Vertical line */}
+    <div className="absolute left-3 top-0 w-1 h-full bg-gray-300"></div>
+
+    <ul className="space-y-6">
+      {orderStatus?.map((status: any, idx: number) => {
+        const stepNumber = idx + 1;
+        const isCompleted = stepNumber <= 4; // example completed
+        const isCurrent = stepNumber === 4;  // example current
+
+        return (
+          <li key={status.id} className="flex items-center relative">
+            {/* Circle / Flag */}
+            <div
+              className={`w-6 h-6 rounded-full z-10 flex items-center justify-center
+                ${isCompleted ? "bg-green-500 text-white" : isCurrent ? "bg-green-400 border-2 border-green-500 text-white" : "bg-gray-300 text-gray-700"}
+              `}
+            >
+              {isCompleted && !isCurrent ? "✓" : ""}
+            </div>
+
+            {/* Step info */}
+            <span className="ml-4 text-sm font-medium text-gray-800">
+              {status.name.charAt(0).toUpperCase() + status.name.slice(1)}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</div>
+
         </div>
       </div>
     </div>

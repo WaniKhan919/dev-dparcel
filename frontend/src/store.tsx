@@ -26,10 +26,13 @@ import chatContactsReducer from "./slices/chatContactsSlice"
 import messagesReducer from "./slices/messagesSlice"
 import latestChatsReducer from "./slices/latestChatsSlice"
 import shopperChatContactsReducer from "./slices/shopper/shopperChatContactsSlice"
+import getBlogsReducer from "./slices/admin/getBlogsSlice"
 
 export const store = configureStore({
   reducer: {
+    //admin
     roles: roleReducer,
+    blogs: getBlogsReducer,
     permissions: permissionReducer,
     services: servicesReducer,
     products: productReducer,

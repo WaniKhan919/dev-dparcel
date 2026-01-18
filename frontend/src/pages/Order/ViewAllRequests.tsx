@@ -2,60 +2,43 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchAllOrders } from "../../slices/allOrderSlice";
 import AdminOrderMessages from "../../utils/Drawers/Order/AdminOrderMessages";
 import OrdedrSearchFilter from "../../utils/Drawers/Order/OrdedrSearchFilter";
-import TableActions from "../../components/tables/TableActions";
+import { ChatBubbleLeftIcon, EyeIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import { Modal } from "../../components/ui/modal";
 
 interface Request {
   id: number;
   service_type: string;
   request_number: string;
-  ship_from: string;
-  ship_to: string;
-  products: string; // comma-separated
   total_aprox_weight: string;
   total_price: string;
-  weight_per_unit: string;
   order_details: {
     id: number;
     quantity: number;
     price: string;
-    product: {
-      id: number;
-      title: string;
-      weight?: string;
-    };
+    weight?: string;
+    product: { id: number; title: string; weight?: string };
   }[];
-  order_offer: {
-    id: number;
-    order_id: number;
-    user_id: number;
-    message: string;
-    status: string;
-    shipper: {
-      id: number;
-      name: string;
-    };
-  };
-  order_status: {
-    name: string;
-  };
-  user: {
-    id: number;
-    name: string;
-  };
+  order_offer: any;
+  order_status: { name: string } | null;
+  user: { id: number; name: string };
+  ship_from_country?: { name: string };
+  ship_from_state?: { name: string };
+  ship_from_city?: { name: string };
+  ship_to_country?: { name: string };
+  ship_to_state?: { name: string };
+  ship_to_city?: { name: string };
 }
 
 export default function ViewAllRequests() {
   const dispatch = useDispatch<AppDispatch>();
   const { data, meta, loading } = useSelector((state: any) => state.allOrder);
-  const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
-  const [orderData, setOrderData] = useState([])
-  
+
   const [filters, setFilters] = useState({
     request_number: "",
     status: "",
@@ -63,23 +46,29 @@ export default function ViewAllRequests() {
     ship_to: "",
     date: "",
   });
-
   const [page, setPage] = useState(1);
+
+  const [openMessageDrawer, setOpenMessageDrawer] = useState(false);
+  const [openDetailModal, setOpenDetailModal] = useState(false);
+  const [orderData, setOrderData] = useState<Request | null>(null);
 
   useEffect(() => {
     dispatch(fetchAllOrders({ page, per_page: 12, ...filters }));
   }, [dispatch, page, filters]);
 
-  const openMessage = (record: any) => {
-    setOrderData(record)
-    setOpenMessageDrawer(true)
-  }
+  const openMessage = (record: Request) => {
+    setOrderData(record);
+    setOpenMessageDrawer(true);
+  };
 
-  const trackOrder = (record: any) => {
-  }
-  const onClose = () => {
-    setOpenMessageDrawer(false)
-  }
+  const openDetails = (record: Request) => {
+    setOrderData(record);
+    setOpenDetailModal(true);
+  };
+
+  const trackOrder = (record: Request) => {
+    console.log("Track order", record.id);
+  };
 
   const handleSearch = (searchFilters: any) => {
     setPage(1);
@@ -104,85 +93,32 @@ export default function ViewAllRequests() {
   };
 
   const columns = [
-{
-  key: "service_type",
-  header: "Ship Type",
-  render: (record: Request) => {
-    const label =
-      record.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me";
-    const color =
-      record.service_type === "ship_for_me"
-        ? "bg-blue-100 text-blue-800"
-        : "bg-green-100 text-green-800";
-
-    return (
-      <div className="flex flex-col">
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
-          {label}
-        </span>
-        <span className="text-xs text-gray-500 mt-1">{record.request_number}</span>
-      </div>
-    );
-  },
-},
+    { key: "request_number", header: "Request Number" },
     {
-      key: "ship_from",
-      header: "Ship From/To",
+      key: "service_type",
+      header: "Ship Type",
+      render: (record: Request) => {
+        const label = record.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me";
+        const color = record.service_type === "ship_for_me" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
+        return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color} w-max`}>{label}</span>;
+      },
+    },
+    {
+      key: "ship_from_to",
+      header: "Ship From / To",
       render: (record: Request) => (
-        <div className="flex flex-col">
-          <span><strong>From:</strong> {record.ship_from}</span>
-          <span><strong>To:</strong> {record.ship_to}</span>
+        <div className="text-sm">
+          <div><strong>From:</strong> {record.ship_from_country?.name ?? "-"}, {record.ship_from_state?.name ?? "-"}, {record.ship_from_city?.name ?? "-"}</div>
+          <div><strong>To:</strong> {record.ship_to_country?.name ?? "-"}, {record.ship_to_state?.name ?? "-"}, {record.ship_to_city?.name ?? "-"}</div>
         </div>
       ),
     },
-    {
-      key: "products",
-      header: "Products",
-      render: (record: Request) => (
-        <div className="flex flex-col gap-1">
-          {record.order_details?.map((detail) => (
-            <span key={detail.id} className="text-gray-700">
-              {detail.product?.title} (x{detail.quantity})
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    { key: "total_aprox_weight", header: "Approx Weight (g)" },
     { key: "total_price", header: "Total Price" },
-    {
-      key: "shipper",
-      header: "Shipper",
-      render: (record: Request) => (
-        <span>{record.user.name}</span>
-      ),
-    },
-    {
-      key: "user",
-      header: "Shopper",
-      render: (record: Request) => (
-        <span>{record?.order_offer?.shipper?.name}</span>
-      ),
-    },
-    {
-      key: "weight_per_unit",
-      header: "Weight Per Unit (Gram)",
-      render: (record: Request) => (
-        <div className="flex flex-col gap-1">
-          {record.order_details?.map((detail) => (
-            <span key={detail.id}>
-              {detail.product?.title}: {detail.product?.weight ?? "N/A"} g
-            </span>
-          ))}
-        </div>
-      ),
-    },
     {
       key: "status",
       header: "Status",
       render: (record: Request) => {
-        const status = (record?.order_status?.name ?? "Pending").toLowerCase();
-
+        const status = (record.order_status?.name ?? "Pending").toLowerCase();
         const statusColors: Record<string, string> = {
           pending: "bg-yellow-100 text-yellow-800",
           "awaiting payment": "bg-orange-100 text-orange-800",
@@ -196,33 +132,26 @@ export default function ViewAllRequests() {
           cancelled: "bg-gray-200 text-gray-800",
           returned: "bg-red-100 text-red-800",
         };
-
-        return (
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              statusColors[status] || "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {status
-              .split(" ")
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(" ")}
-          </span>
-        );
+        return <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || "bg-gray-100 text-gray-800"}`}>{status}</span>;
       },
     },
     {
       key: "actions",
       header: "Actions",
       render: (record: Request) => (
-        <TableActions
-          record={record}
-          onViewOffers={(rec) => console.log("View Offers:", rec)}
-          onTrackOrder={(rec) => trackOrder(rec)}
-          onOpenMessage={(rec) => openMessage(rec)}
-        />
+        <div className="flex items-center gap-2">
+          <button title="View Details" onClick={() => openDetails(record)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200">
+            <EyeIcon className="h-5 w-5 text-gray-800 stroke-2" />
+          </button>
+          <button title="Track Order" onClick={() => trackOrder(record)} className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100">
+            <MapPinIcon className="h-5 w-5 text-blue-700" />
+          </button>
+          <button title="Messages" onClick={() => openMessage(record)} className="p-2 rounded-lg bg-green-50 hover:bg-green-100">
+            <ChatBubbleLeftIcon className="h-5 w-5 text-green-700" />
+          </button>
+        </div>
       ),
-    }
+    },
   ];
 
   return (
@@ -230,28 +159,45 @@ export default function ViewAllRequests() {
       <PageMeta title="Delivering Parcel | Requests" description="" />
       <PageBreadcrumb pageTitle="Requests" />
       <div className="space-y-6">
-        {/* Search All Order */}
         <OrdedrSearchFilter onSearch={handleSearch} onReset={handleReset} />
         <ComponentCard title="Requests">
-          <DParcelTable 
-            columns={columns} 
-            data={data} 
-            rowsPerPage={12}
-            meta={meta}
-            loading={loading}
-            onPageChange={(newPage:number) => setPage(newPage)}
-          />
-          {
-            openMessageDrawer &&
-            <AdminOrderMessages
-              isOpen={openMessageDrawer}
-              onClose={onClose}
-              orderData={orderData}
-            />
-          }
+          <DParcelTable columns={columns} data={data} rowsPerPage={10} meta={meta} loading={loading} onPageChange={(newPage) => setPage(newPage)} />
         </ComponentCard>
       </div>
+
+      {/* Messages Drawer */}
+      {openMessageDrawer && <AdminOrderMessages isOpen={openMessageDrawer} onClose={() => setOpenMessageDrawer(false)} orderData={orderData} />}
+
+      {/* Order Detail Modal */}
+      {openDetailModal && orderData && (
+        <Modal isOpen={openDetailModal} onClose={() => setOpenDetailModal(false)} className="max-w-2xl p-6">
+          <h2 className="text-xl font-semibold mb-4">Request Details - {orderData.request_number}</h2>
+          <div className="mb-3">
+            <strong>Ship Type:</strong>{" "}
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${orderData.service_type === "ship_for_me" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}`}>
+              {orderData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
+            </span>
+          </div>
+          <div className="mb-3">
+            <div><strong>From:</strong> {orderData.ship_from_country?.name}, {orderData.ship_from_state?.name}, {orderData.ship_from_city?.name}</div>
+            <div><strong>To:</strong> {orderData.ship_to_country?.name}, {orderData.ship_to_state?.name}, {orderData.ship_to_city?.name}</div>
+          </div>
+          <div className="mb-3">
+            <strong>Products:</strong>
+            <ul className="list-disc list-inside">
+              {orderData.order_details?.map((d) => (
+                <li key={d.id}>{d.product?.title} - Qty: {d.quantity} - Price: {d.price} - Weight: {d.weight}g</li>
+              ))}
+            </ul>
+          </div>
+          <div className="mb-3 flex gap-6">
+            <div><strong>Total Weight:</strong> {orderData.total_aprox_weight} g</div>
+            <div><strong>Total Price:</strong> ${orderData.total_price}</div>
+          </div>
+          <div className="mb-3"><strong>Shopper:</strong> {orderData.user?.name}</div>
+          <div><strong>Status:</strong> {orderData.order_status?.name ?? "Pending"}</div>
+        </Modal>
+      )}
     </>
   );
 }
-

@@ -96,7 +96,18 @@ class OrderController extends Controller
             $shipTo = $request->get('ship_to');
             $date = $request->get('date'); // Expected format: YYYY-MM-DD
 
-            $query = Order::with(['orderDetails.product', 'orderOffer.shipper', 'user', 'orderStatus'])
+            $query = Order::with([
+                'orderDetails.product', 
+                'orderOffer.shipper', 
+                'user', 
+                'orderStatus',
+                'shipFromCountry:id,name',
+                'shipFromState:id,name',
+                'shipFromCity:id,name',
+                'shipToCountry:id,name',
+                'shipToState:id,name',
+                'shipToCity:id,name'
+                ])
                 ->orderBy('id', 'desc');
 
             // ✅ Apply filters only if present
@@ -109,11 +120,11 @@ class OrderController extends Controller
             }
 
             if (!empty($shipFrom)) {
-                $query->where('ship_from', $shipFrom);
+                $query->where('ship_from_country_id', $shipFrom);
             }
 
             if (!empty($shipTo)) {
-                $query->where('ship_to', $shipTo);
+                $query->where('ship_to_country_id', $shipTo);
             }
 
             if (!empty($date)) {

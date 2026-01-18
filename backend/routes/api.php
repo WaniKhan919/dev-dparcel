@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdminDashboardController;
+use App\Http\Controllers\Api\Admin\BlogController;
 use App\Http\Controllers\Api\Admin\ShipperLevelController;
 use App\Http\Controllers\Api\CustomDeclarationController;
 use App\Http\Controllers\Api\LocationController;
@@ -27,6 +29,8 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\Shipper\ManageMultipleLocationController;
+use App\Http\Controllers\Api\Shipper\ShipperDashboardController;
+use App\Http\Controllers\Api\Shopper\ShopperDashboardController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -43,6 +47,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin api routes
     Route::prefix('admin')->group(function () {
+        // Admin Dashboard routes
+        Route::prefix('/dashboard')->controller(AdminDashboardController::class)->group(function () {
+            Route::get('/orders', 'recordCount');
+            Route::get('/balance', 'currentBalance');
+        });
+        
         Route::controller(MessageController::class)->group(function () {
             Route::get('/messages', 'getMessagesForAdmin');
             Route::post('/messages/status', 'updateMessageStatus');
@@ -65,6 +75,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/payment/{id}', [PaymentSettingController::class, 'show']);
             Route::put('/payment/{id}', [PaymentSettingController::class, 'update']);
             Route::delete('/payment/{id}', [PaymentSettingController::class, 'destroy']);
+        });
+        Route::prefix('/blogs')->group(function () {
+            Route::get('/', [BlogController::class, 'index']);
+            Route::post('/', [BlogController::class, 'store']);
+            Route::get('{id}', [BlogController::class, 'show']);
+            Route::put('{id}', [BlogController::class, 'update']);
+            Route::delete('{id}', [BlogController::class, 'destroy']);
         });
 
         Route::get('/get-wallet', [WalletController::class, 'adminWallet']);
@@ -124,12 +141,19 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     // Shipper Routes
     Route::prefix('shipper')->group(function () {
+        // Shipper Dashboard routes
+        Route::prefix('/dashboard')->controller(ShipperDashboardController::class)->group(function () {
+            Route::get('/orders', 'orderCount');
+            Route::get('/balance', 'balance');
+            Route::get('/offers', 'offerCount');
+        });
+
         Route::controller(ShipperController::class)
         ->group(function () {
             Route::get('/get/requests', 'getRequests');
             Route::post('/confirm/request', 'confirmRequest');
             Route::get('/get/offers', 'getMyOffers');
-            Route::get('/get/new-offers', 'getNewOffers');
+            Route::get('/get/current-offers', 'getCurrentOffers');
 
         });
         Route::get('/payments', [ShipperPaymentController::class, 'index']);
@@ -143,6 +167,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Shopper Routes
     Route::prefix('shopper')->group(function () {
+        // Shopper Dashboard routes
+        Route::prefix('/dashboard')->controller(ShopperDashboardController::class)->group(function () {
+            Route::get('/orders', 'recordCount');
+            Route::get('/offers', 'offerStats');
+        });
         //Shopper Messages
        Route::prefix('messages')->controller(ShopperMessageController::class)->group(function(){
             Route::get('/contacts','chatContacts');

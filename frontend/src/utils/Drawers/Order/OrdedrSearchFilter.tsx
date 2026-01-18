@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOrderStatus } from "../../../slices/orderStatusSlice";
+import { fetchCountries } from "../../../slices/countriesSlice";
 import { AppDispatch } from "../../../store";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
@@ -13,6 +14,7 @@ interface RequestSearchFilterProps {
 const OrdedrSearchFilter: React.FC<RequestSearchFilterProps> = ({ onSearch, onReset }) => {
     const dispatch = useDispatch<AppDispatch>();
     const { orderStatus, loading } = useSelector((state: any) => state.orderStatus);
+    const { data: countries, loading: countriesLoading } = useSelector((state: any) => state.countries);
 
     const [filters, setFilters] = useState({
         requestNumber: "",
@@ -43,6 +45,7 @@ const OrdedrSearchFilter: React.FC<RequestSearchFilterProps> = ({ onSearch, onRe
     };
     useEffect(() => {
         dispatch(fetchOrderStatus());
+        dispatch(fetchCountries());
     }, [dispatch]);
 
     return (
@@ -99,11 +102,9 @@ const OrdedrSearchFilter: React.FC<RequestSearchFilterProps> = ({ onSearch, onRe
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">Select Country</option>
-                        <option value="USA">United States</option>
-                        <option value="UK">United Kingdom</option>
-                        <option value="CN">China</option>
-                        <option value="PK">Pakistan</option>
-                        <option value="UAE">UAE</option>
+                        {countries?.map((c: any) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
                     </select>
                 </div>
 
@@ -117,11 +118,9 @@ const OrdedrSearchFilter: React.FC<RequestSearchFilterProps> = ({ onSearch, onRe
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">Select Country</option>
-                        <option value="USA">United States</option>
-                        <option value="UK">United Kingdom</option>
-                        <option value="CN">China</option>
-                        <option value="PK">Pakistan</option>
-                        <option value="UAE">UAE</option>
+                        {countries?.map((c: any) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
                     </select>
                 </div>
             </div>

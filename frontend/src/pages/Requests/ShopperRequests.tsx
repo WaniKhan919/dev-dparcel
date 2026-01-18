@@ -108,9 +108,20 @@ export default function ShopperRequests() {
       header: "Ship From / To",
       render: (record: any) => (
         <div className="text-sm">
-          <div><strong>From:</strong> {record.order.ship_from_country?.name}, {record.order.ship_from_state?.name}, {record.order.ship_from_city?.name}</div>
-          <div><strong>To:</strong> {record.order.ship_to_country?.name}, {record.order.ship_to_state?.name}, {record.order.ship_to_city?.name}</div>
+          <div>
+            <strong>From:</strong>{" "}
+            {record.order?.ship_from_country?.name ?? "-"},{" "}
+            {record.order?.ship_from_state?.name ?? "-"},{" "}
+            {record.order?.ship_from_city?.name ?? "-"}
+          </div>
+          <div>
+            <strong>To:</strong>{" "}
+            {record.order?.ship_to_country?.name ?? "-"},{" "}
+            {record.order?.ship_to_state?.name ?? "-"},{" "}
+            {record.order?.ship_to_city?.name ?? "-"}
+          </div>
         </div>
+
       ),
     },
     {
@@ -203,8 +214,6 @@ export default function ShopperRequests() {
       ),
     }
   ];
-
-
 
   const viewOffers = (record: any) => {
     setOrderData(record)

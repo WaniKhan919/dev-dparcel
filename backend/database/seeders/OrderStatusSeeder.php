@@ -18,17 +18,15 @@ class OrderStatusSeeder extends Seeder
 
         try {
             $statuses = [
-                ['id' => 1, 'name' => 'Pending'],             // Order created, waiting for admin or confirmation
-                ['id' => 2, 'name' => 'Awaiting Payment'],    // Waiting for user payment
-                ['id' => 3, 'name' => 'Paid'],                // Payment received
-                ['id' => 4, 'name' => 'Purchased'],           // Admin purchased product (Buy for Me only)
-                ['id' => 5, 'name' => 'In Warehouse'],        // Package arrived at warehouse
-                ['id' => 6, 'name' => 'Packed'],              // Order packed and ready for shipment
-                ['id' => 7, 'name' => 'Shipped'],             // Shipped out from warehouse
-                ['id' => 8, 'name' => 'In Transit'],          // Package on the way to destination
-                ['id' => 9, 'name' => 'Delivered'],           // Successfully delivered
-                ['id' => 10, 'name' => 'Cancelled'],          // Cancelled by user/admin
-                ['id' => 11, 'name' => 'Returned'],           // Returned to warehouse/sender
+                ['id' => 1, 'name' => 'Pending'],
+                ['id' => 2, 'name' => 'Offer Placed'],
+                ['id' => 3, 'name' => 'Offer Accepted'],
+                ['id' => 4, 'name' => 'Payment Pending'],
+                ['id' => 5, 'name' => 'Inprogress'],
+                ['id' => 6, 'name' => 'Processed'],
+                ['id' => 7, 'name' => 'Forwarded'],
+                ['id' => 8, 'name' => 'Received'],
+                ['id' => 9, 'name' => 'Completed'],
             ];
 
             DB::table('order_statuses')->upsert($statuses, ['id'], ['name']);

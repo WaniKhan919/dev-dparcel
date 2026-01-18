@@ -22,7 +22,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
-import { BanknotesIcon, LinkIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { BanknotesIcon, LinkIcon, NewspaperIcon, WalletIcon } from "@heroicons/react/24/outline";
 
 type SubNavItem = {
   name: string;
@@ -88,6 +88,12 @@ const navItems: NavItem[] = [
     icon: <FolderIcon />,
     name: "Shipper Levels",
     path: "/shipper/levels",
+    roles: ["admin"],
+  },
+  {
+    icon: <NewspaperIcon />,
+    name: "Blog",
+    path: "/blogs",
     roles: ["admin"],
   },
   {
@@ -305,8 +311,8 @@ const AppSidebar: React.FC = () => {
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
               className={`menu-item group ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))] text-white"
-                  : "text-white hover:bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))]"
+                ? "bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))] text-white"
+                : "text-white hover:bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))]"
                 }`}
             >
               <span className="menu-item-icon-size">{nav.icon}</span>
@@ -316,9 +322,9 @@ const AppSidebar: React.FC = () => {
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
                   className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType &&
-                      openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
+                    openSubmenu?.index === index
+                    ? "rotate-180 text-brand-500"
+                    : ""
                     }`}
                 />
               )}
@@ -328,8 +334,8 @@ const AppSidebar: React.FC = () => {
               <Link
                 to={nav.path}
                 className={`menu-item group ${isActive(nav.path)
-                    ? "bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))] text-white"
-                    : "text-white hover:bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))]"
+                  ? "bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))] text-white"
+                  : "text-white hover:bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))]"
                   }`}
               >
                 <span className="menu-item-icon-size">{nav.icon}</span>
@@ -359,8 +365,8 @@ const AppSidebar: React.FC = () => {
                     <Link
                       to={subItem.path}
                       className={`menu-dropdown-item ${isActive(subItem.path)
-                          ? "bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))] text-white"
-                          : "text-white hover:bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))]"
+                        ? "bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))] text-white"
+                        : "text-white hover:bg-[linear-gradient(90deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))]"
                         }`}
                     >
                       {subItem.name}
@@ -407,7 +413,7 @@ const AppSidebar: React.FC = () => {
           />
         </Link>
       </div>
-      <div className="flex flex-col overflow-y-auto">
+      <div className="flex flex-col h-full overflow-y-auto scrollbar-thin">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
@@ -424,6 +430,25 @@ const AppSidebar: React.FC = () => {
           </div>
         </nav>
       </div>
+      <style jsx global>{`
+  /* Webkit browsers (Chrome, Edge, Safari) */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;          /* width of the scrollbar */
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.5); /* thumb color */
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent; /* make track transparent */
+  }
+
+  /* Firefox */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+  }
+`}</style>
     </aside>
   );
 };

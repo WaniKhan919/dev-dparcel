@@ -6,8 +6,9 @@ import { AppDispatch } from "../../store";
 import { fetchRequests } from "../../slices/shopperRequestSlice";
 import { fetchNewOffers } from "../../slices/shipperNewOffersSlice";
 import { fetchLatestMessages } from "../../slices/latestChatsSlice";
+import { fetchOrderStatus } from "../../slices/orderStatusSlice";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Modal } from "../../components/ui/modal";
 import { ApiHelper } from "../../utils/ApiHelper";
 import toast from "react-hot-toast";
@@ -28,11 +29,32 @@ interface Notification {
 }
 
 export default function ShipperDashboard() {
-
+  const [ordersData, setOrdersData] = useState<{
+    accepted_orders: number;
+  }>({
+    accepted_orders: 0,
+  });
+  const [balance, setBalance] = useState<{
+    total_credit: number;
+    total_debit: number;
+    balance: number;
+  }>({
+    total_credit: 0,
+    total_debit: 0,
+    balance: 0,
+  });
+  const [offerStats, setOfferStats] = useState<{
+    accepted: number;
+    inprogress: number;
+  }>({
+    accepted: 0,
+    inprogress: 0,
+  });
   const dispatch = useDispatch<AppDispatch>();
   const { requests, loading, error: requestError } = useSelector((state: any) => state.shopperRequest);
-  const { data: newOffers, loading: loadingOffers, errorOffers } = useSelector((state: any) => state.shipperNewOffers);
+  const { data: newOffers, loading: loadingOffers, errorOffers, meta, page: offerPage, perPage } = useSelector((state: any) => state.shipperNewOffers);
   const { data: latestChats, loading: latestChatLoading } = useSelector((state: any) => state.latestChats);
+  const { orderStatus, loading: statusLoading } = useSelector((state: any) => state.orderStatus);
   const navigate = useNavigate();
   const [hiddenIds, setHiddenIds] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,7 +66,10 @@ export default function ShipperDashboard() {
   }>({ open: false, id: null, status: null });
   const [offerPrice, setOfferPrice] = useState("");
   const [error, setError] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState('');
+  const [page, setPage] = useState(1);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleHide = (id: number) => {
     setHiddenIds((prev) => [...prev, id]);
@@ -94,9 +119,79 @@ export default function ShipperDashboard() {
 
   useEffect(() => {
     dispatch(fetchRequests());
-    dispatch(fetchNewOffers());
     dispatch(fetchLatestMessages());
+    dispatch(fetchOrderStatus());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchNewOffers({ page, perPage: 12, status: filterStatus }));
+  }, [dispatch, page, perPage, filterStatus]);
+
+  useEffect(() => {
+    fetchOrdersStats();
+    fetchBalanceStats();
+    fetchOfferStats();
+  }, []);
+
+  const fetchOrdersStats = async () => {
+    setIsLoading(true);
+    try {
+      const res = await ApiHelper("GET", "/shipper/dashboard/orders");
+
+      if (res.status === 200 && res.data.success) {
+        setOrdersData(res.data.data);
+      } else {
+        setOrdersData({
+          accepted_orders: 0,
+        });
+      }
+    } catch (err: any) {
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchOfferStats = async () => {
+    setIsLoading(true);
+    try {
+      const res = await ApiHelper("GET", "/shipper/dashboard/offers");
+
+      if (res.status === 200 && res.data.success) {
+        setOfferStats({
+          accepted: res.data.data.accepted ?? 0,
+          inprogress: res.data.data.inprogress ?? 0,
+        });
+      } else {
+        setOfferStats({ accepted: 0, inprogress: 0 });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setOfferStats({ accepted: 0, inprogress: 0 });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  const fetchBalanceStats = async () => {
+    setIsLoading(true);
+    try {
+      const res = await ApiHelper("GET", "/shipper/dashboard/balance");
+
+      if (res.status === 200 && res.data.success) {
+        setBalance(res.data.data);
+      } else {
+        setBalance({
+          total_credit: 0,
+          total_debit: 0,
+          balance: 0,
+        });
+      }
+    } catch (err: any) {
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const notification: Notification[] = useMemo(() => {
     if (!requests) return [];
@@ -137,8 +232,8 @@ export default function ShipperDashboard() {
             <div className="bg-white rounded-2xl shadow-md p-4 border-b-4 border-blue-600 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">0</p>
-                  <p className="text-gray-600">Total orders</p>
+                  <p className="text-2xl font-bold">{loading ? "..." : ordersData.accepted_orders}</p>
+                  <p className="text-gray-600">Total Orders</p>
                 </div>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -156,38 +251,65 @@ export default function ShipperDashboard() {
                 </svg>
               </div>
               <div className="flex justify-end mt-4">
-                <a href="#" className="text-blue-600 font-medium text-sm">
+                <Link
+                  to="/shipper/requests"
+                  className="text-blue-600 font-medium text-sm"
+                >
                   See all
-                </a>
+                </Link>
               </div>
             </div>
 
 
             {/* Pickup Soon */}
-            <div className="bg-white rounded-2xl shadow-md p-4 border-b-4 border-yellow-400 flex flex-col justify-between">
+            <div className="bg-white rounded-2xl shadow-md p-4 border-b-4 border-yellow-400">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">0</p>
-                  <p className="text-gray-600">Pickup soon</p>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"
-                  className="w-6 h-6 text-yellow-600">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
+                  <p className="text-gray-600 text-sm mb-1">Your Offers</p>
 
+                  <div className="flex gap-4">
+                    <span className="text-green-600 text-sm font-medium">
+                      Accepted: {loading ? "--" : offerStats.accepted}
+                    </span>
+
+                    <span className="text-blue-600 text-sm font-medium">
+                      In Progress: {loading ? "--" : offerStats.inprogress}
+                    </span>
+                  </div>
+                </div>
+
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="w-6 h-6 text-yellow-600"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                  />
+                </svg>
               </div>
-              <div className="flex justify-end mt-4">
-                <a href="#" className="text-blue-600 font-medium text-sm">
+
+              <div className="flex justify-end mt-3">
+                <a
+                  href="/shipper/offers"
+                  className="text-blue-600 font-medium text-sm hover:underline"
+                >
                   See all
                 </a>
               </div>
             </div>
 
+
             {/* Balance */}
             <div className="bg-white rounded-2xl shadow-md p-4 border-b-4 border-green-500 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">€0.00</p>
+                  <p className="text-2xl font-bold">€{balance.balance}</p>
                   <p className="text-gray-600">Your current balance</p>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"
@@ -456,13 +578,14 @@ export default function ShipperDashboard() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-4 py-2 border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition"
               >
-                <option value="all">All</option>
-                <option value="pending">Pending</option>
-                <option value="awaiting_payment">Awaiting Payment</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-                {/* Add more statuses here */}
+                <option value="">Select status</option>
+                {orderStatus?.map((st: any) => (
+                  <option key={st.id} value={st.id}>
+                    {st.name.charAt(0).toUpperCase() + st.name.slice(1)}
+                  </option>
+                ))}
               </select>
+
             </div>
           </div>
 
@@ -484,13 +607,6 @@ export default function ShipperDashboard() {
             <tbody>
               {newOffers?.length > 0 ? (
                 newOffers
-                  .filter((order: any) => {
-                    if (filterStatus === "all") return true;
-                    // check if any of the order_details match the selected filter
-                    return order.order_details.some(
-                      (item: any) => item.status === filterStatus
-                    );
-                  })
                   .map((order: any) => (
                     <tr
                       key={order.id}
@@ -569,6 +685,45 @@ export default function ShipperDashboard() {
               )}
             </tbody>
           </table>
+          {/* Pagination */}
+          {meta && meta.total > 0 && (
+            <div className="flex items-center justify-between mt-6 px-2">
+              {/* Info */}
+              <p className="text-sm text-gray-600">
+                Page <span className="font-medium">{meta.current_page}</span> of{" "}
+                <span className="font-medium">{meta.last_page}</span> — Total{" "}
+                <span className="font-medium">{meta.total}</span> records
+              </p>
+
+              {/* Controls */}
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={!meta.prev_page_url || loading}
+                  onClick={() => setPage(meta.current_page - 1)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition
+          ${meta.prev_page_url
+                      ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                >
+                  Previous
+                </button>
+
+                <button
+                  disabled={!meta.next_page_url || loading}
+                  onClick={() => setPage(meta.current_page + 1)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition
+          ${meta.next_page_url
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-blue-100 text-blue-300 cursor-not-allowed"
+                    }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 

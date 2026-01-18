@@ -41,7 +41,6 @@ class ShipperController extends Controller
         }
     }
 
-
     public function confirmRequest(Request $request)
     {
         try {
@@ -75,17 +74,17 @@ class ShipperController extends Controller
             $perPage = (int) $request->get('per_page', 10);
 
             $orderOffers = OrderOffer::with([
-                                'order.orderDetails.product',
-                                'order.shipFromCountry:id,name',
-                                'order.shipFromState:id,name',
-                                'order.shipFromCity:id,name',
-                                'order.shipToCountry:id,name',
-                                'order.shipToState:id,name',
-                                'order.shipToCity:id,name',
-                            ])
-                            ->where('user_id', $userId)
-                            ->orderBy('id', 'desc')
-                            ->paginate($perPage);
+                'order.orderDetails.product',
+                'order.shipFromCountry:id,name',
+                'order.shipFromState:id,name',
+                'order.shipFromCity:id,name',
+                'order.shipToCountry:id,name',
+                'order.shipToState:id,name',
+                'order.shipToCity:id,name',
+            ])
+                ->where('user_id', $userId)
+                ->orderBy('id', 'desc')
+                ->paginate($perPage);
 
 
             return response()->json([
@@ -108,61 +107,70 @@ class ShipperController extends Controller
             ], 500);
         }
     }
-    public function getNewOffers(Request $request){
+    public function getCurrentOffers(Request $request)
+    {
         try {
             $user = Auth::user();
+            $perPage = (int) $request->get('per_page', 10);
+            $status  = $request->get('status'); // 👈 filter from frontend
 
-            $orderIds = OrderOffer::where('user_id', $user->id)
-                ->whereIn('status', ['pending', 'inprogress', 'accepted'])
-                ->pluck('order_id');
+            // Base query
+            $ordersQuery = Order::with([
+                'orderDetails.product',
+                'user',
+                'shipFromCountry:id,name',
+                'shipFromState:id,name',
+                'shipFromCity:id,name',
+                'shipToCountry:id,name',
+                'shipToState:id,name',
+                'shipToCity:id,name'
+            ])
+            ->whereHas('offers', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->orderByDesc('id');
 
-            if ($orderIds->isEmpty()) {
-                return response()->json([
-                    'success' => true,
-                    'data' => [],
-                    'message' => 'No active orders found.'
-                ], 200);
+            // Apply filter directly on orders.status
+            if ($status) {
+                $ordersQuery->where('status', $status);
             }
 
-            $orders = Order::with([
-                    'orderDetails.product',
-                    'user',
-                    'shipFromCountry',
-                    'shipFromState',
-                    'shipFromCity',
-                    'shipToCountry',
-                    'shipToState',
-                    'shipToCity'
-                ])
-                ->whereIn('id', $orderIds)
-                ->orderBy('id', 'desc')
-                ->get()
-                ->map(function ($order) {
-                    return [
-                        'id' => $order->id,
-                        'user_id' => $order->user_id,
-                        'service_type' => $order->service_type,
-                        'total_aprox_weight' => $order->total_aprox_weight,
-                        'total_price' => $order->total_price,
-                        'tracking_number' => $order->tracking_number,
-                        'request_number' => $order->request_number,
-                        'status' => $order->status,
-                        'created_at' => $order->created_at,
-                        'updated_at' => $order->updated_at,
-                        'ship_from_country' => $order->shipFromCountry?->name,
-                        'ship_from_state' => $order->shipFromState?->name,
-                        'ship_from_city' => $order->shipFromCity?->name,
-                        'ship_to_country' => $order->shipToCountry?->name,
-                        'ship_to_state' => $order->shipToState?->name,
-                        'ship_to_city' => $order->shipToCity?->name,
-                        'order_details' => $order->orderDetails,
-                        'user' => $order->user,
-                    ];
-                });
+            // Paginate
+            $orders = $ordersQuery->paginate($perPage);
+
+            // Transform collection
+            $orders->getCollection()->transform(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'user_id' => $order->user_id,
+                    'service_type' => $order->service_type,
+                    'total_aprox_weight' => $order->total_aprox_weight,
+                    'total_price' => $order->total_price,
+                    'tracking_number' => $order->tracking_number,
+                    'request_number' => $order->request_number,
+                    'status' => $order->status,
+                    'ship_from_country' => $order->shipFromCountry?->name,
+                    'ship_from_state' => $order->shipFromState?->name,
+                    'ship_from_city' => $order->shipFromCity?->name,
+                    'ship_to_country' => $order->shipToCountry?->name,
+                    'ship_to_state' => $order->shipToState?->name,
+                    'ship_to_city' => $order->shipToCity?->name,
+                    'order_details' => $order->orderDetails,
+                    'user' => $order->user,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'data' => $orders,
+                'data' => $orders->items(),
+                'meta' => [
+                    'current_page'  => $orders->currentPage(),
+                    'last_page'     => $orders->lastPage(),
+                    'per_page'      => $orders->perPage(),
+                    'total'         => $orders->total(),
+                    'next_page_url' => $orders->nextPageUrl(),
+                    'prev_page_url' => $orders->previousPageUrl(),
+                ],
             ], 200);
 
         } catch (Exception $e) {
@@ -173,5 +181,4 @@ class ShipperController extends Controller
             ], 500);
         }
     }
-
 }

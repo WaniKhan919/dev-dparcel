@@ -47,6 +47,9 @@ import ShipperMessages from "./pages/Shipper/ShipperMessages";
 import RoleRedirect from "./context/RoleRedirect";
 import ManageMultipleLocations from "./pages/Shipper/ManageLocations/ManageMultipleLocations";
 import ShopperMessages from "./pages/Shopper/ShopperMessages";
+import Blogs from "./pages/Admin/Blogs";
+import CreateBlogs from "./pages/Admin/CreateBlogs";
+import EditBlogs from "./pages/Admin/EditBlogs";
 
 export default function App() {
   return (
@@ -90,6 +93,9 @@ export default function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/shipper/levels" element={<ShipperLevels />} />
             <Route path="/payment/setting" element={<PaymentsSettings />} />
+            <Route path="/blogs" element={<Blogs />} />
+            <Route path="/blogs/create" element={<CreateBlogs />} />
+            <Route path="/blogs/edit" element={<EditBlogs />} />
 
             {/* Shopper Routes */}
             <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
