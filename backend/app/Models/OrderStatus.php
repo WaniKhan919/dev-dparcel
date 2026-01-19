@@ -13,6 +13,6 @@ class OrderStatus extends Model
 
     public function tracking()
     {
-        return $this->hasMany(OrderTracking::class, 'status_id');
+        return $this->hasOne(OrderTracking::class, 'status_id');
     }
 }

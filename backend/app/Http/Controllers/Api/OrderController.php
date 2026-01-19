@@ -97,9 +97,9 @@ class OrderController extends Controller
             $date = $request->get('date'); // Expected format: YYYY-MM-DD
 
             $query = Order::with([
-                'orderDetails.product', 
-                'orderOffer.shipper', 
-                'user', 
+                'orderDetails.product',
+                'orderOffer.shipper',
+                'user',
                 'orderStatus',
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
@@ -107,7 +107,7 @@ class OrderController extends Controller
                 'shipToCountry:id,name',
                 'shipToState:id,name',
                 'shipToCity:id,name'
-                ])
+            ])
                 ->orderBy('id', 'desc');
 
             // ✅ Apply filters only if present
@@ -153,8 +153,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
-
 
     public function store(Request $request)
     {
@@ -219,7 +217,7 @@ class OrderController extends Controller
                 $linePrice = $p['price'] * $p['quantity'];
                 $lineWeight = ($p['weight'] ?? 0) * $p['quantity'];
 
-                if($type == 1){
+                if ($type == 1) {
                     $totalPrice += $linePrice;
                 }
                 $totalWeight += $lineWeight;
@@ -306,6 +304,19 @@ class OrderController extends Controller
             }
 
             DB::commit();
+
+            // Prepare data for template
+            $emailData = [
+                'user_name' => $user->name,
+                'order_request_number' => $order->request_number,
+                'tracking_number' => $order->tracking_number,
+                'total_price' => $order->total_price,
+                'total_weight' => $order->total_aprox_weight,
+                'service_type' => $order->service_type,
+            ];
+
+            // Use your existing sendEmail helper
+            sendEmail($user->email, 'Your Order has been Placed Successfully!', 'emails.shipper.orders.order_success', $emailData);
 
             return response()->json([
                 'success' => true,
@@ -453,26 +464,51 @@ class OrderController extends Controller
     public function getOrderTracking($id)
     {
         try {
-            $tracking = OrderTracking::with('status')->where('order_id', $id)->get();
-            if (!$tracking) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order tracking not found',
-                    'data' => null
-                ], 404);
-            }
+
+            // 1️⃣ Get all statuses in correct sequence
+            $statuses = OrderStatus::orderBy('id')->get();
+
+            // 2️⃣ Get tracking data for this order
+            $trackings = OrderTracking::where('order_id', $id)
+                ->get()
+                ->keyBy('status_id');
+
+            // 3️⃣ Merge statuses + tracking
+            $timeline = $statuses->map(function ($status) use ($trackings) {
+
+                $tracking = $trackings->get($status->id);
+
+                return [
+                    'status_id'   => $status->id,
+                    'status_name' => $status->name,
+                    'description' => $status->description,
+
+                    'is_completed' => $tracking ? true : false,
+
+                    'tracking' => $tracking ? [
+                        'remarks'         => $tracking->remarks,
+                        'attachments'     => $tracking->attachments,
+                        'tracking_number' => $tracking->tracking_number,
+                        'created_at'      => $tracking->created_at,
+                        'updated_at'      => $tracking->updated_at,
+                    ] : null
+                ];
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $tracking,
+                'data'    => $timeline
             ]);
         } catch (Exception $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get order tracking',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
+
     public function getOrderDetail($id)
     {
         try {
@@ -500,5 +536,4 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
 }

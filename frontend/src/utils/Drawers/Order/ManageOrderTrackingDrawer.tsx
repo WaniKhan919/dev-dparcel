@@ -29,6 +29,14 @@ interface ViewOffersDrawerProps {
   onClose: () => void;
   orderData: any;
 }
+const excludedStatuses = [
+  "Pending",
+  "Offer Placed",
+  "Offer Accepted",
+  "Payment Pending",
+  "Received",
+  "Completed",
+];
 
 export default function ViewShopperOffersDrawer({
   isOpen,
@@ -39,6 +47,9 @@ export default function ViewShopperOffersDrawer({
 
   const dispatch = useDispatch<AppDispatch>();
   const { orderStatus, loading } = useSelector((state: any) => state.orderStatus);
+  const [orderStatusOptions, setOrderStatusOptions] = useState<
+    { id: number; name: string; disabled: boolean }[]
+  >([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [orderTracking, setOrderTrackingData] = useState<any>([]);
@@ -97,18 +108,19 @@ export default function ViewShopperOffersDrawer({
     try {
       const res = await ApiHelper("GET", `/order/get-order-tracking/${orderData.id}`);
       if (res.status === 200) {
-        const trackingArray = res.data.data; // assume this is an array
-        const historyData = trackingArray.map((tracking: any) => ({
-          id: tracking.id,
-          status: tracking.status?.name
-            ? "Order " + tracking.status.name.charAt(0).toUpperCase() + tracking.status.name.slice(1)
-            : "Unknown",
-          time: new Date(tracking.created_at).toLocaleString(), // format timestamp
-          remarks: tracking.remarks || null,
-        }));
+        const trackingArray = res.data.data;
+        setOrderTrackingData(trackingArray);
+        const options = trackingArray
+          .filter((st: any) => !excludedStatuses.includes(st.status_name))
+          .map((st: any) => {
+            return {
+              id: st.status_id,
+              name: st.status_name,
+              disabled: st.is_completed, // only completed steps disabled
+            };
+          });
 
-        setOrderTrackingData(historyData);
-
+        setOrderStatusOptions(options);
       } else {
         setOrderTrackingData([]);
       }
@@ -135,9 +147,8 @@ export default function ViewShopperOffersDrawer({
 
       {/* Drawer */}
       <div
-        className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-xl transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between bg-gray-100 px-4 py-3 border-b sticky top-0 z-10">
@@ -167,8 +178,8 @@ export default function ViewShopperOffersDrawer({
                   className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring focus:ring-blue-200"
                 >
                   <option value="">Select status</option>
-                  {orderStatus?.map((st: any) => (
-                    <option key={st.id} value={st.id}>
+                  {orderStatusOptions.map((st) => (
+                    <option key={st.id} value={st.id} disabled={st.disabled}>
                       {st.name.charAt(0).toUpperCase() + st.name.slice(1)}
                     </option>
                   ))}
@@ -226,66 +237,66 @@ export default function ViewShopperOffersDrawer({
           </form>
 
           {/* Order History */}
-          {/* <div>
-            <h3 className="text-md font-semibold mb-3">Order History</h3>
-            <ol className="relative border-l border-gray-300">
-              {orderTracking.map((item: any) => (
-                <li key={item.id} className="mb-6 ml-4">
-                  <div className="absolute w-3 h-3 bg-blue-600 rounded-full -left-1.5 border border-white"></div>
+          <div className="p-4">
+            <h3 className="text-lg font-semibold mb-6">Order Tracking</h3>
 
-                  <time className="mb-1 text-sm font-normal leading-none text-gray-500">
-                    {item.time}
-                  </time>
+            <ul className="relative">
+              {orderTracking.map((status: any, idx: number) => {
+                const isCompleted = status.is_completed;
+                const nextStatus = orderTracking[idx + 1];
+                const isCurrent = isCompleted && !nextStatus?.is_completed;
 
-                  <p className="text-base font-medium text-gray-800">
-                    {item.status}
-                  </p>
+                return (
+                  <li key={status.status_id} className="flex items-start relative">
 
-                  {item.remarks && (
-                    <p className="text-sm text-gray-600 italic mt-1">
-                      {item.remarks}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </div> */}
-          {/* Modern Courier-style Vertical Tracker */}
-<div className="p-4">
-  <h3 className="text-lg font-semibold mb-6">Order Tracking</h3>
+                    {/* Left: circle + vertical line */}
+                    <div className="flex flex-col items-center relative">
+                      {/* Circle */}
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center z-10
+                ${isCompleted
+                            ? isCurrent
+                              ? "bg-green-400 border-2 border-green-600 text-white"
+                              : "bg-green-600 text-white"
+                            : "bg-gray-300 text-gray-600"
+                          }`}
+                      >
+                        {!isCurrent && isCompleted ? "✓" : ""}
+                      </div>
 
-  <div className="relative">
-    {/* Vertical line */}
-    <div className="absolute left-3 top-0 w-1 h-full bg-gray-300"></div>
+                      {/* Vertical line connecting to next circle */}
+                      {idx !== orderTracking.length - 1 && (
+                        <div
+                          className={`w-1 h-6 mt-0.5 ${isCompleted ? "bg-green-600" : "bg-gray-300"}`}
+                        ></div>
+                      )}
+                    </div>
 
-    <ul className="space-y-6">
-      {orderStatus?.map((status: any, idx: number) => {
-        const stepNumber = idx + 1;
-        const isCompleted = stepNumber <= 4; // example completed
-        const isCurrent = stepNumber === 4;  // example current
+                    {/* Right: step info */}
+                    <div className="ml-4">
+                      <p
+                        className={`text-sm font-medium ${isCurrent ? "text-blue-600" : "text-gray-800"
+                          }`}
+                      >
+                        {status.status_name} {isCurrent && "(Current)"}
+                      </p>
 
-        return (
-          <li key={status.id} className="flex items-center relative">
-            {/* Circle / Flag */}
-            <div
-              className={`w-6 h-6 rounded-full z-10 flex items-center justify-center
-                ${isCompleted ? "bg-green-500 text-white" : isCurrent ? "bg-green-400 border-2 border-green-500 text-white" : "bg-gray-300 text-gray-700"}
-              `}
-            >
-              {isCompleted && !isCurrent ? "✓" : ""}
-            </div>
-
-            {/* Step info */}
-            <span className="ml-4 text-sm font-medium text-gray-800">
-              {status.name.charAt(0).toUpperCase() + status.name.slice(1)}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  </div>
-</div>
-
+                      {status.tracking && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {status.tracking.tracking_number && (
+                            <p>Tracking #: {status.tracking.tracking_number}</p>
+                          )}
+                          {status.tracking.created_at && (
+                            <p>{new Date(status.tracking.created_at).toLocaleString()}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       </div>
     </div>
