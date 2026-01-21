@@ -151,12 +151,20 @@ export default function ViewOffersDrawer({
                 {/* From/To */}
                 <div className="flex mt-4 text-sm">
                   <span className="w-1/2">
-                    <b>From:</b> {offersData.ship_from}
+                    <b>From:</b>{" "}
+                    {offersData?.ship_from_country?.name},
+                    {offersData?.ship_from_state?.name},
+                    {offersData?.ship_from_city?.name}
                   </span>
+
                   <span className="w-1/2">
-                    <b>To:</b> {offersData.ship_to}
+                    <b>To:</b>{" "}
+                    {offersData?.ship_to_country?.name},
+                    {offersData?.ship_to_state?.name},
+                    {offersData?.ship_to_city?.name}
                   </span>
                 </div>
+
 
                 {/* Service + Price */}
                 <div className="text-lg font-semibold text-blue-600 mt-4">

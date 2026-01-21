@@ -81,6 +81,7 @@ export default function ShipperDashboard() {
       const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status, offerPrice });
 
       if (response.status === 200) {
+        dispatch(fetchRequests());
         toast.success(response.data.message, {
           duration: 3000,
           position: "top-right",
@@ -90,13 +91,15 @@ export default function ShipperDashboard() {
           //   fontWeight: "bold",
           // },
           icon: "🎉",
-        });
+        });    
+        setConfirmModal({ open: false, id: null, status: null });
       } else {
         toast.error(response.data.message);
+        setConfirmModal({ open: false, id: null, status: null });
       }
     } catch (error) {
+      setConfirmModal({ open: false, id: null, status: null });
       console.error(error);
-      toast.error("API Error!");
     }
   };
 
@@ -109,7 +112,6 @@ export default function ShipperDashboard() {
     if (confirmModal.id && confirmModal.status) {
       confirmRequest(confirmModal.id, confirmModal.status);
     }
-    setConfirmModal({ open: false, id: null, status: null });
   };
 
   const handleViewDetails = (notification: Notification) => {

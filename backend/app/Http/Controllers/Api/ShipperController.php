@@ -52,6 +52,20 @@ class ShipperController extends Controller
                 'status'   => $request->status,           // fixed status
                 'offer_price'   => $request->offerPrice,           // fixed status
             ]);
+            // Prepare data for email template
+            $order = Order::with('user')->where('id',$request->id)->first();
+            $emailData = [
+                'user_name'      => $order->user->name,
+                'order_number'   => $order->request_number,
+                'request_number'=> $order->request_number,
+                'offer_price'    => $orderOffer->offer_price,
+                'offer_message'  => $orderOffer->message,
+                'service_type'   => ucfirst(str_replace('_', ' ', $order->service_type)),
+                'dashboard_url'  => env('REACT_APP') . '/shopper/view/request'
+            ];
+
+            // Use your existing sendEmail helper
+            sendEmail($order->user->email, 'Your Order has been Placed Successfully!', 'emails.shopper.orders.offer-send', $emailData);
 
             return response()->json([
                 'success' => true,

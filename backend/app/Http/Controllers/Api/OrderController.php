@@ -338,7 +338,14 @@ class OrderController extends Controller
     {
         try {
             $order = Order::with([
-                'offers.shipper'
+                'offers.shipper',
+                'orderStatus',
+                'shipFromCountry:id,name',
+                'shipFromState:id,name',
+                'shipFromCity:id,name',
+                'shipToCountry:id,name',
+                'shipToState:id,name',
+                'shipToCity:id,name'
             ])
                 ->where('id', $orderId)
                 ->firstOrFail();
@@ -361,7 +368,7 @@ class OrderController extends Controller
             $request->validate([
                 'status' => 'required|in:accepted,rejected',
             ]);
-            $offer = OrderOffer::with('order')->findOrFail($offerId);
+            $offer = OrderOffer::with(['order','shipper'])->findOrFail($offerId);
             $offer->status = $request->status;
             $offer->save();
             if ($request->status == "accepted") {
@@ -391,6 +398,32 @@ class OrderController extends Controller
                 'title' => $shopper_title,
                 'message' => $shopper_message . $offer->order->request_number,
             ]);
+            $shipper = $offer->shipper;
+
+            $emailData = [
+                'shipper_name'   => $shipper->name,
+                'order_number'   => $offer->order->request_number,
+                'tracking_number'=> $offer->order->tracking_number,
+                'offer_price'    => $offer->offer_price,
+                'status'         => $request->status,
+                'dashboard_url'  => env('REACT_APP') . '/shipper/requests'
+            ];
+
+            $template = $request->status === 'accepted'
+                ? 'emails.shopper.orders.offer-accepted'
+                : 'emails.shopper.orders.offer-rejected';
+
+            $subject = $request->status === 'accepted'
+                ? 'Your Offer Has Been Accepted 🎉'
+                : 'Your Offer Has Been Rejected';
+
+            // send email to shipper
+            sendEmail(
+                $shipper->email,
+                $subject,
+                $template,
+                $emailData
+            );
 
             return response()->json([
                 'success' => true,

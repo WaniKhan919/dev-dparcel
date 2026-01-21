@@ -175,17 +175,19 @@ export default function ShopperRequests() {
 
 
           {/* Manage Order */}
-          <Tooltip text="Manage Order">
-            <button
-              onClick={() => manageOrder(record)}
-              className="p-2 rounded-lg bg-green-50 hover:bg-green-100"
-            >
-              <Cog6ToothIcon className="h-5 w-5 text-green-700" />
-            </button>
-          </Tooltip>
+          {record.status === "accepted" &&
+            <Tooltip text="Manage Order">
+              <button
+                onClick={() => manageOrder(record)}
+                className="p-2 rounded-lg bg-green-50 hover:bg-green-100"
+              >
+                <Cog6ToothIcon className="h-5 w-5 text-green-700" />
+              </button>
+            </Tooltip>
+          }
 
           {/* Custom Declaration */}
-          {record.order_details?.[0]?.id && (
+          {record.status === "accepted" && record.order_details?.[0]?.id && (
             <Tooltip text="Custom Declaration">
               <button
                 onClick={() => handleCustomDecleration(record.order_details[0].id)}

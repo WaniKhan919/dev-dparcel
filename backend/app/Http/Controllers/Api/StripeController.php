@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderOffer;
 use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
@@ -79,6 +80,12 @@ class StripeController extends Controller
             ]);
  
             $order = Order::with('orderOffer')->findOrFail($validated['order_id']);
+            
+            $order_offer_id = $order->orderOffer->id;
+            $offer = OrderOffer::find($order_offer_id);
+            $offer->status = 4;
+            $offer->save();
+
             $shipperId = $order->orderOffer->user_id; // assuming Order model has shipper relation
             $shippingTypeId = $order->service_type=='buy_for_me'?1:2;
             $admin = User::whereHas('roles', function($q) {
@@ -140,9 +147,46 @@ class StripeController extends Controller
                     ]);
                 }
             }
+            $order_offer_id = $order->orderOffer->id;
+            $offer->status = 5;
+            $offer->save();
  
             DB::commit();
- 
+            $shopper = Auth::user();
+
+            $shopperEmailData = [
+                'shopper_name' => $shopper->name,
+                'order_number' => $order->request_number,
+                'amount'       => $validated['amount'],
+                'currency'     => $validated['currency'],
+                'dashboard_url'=> env('REACT_APP') . '/shopper/view/request',
+            ];
+
+            sendEmail(
+                $shopper->email,
+                'Payment Successful – Order Confirmed',
+                'emails.shopper.payment.payment-success',
+                $shopperEmailData
+            );
+            
+            //Send email to shipper
+            $shipper = User::find($shipperId);
+
+            $shipperEmailData = [
+                'shipper_name' => $shipper->name,
+                'order_number' => $order->request_number,
+                'amount'       => $validated['amount'],
+                'currency'     => $validated['currency'],
+                'dashboard_url'=> env('REACT_APP') . '/shipper/requests',
+            ];
+
+            sendEmail(
+                $shipper->email,
+                'Payment Received for Your Order',
+                'emails.shipper.payment.payment-received',
+                $shipperEmailData
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Payment successful',
