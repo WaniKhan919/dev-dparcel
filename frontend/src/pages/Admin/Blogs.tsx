@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { AppDispatch } from "../../store";
 import { useNavigate } from "react-router";
 import { PencilIcon, TrashBinIcon } from "../../icons";
-import { EyeIcon } from "@heroicons/react/24/outline";
+import { EnvelopeIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { Modal } from "../../components/ui/modal";
 import { DeleteConfirmModal } from "../../components/delete/ConfirmDeleteModal";
 import { ApiHelper } from "../../utils/ApiHelper";
@@ -42,6 +42,20 @@ export default function Blogs() {
       console.error(err);
     }
   };
+
+  const handleSendBroadcast = async (id: string) => {
+    try {
+      const res = await ApiHelper("GET", `/admin/blogs/broadcast-email/${id}`);
+      if (res.status === 200) {
+        toast.success("Blog broadcast email sent successfully");
+      } else {
+        toast.error("Failed to send broadcast email");
+      }
+    } catch (err) {
+      toast.error("Failed to send broadcast email");
+    }
+  };
+
 
   const columns = [
     { key: "title", header: "Title" },
@@ -102,6 +116,14 @@ export default function Blogs() {
           >
             <TrashBinIcon />
           </button>
+
+          <button
+            onClick={() => handleSendBroadcast(record.id)}
+            className="p-2 rounded bg-green-100 hover:bg-green-200"
+            title="Send as Broadcast Email"
+          >
+            <EnvelopeIcon className="h-5 w-5 text-green-700" />
+          </button>
         </div>
       ),
     },
@@ -129,16 +151,86 @@ export default function Blogs() {
       <Modal
         isOpen={!!viewBlog}
         onClose={() => setViewBlog(null)}
-        className="max-w-4xl p-8"
+        className="
+          w-full 
+          max-w-full 
+          sm:max-w-2xl 
+          md:max-w-3xl 
+          lg:max-w-4xl 
+          xl:max-w-5xl 
+          p-4 sm:p-6 md:p-8
+        "
       >
         {viewBlog && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-semibold">{viewBlog.title}</h2>
-            <p className="text-sm text-gray-500 italic">Slug: {viewBlog.slug}</p>
-            <div dangerouslySetInnerHTML={{ __html: viewBlog.content }} />
+          <div className="space-y-5 max-h-[85vh] overflow-y-auto">
+
+            {/* Title */}
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+              {viewBlog.title}
+            </h2>
+
+            {/* Meta Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-gray-500">
+              <p><strong>Slug:</strong> {viewBlog.slug}</p>
+              <p><strong>Author:</strong> {viewBlog.author_name}</p>
+              <p><strong>Published:</strong> {new Date(viewBlog.published_at).toLocaleDateString()}</p>
+              <p><strong>Excerpt:</strong> {viewBlog.excerpt}</p>
+            </div>
+
+            {/* Tags */}
+            {viewBlog.tags && (
+              <div>
+                <h4 className="font-semibold text-sm sm:text-base text-gray-700 mb-2">
+                  Tags
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {viewBlog.tags.split(",").map((tag: string, i: number) => (
+                    <span
+                      key={i}
+                      className="px-2 py-1 text-[10px] sm:text-xs bg-blue-100 text-blue-700 rounded-full"
+                    >
+                      {tag.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SEO Info */}
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg space-y-1 text-xs sm:text-sm">
+              <h4 className="font-semibold text-gray-700 mb-1">
+                SEO Details
+              </h4>
+              <p><strong>Meta Title:</strong> {viewBlog.meta_title}</p>
+              <p><strong>Meta Description:</strong> {viewBlog.meta_description}</p>
+              <p><strong>Meta Keywords:</strong> {viewBlog.meta_keywords}</p>
+              <p className="break-all">
+                <strong>Canonical URL:</strong> {viewBlog.canonical_url}
+              </p>
+              <p><strong>Robots:</strong> {viewBlog.robots}</p>
+            </div>
+
+            {/* Content */}
+            <div>
+              <h4 className="font-semibold text-sm sm:text-base text-gray-700 mb-2">
+                Content
+              </h4>
+
+              <div
+                className="
+            prose 
+            prose-sm 
+            sm:prose 
+            max-w-none
+          "
+                dangerouslySetInnerHTML={{ __html: viewBlog.content }}
+              />
+            </div>
+
           </div>
         )}
       </Modal>
+
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmModal

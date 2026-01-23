@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Blog;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BlogController extends Controller
@@ -57,8 +59,8 @@ class BlogController extends Controller
                 'meta_keywords'    => 'nullable|string',
                 'canonical_url'    => 'nullable|string',
                 'robots' => 'nullable',
-                'category_id'      => 'nullable|exists:categories,id',
-                'tags'             => 'nullable|array',
+                'category_id'      => 'nullable',
+                'tags'             => 'nullable',
                 'published_at'     => 'nullable|date',
             ]);
 
@@ -199,4 +201,53 @@ class BlogController extends Controller
             ], 500);
         }
     }
+    
+    public function broadcastEmail($blog_id)
+    {
+        try {
+            $blog = Blog::findOrFail($blog_id);
+
+             $users = User::whereHas('roles', function ($q) {
+                $q->whereIn('name', ['shipper', 'shopper']);
+            })->get();
+
+            foreach ($users as $user) {
+
+                $emailData = [
+                    'user_name'        => $user->name,
+                    'blog_title'       => $blog->title,
+                    'blog_excerpt'     => $blog->excerpt,
+                    'blog_content'     => $blog->content,
+                    'blog_slug'        => $blog->slug,
+                    'author_name'      => $blog->author_name,
+                    'published_at'     => $blog->published_at,
+                ];
+
+                // ✅ Using your existing helper
+                sendEmail(
+                    $user->email,
+                    $blog->title,
+                    'emails.admin.blogs.broadcast-blog',
+                    $emailData
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Blog broadcast email sent successfully'
+            ]);
+
+        } catch (Exception $e) {
+
+            Log::error('Blog Broadcast Email Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send broadcast email'
+            ], 500);
+        }
+    }
+
 }

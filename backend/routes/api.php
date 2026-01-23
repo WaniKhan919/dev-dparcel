@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('{id}', [BlogController::class, 'show']);
             Route::put('{id}', [BlogController::class, 'update']);
             Route::delete('{id}', [BlogController::class, 'destroy']);
+            Route::get('broadcast-email/{id}', [BlogController::class, 'broadcastEmail']);
         });
 
         Route::get('/get-wallet', [WalletController::class, 'adminWallet']);
