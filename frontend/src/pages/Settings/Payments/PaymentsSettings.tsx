@@ -46,8 +46,8 @@ export default function PaymentSettings() {
   
   const dispatch = useDispatch<AppDispatch>();
   const { data:paymentSetting, meta, loading:paymentLoading } = useSelector((state: any) => state.paymentSetting);
-  const { shippingType, shippingTypeLoading, error } = useSelector((state: any) => state.shippingType);
-  const { roles, loadingRole, errorRole } = useSelector((state: any) => state.roles);
+  const { shippingType} = useSelector((state: any) => state.shippingType);
+  const { roles} = useSelector((state: any) => state.roles);
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -61,7 +61,6 @@ export default function PaymentSettings() {
   const {
     register,
     handleSubmit,
-    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<PaymentSettingFormData>({

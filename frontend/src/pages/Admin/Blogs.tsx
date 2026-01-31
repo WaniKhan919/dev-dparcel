@@ -17,7 +17,7 @@ import { toast } from "react-hot-toast";
 export default function Blogs() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { data, loading } = useSelector((state: any) => state.blogs);
+  const { data } = useSelector((state: any) => state.blogs);
 
   const [viewBlog, setViewBlog] = useState<any>(null); // For viewing modal
   const [deleteBlog, setDeleteBlog] = useState<any>(null); // For delete modal

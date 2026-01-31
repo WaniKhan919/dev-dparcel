@@ -4,8 +4,6 @@ import toast from "react-hot-toast";
 import { Modal } from "../components/ui/modal";
 import Button from "../components/ui/button/Button";
 import { ApiHelper } from "./ApiHelper";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "../store";
 
 interface SubscriptionPaymentModalProps {
   isOpen: boolean;
@@ -23,7 +21,6 @@ export default function SubscriptionPaymentModal({
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
-  const dispatch = useDispatch<AppDispatch>();
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();

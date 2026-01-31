@@ -10,12 +10,18 @@ import toast from "react-hot-toast";
 import { ApiHelper } from "../../../utils/ApiHelper";
 import { fetchCountries } from "../../../slices/countriesSlice";
 
+type Subscription = {
+  level?: {
+    title?: string;
+    max_locations?: number;
+  };
+};
 
 export default function ManageMultipleLocations() {
   const dispatch = useDispatch<any>();
   const [loading, setLoading] = useState<boolean>(false);
   const [availableCities, setAvailableCities] = useState<any[]>([]);
-  const [shipperSubscripition, setShipperSubscripition] = useState<any[]>([]);
+  const [shipperSubscripition, setShipperSubscripition] = useState<Subscription | null>(null);;
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [loadingCities, setLoadingCities] = useState<boolean>(false);
   const [maxLocation, setMaxLocation] = useState<number>(0);
@@ -32,10 +38,10 @@ export default function ManageMultipleLocations() {
             setMaxLocation(Number(maxLocation))
           }
         }else{
-          setShipperSubscripition([])
+          setShipperSubscripition(null)
         }
       } catch (err: any) {
-        setShipperSubscripition([])
+        setShipperSubscripition(null)
     }
   };
 

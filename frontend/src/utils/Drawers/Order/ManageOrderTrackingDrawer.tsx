@@ -46,12 +46,12 @@ export default function ViewShopperOffersDrawer({
   if (!orderData) return null;
 
   const dispatch = useDispatch<AppDispatch>();
-  const { orderStatus, loading } = useSelector((state: any) => state.orderStatus);
+  const { loading } = useSelector((state: any) => state.orderStatus);
   const [orderStatusOptions, setOrderStatusOptions] = useState<
     { id: number; name: string; disabled: boolean }[]
   >([]);
 
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [orderTracking, setOrderTrackingData] = useState<any>([]);
   const [files, setFiles] = useState<File[]>([]);
 
@@ -71,7 +71,7 @@ export default function ViewShopperOffersDrawer({
   };
 
   const onSubmit = async (data: OrderStatusFormData) => {
-    setIsLoading(true);
+    // setIsLoading(true);
 
     try {
       const payload: any = {
@@ -95,7 +95,7 @@ export default function ViewShopperOffersDrawer({
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Something went wrong ❌");
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
@@ -104,7 +104,7 @@ export default function ViewShopperOffersDrawer({
   }, [dispatch]);
 
   const getOrderTrackingData = async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
       const res = await ApiHelper("GET", `/order/get-order-tracking/${orderData.id}`);
       if (res.status === 200) {
@@ -127,7 +127,7 @@ export default function ViewShopperOffersDrawer({
     } catch {
       toast.error("Failed to fetch offers");
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 

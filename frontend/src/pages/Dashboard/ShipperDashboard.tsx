@@ -1,6 +1,5 @@
 import PageMeta from "../../components/common/PageMeta";
 import { InfoIcon } from "../../icons";
-import Card from "../Products/Card";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchRequests } from "../../slices/shopperRequestSlice";
@@ -51,12 +50,11 @@ export default function ShipperDashboard() {
     inprogress: 0,
   });
   const dispatch = useDispatch<AppDispatch>();
-  const { requests, loading, error: requestError } = useSelector((state: any) => state.shopperRequest);
-  const { data: newOffers, loading: loadingOffers, errorOffers, meta, page: offerPage, perPage } = useSelector((state: any) => state.shipperNewOffers);
+  const { requests, loading,} = useSelector((state: any) => state.shopperRequest);
+  const { data: newOffers, loading: loadingOffers, meta, perPage } = useSelector((state: any) => state.shipperNewOffers);
   const { data: latestChats, loading: latestChatLoading } = useSelector((state: any) => state.latestChats);
-  const { orderStatus, loading: statusLoading } = useSelector((state: any) => state.orderStatus);
+  const { orderStatus} = useSelector((state: any) => state.orderStatus);
   const navigate = useNavigate();
-  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Notification | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
@@ -68,13 +66,6 @@ export default function ShipperDashboard() {
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleHide = (id: number) => {
-    setHiddenIds((prev) => [...prev, id]);
-  };
-
 
   const confirmRequest = async (id: number, status: "inprogress" | "cancelled") => {
     try {
@@ -136,7 +127,7 @@ export default function ShipperDashboard() {
   }, []);
 
   const fetchOrdersStats = async () => {
-    setIsLoading(true);
+    
     try {
       const res = await ApiHelper("GET", "/shipper/dashboard/orders");
 
@@ -149,12 +140,12 @@ export default function ShipperDashboard() {
       }
     } catch (err: any) {
     } finally {
-      setIsLoading(false);
+      
     }
   };
 
   const fetchOfferStats = async () => {
-    setIsLoading(true);
+    
     try {
       const res = await ApiHelper("GET", "/shipper/dashboard/offers");
 
@@ -170,13 +161,13 @@ export default function ShipperDashboard() {
       console.error(err);
       setOfferStats({ accepted: 0, inprogress: 0 });
     } finally {
-      setIsLoading(false);
+      
     }
   };
 
 
   const fetchBalanceStats = async () => {
-    setIsLoading(true);
+    
     try {
       const res = await ApiHelper("GET", "/shipper/dashboard/balance");
 
@@ -191,7 +182,7 @@ export default function ShipperDashboard() {
       }
     } catch (err: any) {
     } finally {
-      setIsLoading(false);
+      
     }
   };
 

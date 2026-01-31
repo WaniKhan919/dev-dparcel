@@ -2,7 +2,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchPayments } from "../../slices/shopperPaymentSlice";
@@ -22,7 +22,7 @@ interface Request {
 
 export default function ShopperPayments() {
   const dispatch = useDispatch<AppDispatch>();
-  const { data, meta, loading } = useSelector((state: any) => state.shopperPayments);
+  const { data } = useSelector((state: any) => state.shopperPayments);
 
   useEffect(() => {
     dispatch(fetchPayments({ page: 1, per_page: 10 }));

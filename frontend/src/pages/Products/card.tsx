@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { ApiHelper } from "../../utils/ApiHelper";
 import toast from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
@@ -24,7 +24,6 @@ interface CardToastProps {
 
 export default function CardToast({ notifications }: CardToastProps) {
   const [hiddenIds, setHiddenIds] = useState<number[]>([]);
-  const [visibleIds, setVisibleIds] = useState<number[]>(notifications.map(d => d.id));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Notification | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
@@ -45,7 +44,6 @@ export default function CardToast({ notifications }: CardToastProps) {
       const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status, offerPrice });
 
       if (response.status === 200) {
-        setVisibleIds(prev => prev.filter(d => d !== id));
         toast.success(response.data.message, {
           duration: 3000,
           position: "top-right",

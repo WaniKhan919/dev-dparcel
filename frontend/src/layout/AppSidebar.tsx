@@ -5,14 +5,10 @@ import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  ListIcon,
   PageIcon,
-  TableIcon,
-  UserCircleIcon,
   DocsIcon,
   PlusIcon,
   LockIcon,
-  BoxIcon,
   UserIcon,
   DollarLineIcon,
   TaskIcon,
@@ -430,17 +426,19 @@ const AppSidebar: React.FC = () => {
           </div>
         </nav>
       </div>
-      <style jsx global>{`
+      <style>{`
   /* Webkit browsers (Chrome, Edge, Safari) */
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;          /* width of the scrollbar */
+    width: 6px;
   }
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.5); /* thumb color */
+    background-color: rgba(255, 255, 255, 0.5);
     border-radius: 3px;
   }
+
   .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent; /* make track transparent */
+    background: transparent;
   }
 
   /* Firefox */
@@ -449,6 +447,7 @@ const AppSidebar: React.FC = () => {
     scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
   }
 `}</style>
+
     </aside>
   );
 };

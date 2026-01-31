@@ -17,7 +17,7 @@ interface Order {
 
 export default function Roles() {
     const dispatch = useDispatch<AppDispatch>();
-    const { roles, loading, error } = useSelector((state: any) => state.roles);
+    const { roles } = useSelector((state: any) => state.roles);
     
 
     useEffect(() => {

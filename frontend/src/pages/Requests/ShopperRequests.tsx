@@ -38,7 +38,7 @@ interface Request {
 export default function ShopperRequests() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { data, meta, loading } = useSelector((state: any) => state.shipperOffers);
+  const { data} = useSelector((state: any) => state.shipperOffers);
   const [openOfferDrawer, setOpenOfferDrawer] = useState(false)
   const [openManageOfferDrawer, setOpenManageOfferDrawer] = useState(false)
   const [openMessageDrawer, setOpenMessageDrawer] = useState(false)
@@ -225,10 +225,7 @@ export default function ShopperRequests() {
     setOrderData(record)
     setOpenManageOfferDrawer(true)
   }
-  const openMessage = (record: any) => {
-    setOrderData(record)
-    setOpenMessageDrawer(true)
-  }
+
   const onClose = () => {
     setOpenOfferDrawer(false)
     setOpenMessageDrawer(false)

@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState } from "react";
 import { ApiHelper } from "../../utils/ApiHelper";
 import toast from "react-hot-toast";
 

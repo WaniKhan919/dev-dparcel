@@ -57,7 +57,7 @@ export default function ProfilePage() {
   const {
     register: registerPassword,
     handleSubmit: handlePasswordSubmit,
-    formState: { errors: passwordErrors, isSubmitting: passwordSubmitting },
+    formState: { isSubmitting: passwordSubmitting },
   } = useForm({
     resolver: yupResolver(passwordSchema),
   });

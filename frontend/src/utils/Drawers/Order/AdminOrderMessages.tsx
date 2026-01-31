@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../store";
 import { fetchAdminMessages } from "../../../slices/getAdminMessagesSlice";
@@ -24,7 +24,7 @@ export default function AdminOrderMessages({
   );
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  // const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

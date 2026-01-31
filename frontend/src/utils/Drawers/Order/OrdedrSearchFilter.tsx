@@ -13,8 +13,8 @@ interface RequestSearchFilterProps {
 
 const OrdedrSearchFilter: React.FC<RequestSearchFilterProps> = ({ onSearch, onReset }) => {
     const dispatch = useDispatch<AppDispatch>();
-    const { orderStatus, loading } = useSelector((state: any) => state.orderStatus);
-    const { data: countries, loading: countriesLoading } = useSelector((state: any) => state.countries);
+    const { orderStatus } = useSelector((state: any) => state.orderStatus);
+    const { data: countries } = useSelector((state: any) => state.countries);
 
     const [filters, setFilters] = useState({
         requestNumber: "",

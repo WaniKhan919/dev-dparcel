@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo, useRef } from "react";
 
 type OtpInputProps = {
     length?: number;                 // default 6
@@ -17,8 +17,6 @@ export default function OtpInput({
     value,
     onChange,
     disabled,
-    className = "",
-    error,
     onComplete,
 }: OtpInputProps) {
     // Ensure we always work with fixed-length array of chars

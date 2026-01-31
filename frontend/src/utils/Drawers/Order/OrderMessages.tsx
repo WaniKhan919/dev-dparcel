@@ -29,7 +29,7 @@ export default function OrderMessages({
   const user = getUser()
 
   // TODO: replace with actual logged-in user ID from auth state
-  const currentUserId = 3;
+  // const currentUserId = 3;
 
   // Auto-scroll on new message
   useEffect(() => {

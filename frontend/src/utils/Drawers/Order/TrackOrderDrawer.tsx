@@ -15,16 +15,16 @@ export default function TrackOrderDrawer({
 }: ViewOffersDrawerProps) {
   if (!orderData) return null;
 
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [orderTracking, setOrderTrackingData] = useState<any>([]);
 
   const getOrderTrackingData = async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
       const res = await ApiHelper("GET", `/order/get-order-tracking/${orderData.id}`);
       if (res.status === 200) {
         const trackingArray = res.data.data; // assume this is an array
-        const historyData = trackingArray.map((tracking: any) => ({
+         trackingArray.map((tracking: any) => ({
           id: tracking.id,
           status: tracking.status?.name
             ? "Order " + tracking.status.name.charAt(0).toUpperCase() + tracking.status.name.slice(1)
@@ -41,7 +41,7 @@ export default function TrackOrderDrawer({
     } catch {
       toast.error("Failed to fetch offers");
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 

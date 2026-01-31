@@ -53,7 +53,7 @@ const schema = yup.object({
   .of(
     yup
       .number()
-      .transform((val, originalVal) => {
+      .transform((originalVal) => {
         if (originalVal === "" || originalVal === undefined || originalVal === null)
           return undefined;
         return Number(originalVal);

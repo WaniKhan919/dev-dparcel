@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
 import { LinkIcon } from "@heroicons/react/24/outline";
 import PageMeta from "../../../components/common/PageMeta";

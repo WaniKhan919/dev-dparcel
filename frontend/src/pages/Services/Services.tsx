@@ -51,7 +51,7 @@ type FormData = yup.InferType<typeof schema>;
 
 export default function Services() {
   const dispatch = useDispatch<AppDispatch>();
-  const { services, servicesLoading } = useSelector((state: any) => state.services);
+  const { services } = useSelector((state: any) => state.services);
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);

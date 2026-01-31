@@ -3,7 +3,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { useEffect, useState } from "react";
 import { ApiHelper } from "../../utils/ApiHelper";
-import { UserIcon, BuildingOfficeIcon, CubeIcon, DocumentIcon } from "@heroicons/react/24/outline";
+import { UserIcon, CubeIcon, DocumentIcon } from "@heroicons/react/24/outline";
 
 export default function ShopperCustomDeclaration() {
   const location = useLocation();

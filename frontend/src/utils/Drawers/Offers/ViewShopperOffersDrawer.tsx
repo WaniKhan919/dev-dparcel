@@ -15,7 +15,7 @@ export default function ViewOffersDrawer({
   orderData
 }: ViewOffersDrawerProps) {
   if (!orderData) return null; // avoid crash if no data
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [offersData, setOffersData] = useState<any>([]);
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
@@ -24,7 +24,7 @@ export default function ViewOffersDrawer({
   }>({ open: false, id: null, status: null });
 
   const getOffers = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       const res = await ApiHelper("GET", `/order/shipper/offers/${orderData.id}`);
 
@@ -34,9 +34,9 @@ export default function ViewOffersDrawer({
         setOffersData([])
       }
     } catch (err: any) {
-      setLoading(false);
+      // setLoading(false);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 

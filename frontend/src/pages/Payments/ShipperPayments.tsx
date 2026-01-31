@@ -2,11 +2,10 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchPayments } from "../../slices/shipperPaymentSlice";
-import { render } from "@fullcalendar/core/preact.js";
 
 interface Request {
   id: number;
@@ -26,7 +25,7 @@ interface Request {
 
 export default function ShipperPayments() {
   const dispatch = useDispatch<AppDispatch>();
-  const { data, meta, loading } = useSelector((state: any) => state.shipperPayments);
+  const { data } = useSelector((state: any) => state.shipperPayments);
 
   useEffect(() => {
     dispatch(fetchPayments({ page: 1, per_page: 10 }));

@@ -1,6 +1,5 @@
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { Link } from "react-router";
 
 interface DropdownProps {
   isOpen: boolean;
@@ -24,7 +23,7 @@ export default function MessageDropdown({
     onToggle();
   };
 
-  const handleMessageClick = (id: number) => {
+  const handleMessageClick = () => {
     // You can handle mark-as-read API here if needed
     closeOthers();
   };
@@ -87,7 +86,7 @@ export default function MessageDropdown({
             notifications.map((msg) => (
               <li key={msg.id}>
                 <DropdownItem
-                  onItemClick={() => handleMessageClick(msg.id)}
+                  onItemClick={() => handleMessageClick()}
                   to={`/notifications/${msg.id}`}
                   className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${
                     !msg.is_read ? "bg-gray-50 dark:bg-gray-900" : ""

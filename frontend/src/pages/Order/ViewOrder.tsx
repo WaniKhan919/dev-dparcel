@@ -2,11 +2,10 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import DParcelTable from "../../components/tables/DParcelTable";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchOrders } from "../../slices/orderSlice";
-import { createPortal } from "react-dom";
 import ViewOffersDrawer from "../../utils/Drawers/Offers/ViewOffersDrawer";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
@@ -14,7 +13,6 @@ import PaymentModal from "../../utils/PaymentModal";
 import ShopperOrderMessages from "../../utils/Drawers/Order/ShopperOrderMessages";
 import TrackOrderDrawer from "../../utils/Drawers/Order/TrackOrderDrawer";
 import ViewOrderDetailDrawer from "../../utils/Drawers/Offers/ViewOrderDetailDrawer";
-import ShopperTableAction from "../../components/tables/ShopperTableAction";
 import { useNavigate } from "react-router";
 import { ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon, CreditCardIcon, DocumentTextIcon, EyeIcon, MapPinIcon } from "@heroicons/react/24/outline";
 
@@ -62,7 +60,7 @@ interface Request {
 export default function ViewOrder() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { data, meta, loading } = useSelector((state: any) => state.order);
+  const { data} = useSelector((state: any) => state.order);
   const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false)
   const [openOfferDrawer, setOpenOfferDrawer] = useState(false)
   const [orderData, setOrderData] = useState([])

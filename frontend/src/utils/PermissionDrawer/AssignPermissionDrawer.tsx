@@ -28,7 +28,7 @@ export default function AssignPermissionDrawer({
   onClose,
 }: AssignPermissionDrawerProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { roles, rolesLoading, error } = useSelector((state: any) => state.roles);
+  const { roles} = useSelector((state: any) => state.roles);
   const { permissions, permissionsLoading } = useSelector(
     (state: any) => state.permissions
   );

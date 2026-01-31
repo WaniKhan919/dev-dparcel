@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../store";
 import { fetchMessages } from "../../../slices/getMessagesSlice";
 import { getUser } from "../../DparcelHelper";
-import { ChatIcon } from "../../../icons";
 
 interface ViewOffersDrawerProps {
   isOpen: boolean;
@@ -30,7 +29,7 @@ export default function ShopperOrderMessages({
   const user = getUser()
 
   // TODO: replace with actual logged-in user ID from auth state
-  const currentUserId = 3;
+  // const currentUserId = 3;
 
   // Auto-scroll on new message
   useEffect(() => {

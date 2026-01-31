@@ -3,7 +3,7 @@ import { ApiHelper } from "../../ApiHelper";
 import toast from "react-hot-toast";
 import { Modal } from "../../../components/ui/modal";
 import { fetchNotifications } from "../../../slices/notificationSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../../store";
 import { fetchOrders } from "../../../slices/orderSlice";
 
@@ -20,8 +20,6 @@ export default function ViewOffersDrawer({
 }: ViewOffersDrawerProps) {
   if (!orderData) return null; // avoid crash if no data
   const dispatch = useDispatch<AppDispatch>();
-  const { data, meta, orderLoading } = useSelector((state: any) => state.order);
-  const [loading, setLoading] = useState(false);
   const [offersData, setOffersData] = useState<any>([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
@@ -31,7 +29,7 @@ export default function ViewOffersDrawer({
   }>({ open: false, id: null, status: null });
 
   const getOffers = async () => {
-    setLoading(true);
+    
     try {
       const res = await ApiHelper("GET", `/order/shipper/offers/${orderData.id}`);
 
@@ -41,9 +39,9 @@ export default function ViewOffersDrawer({
         setOffersData([])
       }
     } catch (err: any) {
-      setLoading(false);
+      
     } finally {
-      setLoading(false);
+      
     }
   };
 

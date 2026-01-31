@@ -37,7 +37,7 @@ type FormData = {
 
 export default function Permissions() {
     const dispatch = useDispatch<AppDispatch>();
-    const { permissions, permissionsLoading, error } = useSelector((state: any) => state.permissions);
+    const { permissions } = useSelector((state: any) => state.permissions);
 
     useEffect(() => {
         dispatch(fetchPermission());

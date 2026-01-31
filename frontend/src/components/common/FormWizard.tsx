@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function FormWizard() {
   const [step, setStep] = useState(1);
@@ -14,12 +14,12 @@ export default function FormWizard() {
   const handleNext = () => setStep((prev) => Math.min(prev + 1, 3));
   const handlePrev = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const handleChange = (e) => {
+  const handleChange = (e:any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e:any) => {
     e.preventDefault();
     alert(JSON.stringify(formData, null, 2));
   };

@@ -26,7 +26,6 @@ type FormData = {
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -38,7 +37,7 @@ export default function SignInForm() {
   });
 
   const onSubmit = async (data: FormData) => {
-    setLoading(true);
+
     try {
       const res = await ApiHelper("POST", "/login", data);
 
@@ -84,7 +83,6 @@ export default function SignInForm() {
         icon: "⚠️",
       });
     } finally {
-      setLoading(false);
     }
   };
 

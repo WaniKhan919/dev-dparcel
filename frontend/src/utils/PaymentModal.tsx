@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { Modal } from "../components/ui/modal";
 import Button from "../components/ui/button/Button";
 import { ApiHelper } from "./ApiHelper";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store";
 import { fetchOrders } from "../slices/orderSlice";
 
@@ -21,7 +21,6 @@ export default function PaymentModal({ isOpen, onClose, orderId,shipperId, amoun
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
-  const { data, meta, orderLoading } = useSelector((state: any) => state.order);
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +59,7 @@ export default function PaymentModal({ isOpen, onClose, orderId,shipperId, amoun
           },
           icon: "💳",
         });
-        const res = await ApiHelper("POST", "/store-payment", {
+        await ApiHelper("POST", "/store-payment", {
             order_id: orderId,
             shipper_id: shipperId,
             amount: result.paymentIntent.amount / 100,

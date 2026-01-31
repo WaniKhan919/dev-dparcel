@@ -121,7 +121,12 @@ const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
-            <NotificationDropdown />
+            <NotificationDropdown 
+  isOpen={false}
+  onToggle={() => {}}
+  closeOthers={() => {}}
+  notifications={[]}
+  loading={false}/>
             {/* <!-- Notification Menu Area --> */}
           </div>
           {/* <!-- User Area --> */}

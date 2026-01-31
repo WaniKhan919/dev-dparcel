@@ -33,7 +33,6 @@ type FormValues = {
 
 export default function SignUpForm({ role }: SignUpFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
 
   const {
     register,
@@ -243,7 +242,6 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                         checked={field.value}
                         onChange={(val: boolean) => {
                           field.onChange(val);
-                          setIsChecked(val); // keep local state in sync with controller
                         }}
                       />
                     )}

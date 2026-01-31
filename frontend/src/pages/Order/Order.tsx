@@ -134,18 +134,17 @@ const productSchema = yup.object().shape({
 
 export default function Order() {
   const dispatch = useDispatch<AppDispatch>();
-  const { services, servicesLoading } = useSelector((state: any) => state.services);
-  const { data: paymentPlanData, loading: planLoading, error } = useSelector((state: any) => state.paymentPlan);
+  const { services } = useSelector((state: any) => state.services);
+  const { data: paymentPlanData } = useSelector((state: any) => state.paymentPlan);
   const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [productRequired, setProductRequired] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [shipTypeId, setShipTypeId] = useState(0);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
-  const { data: countries, loading: countriesLoading } = useSelector((state: any) => state.countries);
-  const { data: states, loading: statesLoading } = useSelector((state: any) => state.states);
-  const { data: cities, loading: citiesLoading } = useSelector((state: any) => state.cities);
+  const { data: countries} = useSelector((state: any) => state.countries);
+  const { data: states } = useSelector((state: any) => state.states);
+  const { data: cities } = useSelector((state: any) => state.cities);
 
   // main step form
   const {
@@ -245,7 +244,7 @@ export default function Order() {
   };
 
   const onSubmitForm = async (data: any) => {
-    setLoading(true);
+    
     try {
       // 1️⃣ Get active and selected services
       const activeServices = services?.filter((item: any) => item.status === 1) || [];
@@ -294,7 +293,7 @@ export default function Order() {
         style: { background: "#f44336", color: "#fff" },
       });
     } finally {
-      setLoading(false);
+      
     }
   };
 
