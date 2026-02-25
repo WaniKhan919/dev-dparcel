@@ -5,10 +5,12 @@ import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import PageMeta from "../../../components/common/PageMeta";
 import MultiSelect from "../../../components/form/MultiSelect";
 import Label from "../../../components/form/Label";
-import Select from "../../../components/form/Select";
+// import Select from "../../../components/form/Select";
+import Select from "../../../components/ui/dropdown/Select";
 import toast from "react-hot-toast";
 import { ApiHelper } from "../../../utils/ApiHelper";
 import { fetchCountries } from "../../../slices/countriesSlice";
+import { Controller, useForm } from "react-hook-form";
 
 type Subscription = {
   level?: {
@@ -27,6 +29,10 @@ export default function ManageMultipleLocations() {
   const [maxLocation, setMaxLocation] = useState<number>(0);
   const [selectedCountryId, setSelectedCountryId] = useState<number>(0);
   const { data: countries } = useSelector((state: any) => state.countries);
+
+   const {
+      control,
+    } = useForm<any>()
   
   const fetchLevelsAndSubscriptions = async () => {
     try {
@@ -174,8 +180,27 @@ export default function ManageMultipleLocations() {
 
             {/* Country (Single Select) */}
             <div>
-              <Label>Select Country</Label>
-              <Select
+              <Controller
+                name="ship_to_country_id"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    label="Select Country"
+                    options={countries.map((c: any) => ({
+                      value: String(c.id),
+                      label: c.name,
+                    }))}
+                    value={selectedCountryId ? String(selectedCountryId) : ""}
+                    onChange={(val) => {
+                      
+                      setSelectedCountryId(Number(val));
+                    }}
+                    placeholder="Select Country"
+                    clearable
+                  />
+                )}
+              />
+              {/* <Select
                 className="dark:bg-dark-900"
                 placeholder="Select Country"
                 options={countries.map((c: any) => ({
@@ -186,7 +211,7 @@ export default function ManageMultipleLocations() {
                 onChange={(value) => {
                   setSelectedCountryId(Number(value));
                 }}
-              />
+              /> */}
             </div>
 
             {/* Cities (Multi Select) */}

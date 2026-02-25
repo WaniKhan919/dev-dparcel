@@ -130,6 +130,7 @@ class ShipperController extends Controller
 
             // Base query
             $ordersQuery = Order::with([
+                'orderServices.service',
                 'orderDetails.product',
                 'user',
                 'shipFromCountry:id,name',
@@ -170,6 +171,7 @@ class ShipperController extends Controller
                     'ship_to_state' => $order->shipToState?->name,
                     'ship_to_city' => $order->shipToCity?->name,
                     'order_details' => $order->orderDetails,
+                    'order_services' => $order->orderServices,
                     'user' => $order->user,
                 ];
             });

@@ -63,7 +63,15 @@ export default function NotificationDropdown({
       <Dropdown
         isOpen={isOpen}
         onClose={closeOthers}
-        className="absolute -right-[240px] mt-[17px] flex h-[480px] w-[350px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[361px] lg:right-0"
+        className="fixed inset-0 z-50
+          sm:absolute sm:right-0 sm:inset-auto mt-[50px] lg:mt-[2px]
+          w-full sm:w-[361px]
+          h-full sm:h-[480px]
+          flex flex-col
+          bg-white dark:bg-gray-dark
+          p-4 sm:rounded-2xl
+          border border-gray-200 dark:border-gray-800
+          shadow-theme-lg"
       >
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Notifications</h5>

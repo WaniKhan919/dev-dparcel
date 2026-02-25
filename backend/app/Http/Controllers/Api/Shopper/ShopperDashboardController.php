@@ -83,4 +83,52 @@ class ShopperDashboardController extends Controller
             ], 500);
         }
     }
+
+    public function shopperPendingOffers()
+    {
+        try {
+
+            $shopperId = Auth::id();
+
+            $offers = OrderOffer::with([
+                    'order:id,user_id,request_number,service_type,total_price',
+                    'shipper:id,name'
+                ])
+                ->whereHas('order', function ($query) use ($shopperId) {
+                    $query->where('user_id', $shopperId);
+                })
+                ->whereIn('status', ['pending', 'inprogress'])
+                ->latest()
+                ->get()
+                ->map(function ($offer) {
+
+                    return [
+                        'order_id'        => $offer->order->id,
+                        'request_number'  => $offer->order->request_number,
+                        'service_type'    => $offer->order->service_type,
+                        'order_total'     => $offer->order->total_price,
+
+                        'shipper_id'      => $offer->shipper->id,
+                        'shipper_name'    => $offer->shipper->name,
+
+                        'offer_price'     => $offer->offer_price,
+                        'offer_message'   => $offer->message,
+                        'offer_status'    => $offer->status,
+                        'created_at'      => $offer->created_at->diffForHumans(),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data'    => $offers
+            ]);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong'
+            ], 500);
+        }
+    }
 }

@@ -34,6 +34,7 @@ class OrderController extends Controller
                 'orderDetails.product',
                 'acceptedOffer',
                 'orderPayment',
+                'OrderStatus',
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
                 'shipFromCity:id,name',

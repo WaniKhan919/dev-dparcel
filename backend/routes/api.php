@@ -172,12 +172,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('/dashboard')->controller(ShopperDashboardController::class)->group(function () {
             Route::get('/orders', 'recordCount');
             Route::get('/offers', 'offerStats');
+            Route::get('/pending/offers', 'shopperPendingOffers');
         });
         //Shopper Messages
        Route::prefix('messages')->controller(ShopperMessageController::class)->group(function(){
             Route::get('/contacts','chatContacts');
-            Route::get('/{order_id}','messages');
             Route::get('/latest-messages','unreadChatContacts');
+            Route::get('/{order_id}','messages');
         });
 
         Route::get('/payments', [PaymentController::class, 'index']);

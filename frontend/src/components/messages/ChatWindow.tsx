@@ -82,7 +82,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             />
             <div>
               <p className="font-medium text-gray-800">{activeChat.name}</p>
-              {activeChat.online && <p className="text-xs text-green-500">Online</p>}
+              {/* {activeChat.online && <p className="text-xs text-green-500">Online</p>} */}
             </div>
           </div>
 

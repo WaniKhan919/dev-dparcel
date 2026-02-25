@@ -124,18 +124,17 @@ export default function DParcelTable<T extends { id: number }>({
 
           <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05] relative">
             {loading ? (
-              <TableRow>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-10 text-center text-gray-500 dark:text-gray-400 relative"
-                >
-                  {/* Loader Spinner */}
-                  <div className="flex justify-center items-center">
-                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <p className="text-gray-400 text-sm mt-3">Loading data...</p>
-                </td>
-              </TableRow>
+              <>
+                {Array.from({ length: 5 }).map((_, rowIndex) => (
+                  <TableRow key={rowIndex}>
+                    {columns.map((_, colIndex) => (
+                      <TableCell key={colIndex} className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 dark:bg-white/10 rounded animate-pulse"></div>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </>
             ) : currentData.length === 0 ? (
               <TableRow>
                 <td

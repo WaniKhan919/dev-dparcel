@@ -25,6 +25,9 @@ interface Notification {
   service_type: string;
   total_aprox_weight: number;
   total_price: number;
+  order_details:any;
+  order_services:any;
+  user:any;
 }
 
 export default function ShipperDashboard() {
@@ -220,7 +223,7 @@ export default function ShipperDashboard() {
             </h1>
           </div>
           {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 -mt-25">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 pt-5 -mt-25">
             {/* Total Orders */}
             <div className="bg-white rounded-2xl shadow-md p-4 border-b-4 border-blue-600 flex flex-col justify-between">
               <div className="flex justify-between items-start">
@@ -341,10 +344,12 @@ export default function ShipperDashboard() {
             ) : latestChats && latestChats.length > 0 ? (
               latestChats.map((chat: any) => {
                 const initials = chat.username
+                ? chat.username
                   .split(" ")
                   .map((n: string) => n[0])
                   .join("")
-                  .toUpperCase();
+                  .toUpperCase()
+                : "";
 
                 return (
                   <div
@@ -912,6 +917,43 @@ export default function ShipperDashboard() {
               </p>
             </div>
 
+            {/* Products detail */}
+            {
+              selectedOrder.order_details &&
+                <div className="border rounded-xl p-4 bg-gray-50">
+                  <p className="font-semibold text-gray-700 mb-1">Products</p>
+                  {
+                    
+                  selectedOrder.order_details.map((product: any) => (
+                  <>
+                    <p className="text-sm text-gray-600">
+                      <strong>Title:</strong> {product.product.title}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong>Price:</strong> {product.product.price}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong>Quantity:</strong> {product.product.quantity}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong>Weight:</strong> {product.product.weight}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong>Total Price:</strong> {Number(product.product.price) *Number(product.product.price)}
+                    </p>
+                    {
+                      product.product.description &&
+                        <p className="text-sm text-gray-600">
+                          <strong>Description:</strong> {product.product.description}
+                        </p>
+                    }
+                    <a className="text-sm text-blue-600 font-medium underline hover:text-blue-800" href={product.product.product_url} target="_blank">View</a>
+                  </>
+                  ))
+                  }
+                </div>
+            }
+
             {/* Service Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="border rounded-xl p-4">
@@ -921,10 +963,17 @@ export default function ShipperDashboard() {
                 </p>
               </div>
 
-              <div className="border rounded-xl p-4">
-                <p className="text-sm text-gray-500">Weight</p>
-                <p className="font-medium">{selectedOrder.total_aprox_weight} kg</p>
-              </div>
+              {
+                selectedOrder.order_services &&
+                selectedOrder.order_services.map((services: any) => (
+                  <>
+                    <div className="border rounded-xl p-4">
+                      <p className="text-sm text-gray-500">{services.service.title}</p>
+                      <p className="font-medium"> ${services.service.price}</p>
+                    </div>
+                  </>
+                ))
+              }
 
               <div className="border rounded-xl p-4">
                 <p className="text-sm text-gray-500">Total Price</p>
@@ -932,8 +981,15 @@ export default function ShipperDashboard() {
               </div>
 
               <div className="border rounded-xl p-4">
-                <p className="text-sm text-gray-500">Name</p>
-                <p className="font-medium">{selectedOrder.name}</p>
+                <p className="text-sm text-gray-500">Shopper</p>
+                {
+                  selectedOrder?.user?.name &&
+                    <p className="font-medium">{selectedOrder?.user?.name}</p>
+                }
+                {
+                  selectedOrder?.name &&
+                    <p className="font-medium">{selectedOrder?.name}</p>
+                }
               </div>
             </div>
           </div>

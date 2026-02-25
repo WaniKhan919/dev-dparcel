@@ -27,6 +27,7 @@ import messagesReducer from "./slices/messagesSlice"
 import latestChatsReducer from "./slices/latestChatsSlice"
 import shopperChatContactsReducer from "./slices/shopper/shopperChatContactsSlice"
 import getBlogsReducer from "./slices/admin/getBlogsSlice"
+import shopperLatestChatsReducer from "./slices/shopper/shopperLatestChatsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -60,6 +61,7 @@ export const store = configureStore({
     latestChats:latestChatsReducer,
     //shopper
     shopperChatContacts:shopperChatContactsReducer,
+    shopperLatestChats:shopperLatestChatsReducer,
   },
 });
 

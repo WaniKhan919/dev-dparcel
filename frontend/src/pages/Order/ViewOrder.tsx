@@ -60,7 +60,7 @@ interface Request {
 export default function ViewOrder() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { data} = useSelector((state: any) => state.order);
+  const { data,loading} = useSelector((state: any) => state.order);
   const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false)
   const [openOfferDrawer, setOpenOfferDrawer] = useState(false)
   const [orderData, setOrderData] = useState([])
@@ -216,7 +216,7 @@ export default function ViewOrder() {
       <PageBreadcrumb pageTitle="Requests" />
       <div className="space-y-6">
         <ComponentCard title="Requests">
-          <DParcelTable columns={columns} data={data} />
+          <DParcelTable columns={columns} data={data} loading={loading} rowsPerPage={10}/>
           {
             openOrderDetailDrawer &&
             <ViewOrderDetailDrawer

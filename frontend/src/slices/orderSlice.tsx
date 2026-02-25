@@ -15,7 +15,7 @@ interface OrderRequestState {
 const initialState: OrderRequestState = {
   data: [],
   meta: null,
-  loading: false,
+  loading: true,
   error: null,
 };
 

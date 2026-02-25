@@ -157,40 +157,61 @@ class ShopperMessageController extends Controller
     public function unreadChatContacts()
     {
         try {
-            $userId = Auth::id();
+            $shopperId = Auth::id();
 
-            $unreadContacts = OrderMessage::where('receiver_id', $userId)
+            $orders = Order::where('user_id', $shopperId)
+                ->select('id', 'request_number')
+                ->get()
+                ->keyBy('id'); // id => Order object
+
+            $orderIds = $orders->keys();
+
+            $chats = OrderMessage::whereIn('order_id', $orderIds)
                 ->where('status', 'approved')
-                ->where('is_read', 0)
-                ->with('sender:id,name')
                 ->selectRaw('
-                                    sender_id,
-                                    message_text,
-                                    order_id,
-                                    COUNT(*) as unread_count,
-                                    MAX(created_at) as last_message_time
-                                ')
-                ->groupBy('sender_id', 'order_id', 'message_text')
+                    order_id,
+                    MAX(created_at) as last_message_time
+                ')
+                ->groupBy('order_id')
                 ->orderByDesc('last_message_time')
                 ->get()
-                ->map(function ($item) {
+                ->map(function ($item) use ($shopperId, $orders) {
+
+                    $latestMessage = OrderMessage::where('order_id', $item->order_id)
+                        ->where('is_read', 1)
+                        ->where('status', 'approved')
+                        ->latest()
+                        ->with('sender:id,name')
+                        ->first();
+
+                    $unreadCount = OrderMessage::where('order_id', $item->order_id)
+                        ->where('receiver_id', $shopperId)
+                        ->where('is_read', 0)
+                        ->where('status', 'approved')
+                        ->where('is_read', false)
+                        ->count();
+
                     return [
-                        'order_id'          => $item->order_id,
-                        'message_text'          => $item->message_text,
-                        'username'          => $item->sender->name,
-                        'unread_count'      => $item->unread_count,
-                        'last_message_time' => Carbon::parse($item->last_message_time)->diffForHumans(),
+                        'order_id' => $item->order_id,
+                        'request_number' => $orders[$item->order_id]->request_number ?? null,
+                        'shipper_name' => $latestMessage->sender->name ?? null,
+                        'latest_message' => $latestMessage->message_text ?? null,
+                        'unread_count' => $unreadCount,
+                        'last_message_time' => $latestMessage 
+                        ? Carbon::parse($latestMessage->created_at)->diffForHumans()
+                        : null,
                     ];
                 });
 
             return response()->json([
                 'success' => true,
-                'data'    => $unreadContacts,
-            ], 200);
+                'data' => $chats
+            ]);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong',
+                'message' => 'Something went wrong'.$e
             ], 500);
         }
     }

@@ -3,6 +3,34 @@ import PageMeta from "../../components/common/PageMeta";
 import { InfoIcon } from "../../icons";
 import { ApiHelper } from "../../utils/ApiHelper";
 import { Link } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "../../store";
+import { fetchAllOrders } from "../../slices/allOrderSlice";
+import DParcelTable from "../../components/tables/DParcelTable";
+
+interface Request {
+  id: number;
+  service_type: string;
+  request_number: string;
+  total_aprox_weight: string;
+  total_price: string;
+  order_details: {
+    id: number;
+    quantity: number;
+    price: string;
+    weight?: string;
+    product: { id: number; title: string; weight?: string };
+  }[];
+  order_offer: any;
+  order_status: { name: string } | null;
+  user: { id: number; name: string };
+  ship_from_country?: { name: string };
+  ship_from_state?: { name: string };
+  ship_from_city?: { name: string };
+  ship_to_country?: { name: string };
+  ship_to_state?: { name: string };
+  ship_to_city?: { name: string };
+}
 
 export default function Home() {
   const [ordersData, setOrdersData] = useState<{
@@ -23,6 +51,10 @@ export default function Home() {
   });
 
   const [loading, setLoading] = useState(false);
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { data, meta } = useSelector((state: any) => state.allOrder);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchOrdersStats();
@@ -71,6 +103,55 @@ export default function Home() {
     }
   };
 
+    const columns = [
+      { key: "request_number", header: "Request Number" },
+      {
+        key: "service_type",
+        header: "Ship Type",
+        render: (record: Request) => {
+          const label = record.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me";
+          const color = record.service_type === "ship_for_me" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
+          return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color} w-max`}>{label}</span>;
+        },
+      },
+      {
+        key: "ship_from_to",
+        header: "Ship From / To",
+        render: (record: Request) => (
+          <div className="text-sm">
+            <div><strong>From:</strong> {record.ship_from_country?.name ?? "-"}, {record.ship_from_state?.name ?? "-"}, {record.ship_from_city?.name ?? "-"}</div>
+            <div><strong>To:</strong> {record.ship_to_country?.name ?? "-"}, {record.ship_to_state?.name ?? "-"}, {record.ship_to_city?.name ?? "-"}</div>
+          </div>
+        ),
+      },
+      { key: "total_price", header: "Total Price" },
+      {
+        key: "status",
+        header: "Status",
+        render: (record: Request) => {
+          const status = (record.order_status?.name ?? "Pending").toLowerCase();
+          const statusColors: Record<string, string> = {
+            pending: "bg-yellow-100 text-yellow-800",
+            "awaiting payment": "bg-orange-100 text-orange-800",
+            paid: "bg-blue-100 text-blue-800",
+            purchased: "bg-indigo-100 text-indigo-800",
+            "in warehouse": "bg-teal-100 text-teal-800",
+            packed: "bg-purple-100 text-purple-800",
+            shipped: "bg-cyan-100 text-cyan-800",
+            "in transit": "bg-sky-100 text-sky-800",
+            delivered: "bg-green-100 text-green-800",
+            cancelled: "bg-gray-200 text-gray-800",
+            returned: "bg-red-100 text-red-800",
+          };
+          return <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || "bg-gray-100 text-gray-800"}`}>{status}</span>;
+        },
+      },
+    ];
+
+  useEffect(() => {
+    dispatch(fetchAllOrders({ page, per_page: 12 }));
+  }, [dispatch, page]);
+
   return (
     <>
       <PageMeta
@@ -87,7 +168,7 @@ export default function Home() {
             </h1>
           </div>
           {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 -mt-25">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6  pt-5 -mt-25">
             {/* Total Orders */}
             <div className="bg-white rounded-2xl shadow-md p-4 border-b-4 border-blue-600 flex flex-col justify-between">
               <div className="flex justify-between items-start">
@@ -195,6 +276,19 @@ export default function Home() {
           </div>
         </div>
 
+      </div>
+      
+      <div className="grid grid-cols-12 gap-4 md:gap-6 mt-5">
+        <div className="col-span-12">
+          <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+              Requests
+            </h2>
+            <div className="col-span-12 mt-2">
+              <DParcelTable columns={columns} data={data} rowsPerPage={10} meta={meta} loading={loading} onPageChange={(newPage) => setPage(newPage)} />
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
