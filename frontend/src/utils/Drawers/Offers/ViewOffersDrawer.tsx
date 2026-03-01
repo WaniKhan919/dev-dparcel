@@ -16,11 +16,12 @@ interface ViewOffersDrawerProps {
 export default function ViewOffersDrawer({
   isOpen,
   onClose,
-  orderData
+  orderData,
 }: ViewOffersDrawerProps) {
-  if (!orderData) return null; // avoid crash if no data
+  if (!orderData) return null;
+
   const dispatch = useDispatch<AppDispatch>();
-  const [offersData, setOffersData] = useState<any>([]);
+  const [offersData, setOffersData] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
@@ -29,19 +30,16 @@ export default function ViewOffersDrawer({
   }>({ open: false, id: null, status: null });
 
   const getOffers = async () => {
-    
     try {
-      const res = await ApiHelper("GET", `/order/shipper/offers/${orderData.id}`);
-
+      const res = await ApiHelper(
+        "GET",
+        `/order/shipper/offers/${orderData.id}`
+      );
       if (res.status === 200) {
-        setOffersData(res.data.data)
-      } else {
-        setOffersData([])
+        setOffersData(res.data.data);
       }
-    } catch (err: any) {
-      
-    } finally {
-      
+    } catch (err) {
+      setOffersData(null);
     }
   };
 
@@ -52,49 +50,38 @@ export default function ViewOffersDrawer({
     setConfirmModal({ open: false, id: null, status: null });
   };
 
-  const handleOfferAction = async (offerId: number, status: "accepted" | "rejected") => {
+  const handleOfferAction = async (
+    offerId: number,
+    status: "accepted" | "rejected"
+  ) => {
     setActionLoading(true);
     try {
-      const res = await ApiHelper("POST", `/order/offer/${offerId}/status`, { status });
+      const res = await ApiHelper(
+        "POST",
+        `/order/offer/${offerId}/status`,
+        { status }
+      );
 
       if (res.status === 200) {
-        toast.success(res.data.message || `Offer ${status}`, {
-          duration: 3000,
-          position: "top-right",
-          style: {
-            background: status === "accepted" ? "#4caf50" : "#ff9800",
-            color: "#fff",
-            fontWeight: "bold",
-          },
-          icon: status === "accepted" ? "✅" : "❌",
-        });
-
+        toast.success(res.data.message || `Offer ${status}`);
         dispatch(fetchOrders({ page: 1, per_page: 10 }));
-        dispatch(fetchNotifications({ page: 1,type:"order" }));
-        getOffers()
+        dispatch(fetchNotifications({ page: 1, type: "order" }));
+        getOffers();
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || `Failed to ${status} ❌`, {
-        duration: 3000,
-        position: "top-right",
-        style: {
-          background: "#f44336",
-          color: "#fff",
-          fontWeight: "bold",
-        },
-        icon: "⚠️",
-      });
+      toast.error(err.response?.data?.message || "Something went wrong");
     } finally {
-    setActionLoading(false); // hide loader
-  }
+      setActionLoading(false);
+    }
   };
 
-
   useEffect(() => {
-    if (orderData.id) {
-      getOffers()
+    if (orderData?.id) {
+      getOffers();
     }
-  }, [orderData])
+  }, [orderData]);
+
+  if (!offersData) return null;
 
   return (
     <div className="fixed inset-0 z-[100] mt-18">
@@ -102,162 +89,255 @@ export default function ViewOffersDrawer({
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
-      ></div>
+      />
 
       {/* Drawer */}
-      <div
-        className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+      <div className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-2xl transition-transform duration-300 flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between bg-gray-100 px-4 py-3 border-b sticky top-0 z-10">
-          <h2 className="text-lg font-semibold">Offers</h2>
-          <button onClick={onClose} className="text-gray-600 hover:text-black text-xl">
-            ✕
-          </button>
+        {/* ===== HEADER + ORDER SUMMARY ===== */}
+        <div className="bg-white border-b p-4 flex-shrink-0">
+          <div className="flex justify-between items-start px-4 py-3 border-b bg-white z-10 flex-shrink-0">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800">
+                Order #{offersData.request_number}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-black text-xl ml-2 flex-shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Quick Info */}
+          <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
+            <div className="bg-gray-50 rounded-xl p-2">
+              <p className="text-gray-500">Service</p>
+              <p className="font-semibold text-xs">
+                {offersData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-2">
+              <p className="text-gray-500">Total Price</p>
+              <p className="font-semibold text-blue-600 text-xs">
+                ${offersData.total_price}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-2">
+              <p className="text-gray-500">Approx Weight</p>
+              <p className="font-semibold text-xs">
+                {offersData.total_aprox_weight} g
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-2">
+              <p className="text-gray-500">Status</p>
+              <p className="font-semibold text-xs">
+                {offersData.order_status?.name || "Pending"}
+              </p>
+            </div>
+          </div>
+
+          {/* Route */}
+          <div className="mt-3 bg-gray-50 rounded-xl p-3 text-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-xs">From</p>
+                <p className="font-medium text-sm">
+                  {offersData.ship_from_city?.name}, {offersData.ship_from_state?.name}
+                </p>
+              </div>
+
+              <div className="text-gray-400 text-lg font-bold mx-2">→</div>
+
+              <div className="text-right">
+                <p className="text-gray-500 text-xs">To</p>
+                <p className="font-medium text-sm">
+                  {offersData.ship_to_city?.name}, {offersData.ship_to_state?.name}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="p-4 space-y-4 p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-          {/* Offers */}
-          {offersData?.offers?.length > 0 ? (
-            offersData.offers.map((offer: any) => (
-              <div
-                key={offer.id}
-                className="w-full bg-white rounded-3xl p-5 shadow-md border mt-4"
-              >
-                <div className="flex justify-between items-center">
-                  {/* Left Section */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-400 flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">
-                        {offer.shipper?.name?.charAt(0) || "?"}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <span>{offer.shipper?.name}</span>
+        {/* ===== OFFERS LIST ===== */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {offersData.offers?.length > 0 ? (
+            offersData.offers.map((offer: any) => {
+              const basePrice = Number(offer.offer_price);
+              const additionalTotal =
+                offer.additional_prices?.reduce(
+                  (sum: number, item: any) =>
+                    sum + Number(item.price),
+                  0
+                ) || 0;
+
+              const grandTotal = basePrice + additionalTotal;
+              const isAccepted = offer.status === "accepted";
+
+              return (
+                <div
+                  key={offer.id}
+                  className={`rounded-2xl p-5 shadow-md border transition ${isAccepted
+                      ? "border-green-500 bg-green-50"
+                      : "bg-white"
+                    }`}
+                >
+                  {/* Shipper */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-3 items-center">
+                      <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                        {offer.shipper?.name?.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold">
+                          {offer.shipper?.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {offer.shipper?.email}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {offer.shipper?.phone}
+                        </p>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right Section */}
-                  <div className="text-right text-sm font-semibold">
-                    <div>{offersData.total_aprox_weight} g</div>
-                  </div>
-                </div>
-
-                {/* From/To */}
-                <div className="flex mt-4 text-sm">
-                  <span className="w-1/2">
-                    <b>From:</b>{" "}
-                    {offersData?.ship_from_country?.name},
-                    {offersData?.ship_from_state?.name},
-                    {offersData?.ship_from_city?.name}
-                  </span>
-
-                  <span className="w-1/2">
-                    <b>To:</b>{" "}
-                    {offersData?.ship_to_country?.name},
-                    {offersData?.ship_to_state?.name},
-                    {offersData?.ship_to_city?.name}
-                  </span>
-                </div>
-
-
-                {/* Service + Price */}
-                <div className="text-lg font-semibold text-blue-600 mt-4">
-                  {offersData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"} – $
-                  {offersData.total_price}
-                </div>
-
-                {/* Buttons */}
-                <div className="flex mt-4">
-                  {["pending", "inprogress"].includes(offer.status) ? (
-                    <>
-                      <button
-                        onClick={() =>
-                          setConfirmModal({ open: true, id: offer.id, status: "rejected" })
-                        }
-                        className="bg-gray-200 w-1/2 py-2 rounded-full mr-2 hover:bg-gray-300 transition"
-                      >
-                        Reject
-                      </button>
-                      <button
-                        onClick={() =>
-                          setConfirmModal({ open: true, id: offer.id, status: "accepted" })
-                        }
-                        style={{
-                          backgroundImage: "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
-                        }}
-                        className="w-1/2 py-2 rounded-full ml-2 text-white font-medium shadow-md hover:opacity-90 transition"
-                      >
-                        Accept
-                      </button>
-                    </>
-                  ) : (
-                    <div
-                      className={`w-full py-2 rounded-full text-center font-medium shadow-md
-                              ${offer.status === "accepted" ? "bg-green-500 text-white" : ""}
-                              ${offer.status === "rejected" ? "bg-red-500 text-white" : ""}
-                              ${offer.status === "cancelled" ? "bg-yellow-500 text-white" : ""}
-                              ${offer.status === "ignored" ? "bg-gray-400 text-white" : ""}`}
+                    <span
+                      className={`px-3 py-1 text-xs rounded-full font-medium ${offer.status === "accepted"
+                          ? "bg-green-500 text-white"
+                          : offer.status === "rejected"
+                            ? "bg-red-500 text-white"
+                            : offer.status === "inprogress"
+                              ? "bg-blue-500 text-white"
+                              : "bg-yellow-500 text-white"
+                        }`}
                     >
-                      {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
+                      {offer.status}
+                    </span>
+                  </div>
+
+                  {/* Price Breakdown */}
+                  <div className="mt-4 text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span>Offer Price</span>
+                      <span>${basePrice}</span>
                     </div>
-                  )}
+
+                    {offer.additional_prices?.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-gray-600"
+                      >
+                        <span>{item.title}</span>
+                        <span>${item.price}</span>
+                      </div>
+                    ))}
+
+                    <div className="border-t pt-2 flex justify-between font-semibold text-blue-600">
+                      <span>Total</span>
+                      <span>${grandTotal}</span>
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  {["pending", "inprogress"].includes(
+                    offer.status
+                  ) && (
+                      <div className="flex gap-3 mt-5">
+                        <button
+                          onClick={() =>
+                            setConfirmModal({
+                              open: true,
+                              id: offer.id,
+                              status: "rejected",
+                            })
+                          }
+                          className="w-1/2 py-2 rounded-xl bg-gray-200 hover:bg-gray-300"
+                        >
+                          Reject
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            setConfirmModal({
+                              open: true,
+                              id: offer.id,
+                              status: "accepted",
+                            })
+                          }
+                          className="w-1/2 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          Accept
+                        </button>
+                      </div>
+                    )}
                 </div>
-
-
-              </div>
-            ))
+              );
+            })
           ) : (
-            <p className="text-gray-500 mt-4">No offers available</p>
+            <p className="text-gray-500">No offers available</p>
           )}
         </div>
 
-      {actionLoading && (
-        <div className="absolute inset-0 z-[150] flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm rounded-tr-2xl rounded-br-2xl">
-          <div className="w-12 h-12 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin"></div>
-          <p className="mt-3 text-white font-semibold tracking-wide">
-            Please wait...
-          </p>
-        </div>
-      )}
+        {/* Loading Overlay */}
+        {actionLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="w-12 h-12 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin" />
+          </div>
+        )}
       </div>
+
       {/* Confirm Modal */}
       <Modal
         isOpen={confirmModal.open}
-        onClose={() => setConfirmModal({ open: false, id: null, status: null })}
-        className="max-w-md m-4"
+        onClose={() =>
+          setConfirmModal({
+            open: false,
+            id: null,
+            status: null,
+          })
+        }
+        className="max-w-md"
       >
-        <div className="bg-white p-6 rounded-2xl text-center">
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">Confirm Action</h3>
+        <div className="p-6 text-center">
+          <h3 className="text-xl font-semibold mb-4">
+            Confirm Action
+          </h3>
           <p className="mb-6 text-gray-600">
             Are you sure you want to{" "}
-            <strong className="capitalize">{confirmModal.status}</strong> this request?
+            <strong>{confirmModal.status}</strong> this offer?
           </p>
+
           <div className="flex justify-center gap-4">
             <button
-              onClick={() => setConfirmModal({ open: false, id: null, status: null })}
-              className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 transition"
+              onClick={() =>
+                setConfirmModal({
+                  open: false,
+                  id: null,
+                  status: null,
+                })
+              }
+              className="px-4 py-2 rounded-lg bg-gray-300"
             >
               Cancel
             </button>
+
             <button
               onClick={handleConfirm}
-              className={`px-4 py-2 rounded-lg text-white transition ${
-                confirmModal.status === "accepted"
-                  ? "bg-green-500 hover:bg-green-700"
-                  : "bg-red-600 hover:bg-red-700"
-              }`}
+              className={`px-4 py-2 rounded-lg text-white ${confirmModal.status === "accepted"
+                  ? "bg-green-500"
+                  : "bg-red-600"
+                }`}
             >
               Confirm
             </button>
           </div>
         </div>
       </Modal>
-
     </div>
-    
   );
 }

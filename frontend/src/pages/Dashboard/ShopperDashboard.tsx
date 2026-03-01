@@ -40,6 +40,10 @@ export default function ShopperDashboard() {
   const { data: shopperLatestChats, loading: latestChatLoading } = useSelector((state: any) => state.shopperLatestChats);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const [viewModal, setViewModal] = useState({
+    open: false,
+    data: null as any,
+  });
 
   useEffect(() => {
     fetchOffersCount();
@@ -110,6 +114,7 @@ export default function ShopperDashboard() {
   };
 
   const handleConfirm = () => {
+    console.log(confirmModal)
     if (confirmModal.id && confirmModal.status) {
       handleOfferAction(confirmModal.id, confirmModal.status);
     }
@@ -344,45 +349,56 @@ export default function ShopperDashboard() {
               pendingOffers.map((offer: any) => (
                 <div
                   key={offer.order_id}
-                  className="border rounded-xl p-4 hover:shadow-md transition-all duration-200"
+                  className="border rounded-2xl p-4 bg-gradient-to-br from-gray-50 to-white hover:shadow-lg transition-all duration-300"
                 >
                   {/* Top Row */}
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-gray-500">
-                        {offer.request_number}
+                    <div className="space-y-1">
+                      <p className="text-xs text-gray-500">
+                        #{offer.request_number}
                       </p>
-                      <p className="font-semibold text-gray-800">
+
+                      {/* Service Type Tag */}
+                      <span
+                        className={`inline-block text-xs px-3 py-1 rounded-full font-semibold
+                        ${offer.service_type === "buy_for_me"
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-indigo-100 text-indigo-700"
+                          }`}
+                      >
                         {offer.service_type === "buy_for_me"
                           ? "Buy For Me"
                           : "Ship For Me"}
-                      </p>
+                      </span>
                     </div>
 
-                    <span className={`text-xs px-3 py-1 rounded-full font-medium
+                    {/* Status Tag */}
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-semibold
                       ${offer.offer_status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-blue-100 text-blue-700"}`}>
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-blue-100 text-blue-700"
+                        }`}
+                    >
                       {offer.offer_status}
                     </span>
                   </div>
 
-                  {/* Middle Info */}
-                  <div className="mt-3 space-y-1 text-sm text-gray-600">
-                    <p>
-                      <span className="font-medium text-gray-800">Shipper:</span>{" "}
-                      {offer.shipper_name}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-800">Order Total:</span>{" "}
-                      ${offer.order_total}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-800">Offered Price:</span>{" "}
-                      <span className="text-green-600 font-semibold">
-                        ${offer.offer_price}
-                      </span>
-                    </p>
+                  {/* Middle Info as Tags */}
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+
+                    <span className="bg-gray-100 px-3 py-1 rounded-full">
+                      👤 {offer.shipper_name}
+                    </span>
+
+                    <span className="bg-gray-100 px-3 py-1 rounded-full">
+                      💵 Order: ${offer.order_total}
+                    </span>
+
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
+                      Offered: ${offer.offer_price}
+                    </span>
+
                   </div>
 
                   {/* Footer */}
@@ -391,30 +407,36 @@ export default function ShopperDashboard() {
                       {offer.created_at}
                     </p>
 
-                    <div className="flex gap-3">
-                      {/* Reject Button */}
+                    <div className="flex gap-2">
+
+                      {/* Reject */}
                       <button
                         onClick={() =>
-                          setConfirmModal({ open: true, id: offer.id, status: "rejected" })
+                          setConfirmModal({ open: true, id: offer.offer_id, status: "rejected" })
                         }
-                        className="w-1/2 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition"
+                        className="flex-1 py-2 text-xs rounded-xl bg-red-100 text-red-600 font-semibold hover:bg-red-200 transition"
                       >
                         Reject
                       </button>
 
-                      {/* Accept Button */}
+                      {/* Accept */}
                       <button
                         onClick={() =>
-                          setConfirmModal({ open: true, id: offer.id, status: "accepted" })
+                          setConfirmModal({ open: true, id: offer.offer_id, status: "accepted" })
                         }
-                        style={{
-                          backgroundImage:
-                            "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
-                        }}
-                        className="w-1/2 py-2 rounded-lg text-white font-medium shadow-md hover:opacity-90 transition"
+                        className="flex-1 py-2 text-xs rounded-xl bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition"
                       >
                         Accept
                       </button>
+
+                      {/* View */}
+                      <button
+                        onClick={() => setViewModal({ open: true, data: offer })}
+                        className="flex-1 py-2 text-xs rounded-xl bg-black text-white font-semibold hover:bg-gray-800 transition"
+                      >
+                        View
+                      </button>
+
                     </div>
                   </div>
                 </div>
@@ -447,14 +469,117 @@ export default function ShopperDashboard() {
               <button
                 onClick={handleConfirm}
                 className={`px-4 py-2 rounded-lg text-white transition ${confirmModal.status === "accepted"
-                    ? "bg-green-500 hover:bg-green-700"
-                    : "bg-red-600 hover:bg-red-700"
+                  ? "bg-green-500 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
                   }`}
               >
                 Confirm
               </button>
             </div>
           </div>
+        </Modal>
+
+        {/* View Offer Details */}
+        <Modal
+          isOpen={viewModal.open}
+          onClose={() => setViewModal({ open: false, data: null })}
+          className="max-w-xl p-0 overflow-hidden"
+        >
+          {viewModal.data && (
+            <div className="bg-white rounded-3xl">
+
+              {/* Header */}
+              <div className="p-6 border-b bg-gradient-to-r from-indigo-50 to-purple-50">
+                <div className="flex justify-between items-start">
+
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      Request # {viewModal.data.request_number}
+                    </h2>
+                    
+                  {/* Status Badge */}
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full font-semibold
+              ${viewModal.data.offer_status === "pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : viewModal.data.offer_status === "accepted"
+                          ? "bg-green-100 text-green-700"
+                          : viewModal.data.offer_status === "rejected"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-blue-100 text-blue-700"
+                      }`}
+                  >
+                    {viewModal.data.offer_status}
+                  </span>
+                    
+                  </div>
+
+
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-6">
+
+                {/* Service + Shipper */}
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold">
+                    {viewModal.data.service_type === "buy_for_me"
+                      ? "Buy For Me"
+                      : "Ship For Me"}
+                  </span>
+
+                  <span className="bg-gray-100 px-3 py-1 rounded-full">
+                    👤 {viewModal.data.shipper_name}
+                  </span>
+                </div>
+
+                {/* Price Breakdown */}
+                <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order Total</span>
+                    <span className="font-medium">
+                      ${viewModal.data.order_total}
+                    </span>
+                  </div>
+
+                  {/* Additional Prices */}
+                  {viewModal.data.additionalPrices &&
+                    viewModal.data.additionalPrices.length > 0 &&
+                    viewModal.data.additionalPrices.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-gray-600"
+                      >
+                        <span>{item.title}</span>
+                        <span>${item.price}</span>
+                      </div>
+                    ))}
+
+                  <div className="border-t pt-3 flex justify-between font-semibold text-green-600">
+                    <span>Offered Price</span>
+                    <span>${viewModal.data.offer_price}</span>
+                  </div>
+                </div>
+
+                {/* Message */}
+                {viewModal.data.offer_message && (
+                  <div className="bg-blue-50 p-4 rounded-2xl text-sm text-gray-700">
+                    <p className="font-medium mb-1">Message</p>
+                    <p>{viewModal.data.offer_message}</p>
+                  </div>
+                )}
+
+                {/* Created At */}
+                <p className="text-xs text-gray-400">
+                  Created {viewModal.data.created_at}
+                </p>
+
+              </div>
+
+            </div>
+          )}
         </Modal>
 
       </div>

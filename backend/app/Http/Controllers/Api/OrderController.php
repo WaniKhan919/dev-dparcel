@@ -28,7 +28,7 @@ class OrderController extends Controller
         try {
             $userId = Auth::id();
 
-            $perPage = (int) $request->get('per_page', 10);
+            $perPage = (int) $request->get('per_page', 12);
 
             $orders = Order::with([
                 'orderDetails.product',
@@ -340,6 +340,7 @@ class OrderController extends Controller
         try {
             $order = Order::with([
                 'offers.shipper',
+                'offers.additionalPrices',
                 'orderStatus',
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
@@ -556,6 +557,12 @@ class OrderController extends Controller
                 'customDeclaration.toCountry',
                 'customDeclaration.toState',
                 'customDeclaration.toCity',
+                'shipFromCountry:id,name',
+                'shipFromState:id,name',
+                'shipFromCity:id,name',
+                'shipToCountry:id,name',
+                'shipToState:id,name',
+                'shipToCity:id,name'
             ])->findOrFail($id);
 
             return response()->json([

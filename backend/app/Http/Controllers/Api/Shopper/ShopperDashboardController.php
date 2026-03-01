@@ -92,7 +92,8 @@ class ShopperDashboardController extends Controller
 
             $offers = OrderOffer::with([
                     'order:id,user_id,request_number,service_type,total_price',
-                    'shipper:id,name'
+                    'shipper:id,name',
+                    'additionalPrices'
                 ])
                 ->whereHas('order', function ($query) use ($shopperId) {
                     $query->where('user_id', $shopperId);
@@ -103,6 +104,7 @@ class ShopperDashboardController extends Controller
                 ->map(function ($offer) {
 
                     return [
+                        'offer_id'        => $offer->id,
                         'order_id'        => $offer->order->id,
                         'request_number'  => $offer->order->request_number,
                         'service_type'    => $offer->order->service_type,
@@ -115,6 +117,7 @@ class ShopperDashboardController extends Controller
                         'offer_message'   => $offer->message,
                         'offer_status'    => $offer->status,
                         'created_at'      => $offer->created_at->diffForHumans(),
+                        'additionalPrices'      => $offer->additionalPrices,
                     ];
                 });
 

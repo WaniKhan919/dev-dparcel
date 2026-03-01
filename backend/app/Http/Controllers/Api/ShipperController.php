@@ -44,34 +44,64 @@ class ShipperController extends Controller
     public function confirmRequest(Request $request)
     {
         try {
-
+            // Create main offer
             $orderOffer = OrderOffer::create([
-                'order_id' => $request->id,          // order id from request
-                'user_id'  => Auth::id(),            // logged in user id
-                'message'  => $request->message ?? null, // optional message
-                'status'   => $request->status,           // fixed status
-                'offer_price'   => $request->offerPrice,           // fixed status
+                'order_id'    => $request->id,
+                'user_id'     => Auth::id(),
+                'message'     => $request->message ?? null,
+                'status'      => $request->status,
+                'offer_price' => $request->offerPrice,
             ]);
+
+            // Store Additional Prices
+            $additionalPrices = [];
+            $totalOfferPrice = $request->offerPrice; // Start with main offer
+
+            if ($request->has('additional_prices') && is_array($request->additional_prices)) {
+                foreach ($request->additional_prices as $price) {
+                    $newPrice = $orderOffer->additionalPrices()->create([
+                        'title' => $price['title'] ?? null,
+                        'price' => $price['price'] ?? 0,
+                    ]);
+
+                    $additionalPrices[] = [
+                        'title' => $newPrice->title,
+                        'price' => $newPrice->price,
+                    ];
+
+                    $totalOfferPrice += (float) $newPrice->price;
+                }
+            }
+
             // Prepare data for email template
-            $order = Order::with('user')->where('id',$request->id)->first();
+            $order = Order::with('user')->where('id', $request->id)->first();
+
             $emailData = [
-                'user_name'      => $order->user->name,
-                'order_number'   => $order->request_number,
-                'request_number'=> $order->request_number,
-                'offer_price'    => $orderOffer->offer_price,
-                'offer_message'  => $orderOffer->message,
-                'service_type'   => ucfirst(str_replace('_', ' ', $order->service_type)),
-                'dashboard_url'  => env('REACT_APP') . '/shopper/view/request'
+                'user_name'         => $order->user->name,
+                'order_number'      => $order->request_number,
+                'request_number'    => $order->request_number,
+                'offer_price'       => $orderOffer->offer_price,
+                'additional_prices' => $additionalPrices,      // <-- Add additional prices
+                'total_offer_price' => $totalOfferPrice,       // <-- Add total price
+                'offer_message'     => $orderOffer->message,
+                'service_type'      => ucfirst(str_replace('_', ' ', $order->service_type)),
+                'dashboard_url'     => env('REACT_APP') . '/shopper/view/request',
             ];
 
-            // Use your existing sendEmail helper
-            sendEmail($order->user->email, 'Your Order has been Placed Successfully!', 'emails.shopper.orders.offer-send', $emailData);
+            // Send Email
+            sendEmail(
+                $order->user->email,
+                'An Offer is placed against your order!',
+                'emails.shopper.orders.offer-send',
+                $emailData
+            );
 
             return response()->json([
                 'success' => true,
                 'message' => 'Offer has been sent from your side',
                 'data'    => $orderOffer
             ], 200);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

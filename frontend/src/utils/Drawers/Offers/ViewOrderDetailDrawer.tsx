@@ -64,125 +64,174 @@ export default function ViewOrderDetailDrawer({
           {loading && <div className="text-center text-gray-500">Loading...</div>}
 
           {!loading && orderData && (
-            <>
-              {/* Order Summary */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-xl p-4 shadow-md">
-                <div className="flex flex-col sm:flex-row sm:justify-between">
-                  <h3 className="text-lg font-bold">
-                    Request No: {orderData.request_number}
-                  </h3>
-                  {/* <span
-                    className={`mt-2 sm:mt-0 inline-block text-xs px-3 py-1 rounded-full ${
-                      orderData.status_name == "Delivered"
-                        ? "bg-green-500"
-                        : orderData.status_name == "Pending"
-                        ? "bg-yellow-400"
-                        : "bg-blue-500"
-                    }`}
-                  >
-                    {orderData.status_name ?? "Pending"}
-                  </span> */}
+            <div className="space-y-6">
+
+              {/* ================= ORDER SUMMARY ================= */}
+              <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl p-6 shadow-lg">
+
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                  <div>
+                    <p className="text-xs opacity-80">Request Number</p>
+                    <h3 className="text-xl font-bold tracking-wide">
+                      {orderData.request_number}
+                    </h3>
+                  </div>
+
+                  <span className="mt-3 sm:mt-0 bg-white/20 px-4 py-1 rounded-full text-xs font-semibold backdrop-blur">
+                    {orderData.order_trackings?.[0]?.status?.name ?? "Pending"}
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 text-sm mt-6">
+
                   <div>
-                    <p className="font-semibold opacity-90">Service Type</p>
-                    <p className="capitalize">{orderData.service_type.replace(/_/g, " ")}</p>
+                    <p className="opacity-80 text-xs">Service Type</p>
+                    <p className="capitalize font-medium">
+                      {orderData.service_type.replace(/_/g, " ")}
+                    </p>
                   </div>
+
                   <div>
-                    <p className="font-semibold opacity-90">Ship From</p>
-                    <p>{orderData.ship_from}</p>
+                    <p className="opacity-80 text-xs">Ship From</p>
+                    <p>
+                      {orderData.ship_from_city?.name},{" "}
+                      {orderData.ship_from_state?.name},{" "}
+                      {orderData.ship_from_country?.name}
+                    </p>
                   </div>
+
                   <div>
-                    <p className="font-semibold opacity-90">Ship To</p>
-                    <p>{orderData.ship_to}</p>
+                    <p className="opacity-80 text-xs">Ship To</p>
+                    <p>
+                      {orderData.ship_to_city?.name},{" "}
+                      {orderData.ship_to_state?.name},{" "}
+                      {orderData.ship_to_country?.name}
+                    </p>
                   </div>
+
                   <div>
-                    <p className="font-semibold opacity-90">Weight</p>
+                    <p className="opacity-80 text-xs">Weight</p>
                     <p>{orderData.total_aprox_weight} g</p>
                   </div>
+
                   <div>
-                    <p className="font-semibold opacity-90">Total Price</p>
-                    <p>${orderData.total_price}</p>
+                    <p className="opacity-80 text-xs">Total Price</p>
+                    <p className="font-semibold text-lg">
+                      ${orderData.total_price}
+                    </p>
                   </div>
+
                 </div>
               </div>
 
-              {/* Product Details */}
-              {/* Product Details */}
+              {/* ================= PRODUCT DETAILS ================= */}
               {orderData.order_details?.length > 0 && (
-                <div className="bg-white border rounded-xl p-4 shadow-sm">
-                  <h4 className="text-lg font-semibold mb-3 text-gray-800">
+                <div className="bg-white border rounded-2xl p-6 shadow-sm">
+                  <h4 className="text-lg font-semibold mb-5 text-gray-800">
                     Product Details
                   </h4>
-                  <div className="divide-y">
-                    {orderData.order_details.map((detail: any) => (
-                      <div
-                        key={detail.id}
-                        className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                      >
-                        <div className="flex gap-3 items-start w-full">
-                          <img
-                            src={detail.product.product_url}
-                            alt={detail.product.title}
-                            className="w-16 h-16 rounded-lg object-cover border"
-                          />
-                          <div className="flex-1">
-                            {/* Request Detail Number Badge */}
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
-                                #{detail.request_details_number}
-                              </span>
+
+                  <div className="space-y-5">
+                    {orderData.order_details.map((detail: any) => {
+
+                      const title = detail.product?.title ?? "Product";
+                      const initials = title
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((w: string) => w[0])
+                        .join("")
+                        .toUpperCase();
+
+                      return (
+                        <div
+                          key={detail.id}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border rounded-xl p-4 hover:shadow-md transition"
+                        >
+                          <div className="flex gap-4 items-start w-full">
+
+                            {/* Product Image or Initial Avatar */}
+                            {detail.product?.image ? (
+                              <img
+                                src={detail.product.image}
+                                alt={title}
+                                className="w-16 h-16 rounded-xl object-cover border"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
+                                {initials}
+                              </div>
+                            )}
+
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
+                                  #{detail.request_details_number}
+                                </span>
+                              </div>
+
+                              <p className="font-medium text-gray-800">
+                                {title}
+                              </p>
+
+                              {detail.product?.description && (
+                                <p className="text-gray-600 text-sm line-clamp-2">
+                                  {detail.product.description}
+                                </p>
+                              )}
+
+                              {detail.product?.product_url && (
+                                <a
+                                  href={detail.product.product_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-blue-500 text-xs hover:underline mt-1 inline-block"
+                                >
+                                  View Product
+                                </a>
+                              )}
                             </div>
-
-                            <p className="font-medium text-gray-800">
-                              {detail.product.title}
-                            </p>
-                            <p className="text-gray-600 text-sm line-clamp-2">
-                              {detail.product.description}
-                            </p>
-
-                            <a
-                              href={detail.product.product_url}
-                              target="_blank"
-                              className="text-blue-500 text-xs hover:underline mt-1 inline-block"
-                            >
-                              View Product
-                            </a>
                           </div>
-                        </div>
 
-                        <div className="text-sm text-right sm:text-left w-full sm:w-auto">
-                          <p>Qty: {detail.quantity}</p>
-                          <p>Price: ${detail.price}</p>
-                          <p>Weight: {detail.weight}g</p>
+                          <div className="text-sm text-right sm:text-left w-full sm:w-auto space-y-1">
+                            <p>Qty: {detail.quantity}</p>
+                            <p>Price: ${detail.price}</p>
+                            <p>Weight: {detail.weight}g</p>
+                          </div>
+
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Service Details */}
+              {/* ================= SELECTED SERVICES ================= */}
               {orderData.order_services?.length > 0 && (
-                <div className="bg-white border rounded-xl p-4 shadow-sm">
-                  <h4 className="text-lg font-semibold mb-3 text-gray-800">
+                <div className="bg-white border rounded-2xl p-6 shadow-sm">
+                  <h4 className="text-lg font-semibold mb-5 text-gray-800">
                     Selected Services
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {orderData.order_services.map((srv: any) => (
                       <div
                         key={srv.id}
-                        className="border rounded-lg px-3 py-2 text-sm flex justify-between items-center bg-gray-50"
+                        className="flex justify-between items-center bg-gray-50 border rounded-xl px-4 py-3 hover:shadow transition"
                       >
-                        <span className="font-medium">{srv.service.title}</span>
-                        <span className="text-gray-700">${srv.service.price}</span>
+                        <span className="font-medium text-gray-700">
+                          {srv.service?.title}
+                        </span>
+
+                        <span className="font-semibold text-indigo-600">
+                          ${srv.service?.price}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-            </>
+
+            </div>
           )}
         </div>
       </div>

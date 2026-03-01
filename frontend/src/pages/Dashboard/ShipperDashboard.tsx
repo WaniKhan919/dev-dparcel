@@ -25,9 +25,9 @@ interface Notification {
   service_type: string;
   total_aprox_weight: number;
   total_price: number;
-  order_details:any;
-  order_services:any;
-  user:any;
+  order_details: any;
+  order_services: any;
+  user: any;
 }
 
 export default function ShipperDashboard() {
@@ -53,10 +53,10 @@ export default function ShipperDashboard() {
     inprogress: 0,
   });
   const dispatch = useDispatch<AppDispatch>();
-  const { requests, loading,} = useSelector((state: any) => state.shopperRequest);
+  const { requests, loading, } = useSelector((state: any) => state.shopperRequest);
   const { data: newOffers, loading: loadingOffers, meta, perPage } = useSelector((state: any) => state.shipperNewOffers);
   const { data: latestChats, loading: latestChatLoading } = useSelector((state: any) => state.latestChats);
-  const { orderStatus} = useSelector((state: any) => state.orderStatus);
+  const { orderStatus } = useSelector((state: any) => state.orderStatus);
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Notification | null>(null);
@@ -69,10 +69,34 @@ export default function ShipperDashboard() {
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [priceRows, setPriceRows] = useState([
+    { id: Date.now(), title: "", price: "" },
+  ]);
+  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+
+  const formattedAdditionalPrices = priceRows
+    .filter(
+      (row) =>
+        row.title &&
+        row.price &&
+        Number(row.price) > 0
+    )
+    .map((row) => ({
+      title: row.title,
+      price: Number(row.price),
+    }));
 
   const confirmRequest = async (id: number, status: "inprogress" | "cancelled") => {
     try {
-      const response = await ApiHelper("POST", "/shipper/confirm/request", { id, status, offerPrice });
+      const payload: any = {
+        id,
+        status,
+        offerPrice: Number(offerPrice),
+      };
+      if (formattedAdditionalPrices.length > 0) {
+        payload.additional_prices = formattedAdditionalPrices;
+      }
+      const response = await ApiHelper("POST", "/shipper/confirm/request", payload);
 
       if (response.status === 200) {
         dispatch(fetchRequests());
@@ -85,7 +109,7 @@ export default function ShipperDashboard() {
           //   fontWeight: "bold",
           // },
           icon: "🎉",
-        });    
+        });
         setConfirmModal({ open: false, id: null, status: null });
       } else {
         toast.error(response.data.message);
@@ -130,7 +154,7 @@ export default function ShipperDashboard() {
   }, []);
 
   const fetchOrdersStats = async () => {
-    
+
     try {
       const res = await ApiHelper("GET", "/shipper/dashboard/orders");
 
@@ -143,12 +167,12 @@ export default function ShipperDashboard() {
       }
     } catch (err: any) {
     } finally {
-      
+
     }
   };
 
   const fetchOfferStats = async () => {
-    
+
     try {
       const res = await ApiHelper("GET", "/shipper/dashboard/offers");
 
@@ -164,13 +188,12 @@ export default function ShipperDashboard() {
       console.error(err);
       setOfferStats({ accepted: 0, inprogress: 0 });
     } finally {
-      
+
     }
   };
 
-
   const fetchBalanceStats = async () => {
-    
+
     try {
       const res = await ApiHelper("GET", "/shipper/dashboard/balance");
 
@@ -185,7 +208,7 @@ export default function ShipperDashboard() {
       }
     } catch (err: any) {
     } finally {
-      
+
     }
   };
 
@@ -205,6 +228,7 @@ export default function ShipperDashboard() {
       total_price: Number(item.total_price),
     }));
   }, [requests]);
+
 
   return (
     <>
@@ -344,12 +368,12 @@ export default function ShipperDashboard() {
             ) : latestChats && latestChats.length > 0 ? (
               latestChats.map((chat: any) => {
                 const initials = chat.username
-                ? chat.username
-                  .split(" ")
-                  .map((n: string) => n[0])
-                  .join("")
-                  .toUpperCase()
-                : "";
+                  ? chat.username
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .toUpperCase()
+                  : "";
 
                 return (
                   <div
@@ -507,52 +531,6 @@ export default function ShipperDashboard() {
               </div>
             ))}
 
-
-            {/* {newOffers?.map((order: any) => (
-                <div
-                  key={order.id}
-                  className="border rounded-xl p-4 bg-green-50 border-green-300 hover:bg-green-100 transition"
-                >
-                  <div className="flex justify-between">
-                    <p className="font-bold text-gray-800 text-sm">
-                      From {order.ship_from_country}, {order.ship_from_state},{" "}
-                      {order.ship_from_city}
-                      {" "}→{" "}
-                      {order.ship_to_country}, {order.ship_to_state},{" "}
-                      {order.ship_to_city}
-                    </p>
-
-                    <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full h-fit">
-                      NEW
-                    </span>
-                  </div>
-
-                  <p className="text-sm text-gray-600 mt-1">
-                    Shipping Type:{" "}
-                    {order.service_type === "buy_for_me"
-                      ? "Buy For Me"
-                      : "Ship For Me"}{" "}
-                    | Weight: {order.total_aprox_weight}kg
-                  </p>
-
-                  <div className="flex justify-between mt-2">
-                    <p className="text-gray-700 font-medium">
-                      ${order.total_price}
-                    </p>
-
-                    <button
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setIsModalOpen(true);
-                      }}
-                      className="text-blue-600 text-sm font-medium hover:underline"
-                    >
-                      View details
-                    </button>
-
-                  </div>
-                </div>
-              ))} */}
           </div>
         </div>
 
@@ -725,273 +703,422 @@ export default function ShipperDashboard() {
         </div>
       </div>
 
-
-      {/* {
-        isModalOpen &&
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedOrder(null);
-          }}
-          className="max-w-2xl p-6"
-        >
-          {selectedOrder && (
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Order Details
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Request #: {selectedOrder.request_number}
-                </p>
-              </div>
-
-              <div className="border rounded-xl p-4 bg-gray-50">
-                <p className="font-medium text-gray-700 mb-1">Route</p>
-                <p className="text-sm text-gray-600">
-                  <strong>From:</strong>{" "}
-                  {selectedOrder.ship_from_country},{" "}
-                  {selectedOrder.ship_from_state},{" "}
-                  {selectedOrder.ship_from_city}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>To:</strong>{" "}
-                  {selectedOrder.ship_to_country},{" "}
-                  {selectedOrder.ship_to_state},{" "}
-                  {selectedOrder.ship_to_city}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="border rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Shipping Type</p>
-                  <p className="font-medium">
-                    {selectedOrder.service_type === "buy_for_me"
-                      ? "Buy For Me"
-                      : "Ship For Me"}
-                  </p>
-                </div>
-
-                <div className="border rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Weight</p>
-                  <p className="font-medium">
-                    {selectedOrder.total_aprox_weight} kg
-                  </p>
-                </div>
-
-                <div className="border rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Total Price</p>
-                  <p className="font-medium">
-                    ${selectedOrder.total_price}
-                  </p>
-                </div>
-
-                <div className="border rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Shopper</p>
-                  <p className="font-medium">
-                    {selectedOrder.user.name}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border rounded-xl p-4">
-                <p className="font-medium text-gray-700 mb-2">
-                  Order Items
-                </p>
-
-                <div className="space-y-2">
-                  {selectedOrder.order_details.map((item: any) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between text-sm border-b pb-2"
-                    >
-                      <div>
-                        <p className="font-medium">
-                          {item.product.title}
-                        </p>
-                        <p className="text-gray-500">
-                          Qty: {item.quantity} | Weight: {item.weight}kg
-                        </p>
-                      </div>
-
-                      <p className="font-medium">
-                        €{item.price}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </Modal>
-      } */}
+      {/* Send offer modal  */}
       <Modal
         isOpen={confirmModal.open}
-        onClose={() => setConfirmModal({ open: false, id: null, status: null })}
-        className="max-w-md w-full m-4"
+        onClose={() => {
+          setConfirmModal({ open: false, id: null, status: null });
+          setOfferPrice("");
+          setPriceRows([]);
+          setError("");
+        }}
+        className="max-w-xl w-full m-4"
       >
-        <div className="bg-white p-7 rounded-2xl shadow-xl">
+        <div className="bg-white p-6 rounded-2xl shadow-xl max-h-[80vh] overflow-y-auto">
+
           {/* Header */}
-          <h3 className="text-2xl font-semibold mb-2 text-gray-900">
-            {confirmModal.status == "inprogress" ? "Send Your Offer" : "Cancel This Offer"}
+          <h3 className="text-xl font-semibold mb-1 text-gray-900">
+            {confirmModal.status === "inprogress"
+              ? "Send Your Offer"
+              : "Cancel This Offer"}
           </h3>
 
-          <p className="text-gray-600 mb-6 leading-relaxed">
-            You're about to{" "}
-            <strong className="capitalize text-brand-600">
-              {confirmModal.status == "inprogress" ? "Offer" : confirmModal.status}
-            </strong>{" "}
-            on this request.
-            {confirmModal.status == "inprogress" ? "Please enter your price below." : " Are you sure to cancel this?"}
+          <p className="text-gray-500 mb-6 text-sm">
+            {confirmModal.status === "inprogress"
+              ? "Enter your offer price and optionally add more price details."
+              : "Are you sure you want to cancel this offer?"}
           </p>
-          {/* PRICE BOX */}
-          {
-            confirmModal.status == "inprogress" ?
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 shadow-inner">
+
+          {confirmModal.status === "inprogress" && (
+            <>
+              {/* MAIN PRICE */}
+              <div className="mb-6">
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Your Offer Price ($)
+                  Offer Price ($)
+                  <span className="text-red-500 ml-1">*</span>
                 </label>
 
                 <Input
                   type="number"
-                  placeholder="Enter your price"
-                  className="!h-12 !text-base"
+                  step="0.01"
+                  min="0"
+                  placeholder="Enter main price"
+                  className={`!h-11 ${error ? "!border-red-500 focus:!border-red-500" : ""
+                    }`}
                   value={offerPrice}
-                  onChange={(e) => setOfferPrice(e.target.value)}
+                  onChange={(e) => {
+                    setOfferPrice(e.target.value);
+                    if (error) setError("");
+                  }}
                 />
-                {
-                  error &&
-                  <span className="text-red-600">{error}</span>
-                }
+
+                {error && (
+                  <p className="text-red-500 text-xs mt-1">{error}</p>
+                )}
               </div>
-              : ""
-          }
+
+              {/* ADD MORE PRICE BUTTON (Always Visible) */}
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-700">
+                  Additional Prices
+                </h4>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPriceRows([
+                      ...priceRows,
+                      { id: Date.now(), title: "", price: "" },
+                    ])
+                  }
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition"
+                >
+                  + Add More
+                </button>
+              </div>
+
+              {/* ADDITIONAL ROWS */}
+              {priceRows.length > 0 && (
+                <div className="space-y-3 mb-6">
+                  {priceRows.map((row) => (
+                    <div key={row.id}>
+
+                      <div
+                        className={`flex gap-3 items-center p-3 rounded-lg border ${rowErrors[row.id]
+                          ? "border-red-400 bg-red-50"
+                          : "bg-gray-50"
+                          }`}
+                      >
+                        {/* Title */}
+                        <Input
+                          placeholder="Title"
+                          className={`flex-1 !h-10 text-sm ${rowErrors[row.id] ? "!border-red-500" : ""
+                            }`}
+                          value={row.title}
+                          onChange={(e) => {
+                            setPriceRows(
+                              priceRows.map((item) =>
+                                item.id === row.id
+                                  ? { ...item, title: e.target.value }
+                                  : item
+                              )
+                            );
+
+                            // remove error on typing
+                            if (rowErrors[row.id]) {
+                              const updated = { ...rowErrors };
+                              delete updated[row.id];
+                              setRowErrors(updated);
+                            }
+                          }}
+                        />
+
+                        {/* Price */}
+                        <Input
+                          type="number"
+                          placeholder="Price"
+                          className={`w-28 !h-10 text-sm ${rowErrors[row.id] ? "!border-red-500" : ""
+                            }`}
+                          value={row.price}
+                          onChange={(e) => {
+                            setPriceRows(
+                              priceRows.map((item) =>
+                                item.id === row.id
+                                  ? { ...item, price: e.target.value }
+                                  : item
+                              )
+                            );
+
+                            if (rowErrors[row.id]) {
+                              const updated = { ...rowErrors };
+                              delete updated[row.id];
+                              setRowErrors(updated);
+                            }
+                          }}
+                        />
+
+                        {/* Delete */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPriceRows(
+                              priceRows.filter((item) => item.id !== row.id)
+                            );
+
+                            const updated = { ...rowErrors };
+                            delete updated[row.id];
+                            setRowErrors(updated);
+                          }}
+                          className="text-red-500 hover:text-red-600 text-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* Error Message */}
+                      {rowErrors[row.id] && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {rowErrors[row.id]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
           {/* ACTION BUTTONS */}
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <button
-              onClick={() => setConfirmModal({ open: false, id: null, status: null })}
-              className="px-5 py-2.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition"
+              onClick={() =>
+                setConfirmModal({ open: false, id: null, status: null })
+              }
+              className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition"
             >
               Cancel
             </button>
 
             <button
-              onClick={handleConfirm}
-              className={`px-5 py-2.5 rounded-lg text-white font-medium shadow-md transition 
-                  ${confirmModal.status === "inprogress"
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-red-700 hover:bg-red-800"
+              onClick={() => {
+                if (confirmModal.status === "inprogress") {
+
+                  // Main Price Validation
+                  if (!offerPrice || Number(offerPrice) <= 0) {
+                    setError("Offer price is required");
+                    return;
+                  }
+
+                  // Additional Rows Validation (Only if rows exist)
+                  if (priceRows.length > 0) {
+                    const newErrors: Record<number, string> = {};
+
+                    priceRows.forEach((row) => {
+                      if (!row.title || !row.price || Number(row.price) <= 0) {
+                        newErrors[row.id] = "Title and price is required";
+                      }
+                    });
+
+                    if (Object.keys(newErrors).length > 0) {
+                      setRowErrors(newErrors);
+                      return;
+                    }
+                  }
                 }
-                `}
+
+                setError("");
+                setRowErrors({});
+                handleConfirm();
+              }}
+              className="px-5 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
             >
-              {confirmModal.status == "inprogress" ? "Send Offer" : "Confirm"}
+              {confirmModal.status === "inprogress"
+                ? "Send Offer"
+                : "Confirm"}
             </button>
           </div>
         </div>
       </Modal>
+      {/* Order detail modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
           setSelectedOrder(null);
         }}
-        className="max-w-2xl p-6"
+        className="max-w-3xl p-8"
       >
         {selectedOrder && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">
-                Order Details
-              </h2>
-            </div>
+          <div className="space-y-6">
 
-            {/* From → To */}
-            <div className="border rounded-xl p-4 bg-gray-50">
-              <p className="font-medium text-gray-700 mb-1">Route</p>
-              <p className="text-sm text-gray-600">
-                <strong>From:</strong> {selectedOrder.ship_from_country}, {selectedOrder.ship_from_state}, {selectedOrder.ship_from_city}
-              </p>
-              <p className="text-sm text-gray-600">
-                <strong>To:</strong> {selectedOrder.ship_to_country}, {selectedOrder.ship_to_state}, {selectedOrder.ship_to_city}
-              </p>
-            </div>
+            {/* Header */}
+            <div className="relative border-b pb-4 pr-10">
 
-            {/* Products detail */}
-            {
-              selectedOrder.order_details &&
-                <div className="border rounded-xl p-4 bg-gray-50">
-                  <p className="font-semibold text-gray-700 mb-1">Products</p>
-                  {
-                    
-                  selectedOrder.order_details.map((product: any) => (
-                  <>
-                    <p className="text-sm text-gray-600">
-                      <strong>Title:</strong> {product.product.title}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>Price:</strong> {product.product.price}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>Quantity:</strong> {product.product.quantity}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>Weight:</strong> {product.product.weight}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>Total Price:</strong> {Number(product.product.price) *Number(product.product.price)}
-                    </p>
-                    {
-                      product.product.description &&
-                        <p className="text-sm text-gray-600">
-                          <strong>Description:</strong> {product.product.description}
-                        </p>
-                    }
-                    <a className="text-sm text-blue-600 font-medium underline hover:text-blue-800" href={product.product.product_url} target="_blank">View</a>
-                  </>
-                  ))
-                  }
-                </div>
-            }
+            {/* Close space reserved using pr-10 */}
 
-            {/* Service Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="border rounded-xl p-4">
-                <p className="text-sm text-gray-500">Shipping Type</p>
-                <p className="font-medium">
-                  {selectedOrder.service_type === "buy_for_me" ? "Buy For Me" : "Ship For Me"}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Order Details
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Complete information about this order
                 </p>
               </div>
 
-              {
-                selectedOrder.order_services &&
-                selectedOrder.order_services.map((services: any) => (
-                  <>
-                    <div className="border rounded-xl p-4">
-                      <p className="text-sm text-gray-500">{services.service.title}</p>
-                      <p className="font-medium"> ${services.service.price}</p>
-                    </div>
-                  </>
-                ))
-              }
+              {/* Shipping Type Badge */}
+              <span
+                className={`inline-block px-4 py-1 text-xs rounded-full font-semibold whitespace-nowrap
+                  ${
+                    selectedOrder.service_type === "buy_for_me"
+                      ? "bg-purple-100 text-purple-700"
+                      : "bg-indigo-100 text-indigo-700"
+                  }`}
+              >
+                {selectedOrder.service_type === "buy_for_me"
+                  ? "Buy For Me"
+                  : "Ship For Me"}
+              </span>
 
-              <div className="border rounded-xl p-4">
-                <p className="text-sm text-gray-500">Total Price</p>
-                <p className="font-medium">${selectedOrder.total_price}</p>
-              </div>
+            </div>
+          </div>
 
-              <div className="border rounded-xl p-4">
-                <p className="text-sm text-gray-500">Shopper</p>
-                {
-                  selectedOrder?.user?.name &&
-                    <p className="font-medium">{selectedOrder?.user?.name}</p>
-                }
-                {
-                  selectedOrder?.name &&
-                    <p className="font-medium">{selectedOrder?.name}</p>
-                }
+            {/* Route Section */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 shadow-sm">
+              <p className="text-sm font-semibold text-gray-700 mb-4">
+                Shipping Route
+              </p>
+
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <div>
+                  <p className="font-medium text-gray-800">From</p>
+                  <p>
+                    {selectedOrder.ship_from_country},{" "}
+                    {selectedOrder.ship_from_state},{" "}
+                    {selectedOrder.ship_from_city}
+                  </p>
+                </div>
+
+                <div className="text-gray-400 text-xl">→</div>
+
+                <div className="text-right">
+                  <p className="font-medium text-gray-800">To</p>
+                  <p>
+                    {selectedOrder.ship_to_country},{" "}
+                    {selectedOrder.ship_to_state},{" "}
+                    {selectedOrder.ship_to_city}
+                  </p>
+                </div>
               </div>
             </div>
+
+            {/* Products Section */}
+            {selectedOrder.order_details && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Products
+                </h3>
+
+                <div className="space-y-4">
+                  {selectedOrder.order_details.map((product: any, index: number) => {
+                    const price = Number(product.product.price);
+                    const qty = Number(product.product.quantity);
+                    const total = price * qty;
+
+                    return (
+                      <div
+                        key={index}
+                        className="border rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-gray-800">
+                              {product.product.title}
+                            </p>
+
+                            {product.product.description && (
+                              <p className="text-sm text-gray-500 mt-1">
+                                {product.product.description}
+                              </p>
+                            )}
+                          </div>
+
+                          <a
+                            href={product.product.product_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 font-medium hover:underline"
+                          >
+                            View Product
+                          </a>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
+                          <div>
+                            <p className="text-gray-500">Price</p>
+                            <p className="font-medium">${price}</p>
+                          </div>
+
+                          <div>
+                            <p className="text-gray-500">Quantity</p>
+                            <p className="font-medium">{qty}</p>
+                          </div>
+
+                          <div>
+                            <p className="text-gray-500">Weight</p>
+                            <p className="font-medium">
+                              {product.product.weight} kg
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-gray-500">Total</p>
+                            <p className="font-semibold text-green-600">
+                              ${total}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Services & Summary */}
+            <div className="grid md:grid-cols-2 gap-6">
+
+              {/* Extra Services */}
+              {selectedOrder.order_services && (
+                <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
+                  <h4 className="font-semibold text-gray-800 mb-3">
+                    Additional Services
+                  </h4>
+
+                  <div className="space-y-2 text-sm">
+                    {selectedOrder.order_services.map(
+                      (services: any, index: number) => (
+                        <div
+                          key={index}
+                          className="flex justify-between border-b pb-2"
+                        >
+                          <span>{services.service.title}</span>
+                          <span className="font-medium">
+                            ${services.service.price}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Order Summary */}
+              <div className="bg-black text-white rounded-2xl p-6 shadow-lg">
+                <h4 className="font-semibold mb-4">Order Summary</h4>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Total Price</span>
+                    <span className="font-semibold text-lg">
+                      ${selectedOrder.total_price}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Customer</span>
+                    <span className="font-medium">
+                      {selectedOrder?.user?.name ||
+                        selectedOrder?.name ||
+                        "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         )}
       </Modal>
