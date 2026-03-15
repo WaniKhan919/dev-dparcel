@@ -630,7 +630,7 @@ export default function ShipperDashboard() {
 
                       {/* Statuses */}
                       <td className="px-5 py-4 flex flex-wrap gap-1">
-                        {order.order_details.map((item: any) => (
+                        {order?.order_details?.map((item: any) => (
                           <span
                             key={item.id}
                             className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-medium"

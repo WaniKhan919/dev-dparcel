@@ -35,8 +35,22 @@ export default function ViewOffersDrawer({
         "GET",
         `/order/shipper/offers/${orderData.id}`
       );
+
       if (res.status === 200) {
-        setOffersData(res.data.data);
+        const data = res.data.data;
+
+        const acceptedOffer = data.offers?.find(
+          (offer: any) => offer.status === "accepted"
+        );
+
+        const filteredOffers = acceptedOffer
+          ? [acceptedOffer]
+          : data.offers;
+
+        setOffersData({
+          ...data,
+          offers: filteredOffers,
+        });
       }
     } catch (err) {
       setOffersData(null);
@@ -183,8 +197,8 @@ export default function ViewOffersDrawer({
                 <div
                   key={offer.id}
                   className={`rounded-2xl p-5 shadow-md border transition ${isAccepted
-                      ? "border-green-500 bg-green-50"
-                      : "bg-white"
+                    ? "border-green-500 bg-green-50"
+                    : "bg-white"
                     }`}
                 >
                   {/* Shipper */}
@@ -208,12 +222,12 @@ export default function ViewOffersDrawer({
 
                     <span
                       className={`px-3 py-1 text-xs rounded-full font-medium ${offer.status === "accepted"
-                          ? "bg-green-500 text-white"
-                          : offer.status === "rejected"
-                            ? "bg-red-500 text-white"
-                            : offer.status === "inprogress"
-                              ? "bg-blue-500 text-white"
-                              : "bg-yellow-500 text-white"
+                        ? "bg-green-500 text-white"
+                        : offer.status === "rejected"
+                          ? "bg-red-500 text-white"
+                          : offer.status === "inprogress"
+                            ? "bg-blue-500 text-white"
+                            : "bg-yellow-500 text-white"
                         }`}
                     >
                       {offer.status}
@@ -329,8 +343,8 @@ export default function ViewOffersDrawer({
             <button
               onClick={handleConfirm}
               className={`px-4 py-2 rounded-lg text-white ${confirmModal.status === "accepted"
-                  ? "bg-green-500"
-                  : "bg-red-600"
+                ? "bg-green-500"
+                : "bg-red-600"
                 }`}
             >
               Confirm

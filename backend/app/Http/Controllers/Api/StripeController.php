@@ -12,6 +12,7 @@ use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\OrderPayment;
+use App\Models\OrderTracking;
 use App\Models\User;
 use Exception;
 
@@ -85,7 +86,12 @@ class StripeController extends Controller
             $offer = OrderOffer::find($order_offer_id);
             $offer->status = 4;
             $offer->save();
-
+            OrderTracking::insert([
+                [
+                    'order_id' => $validated['order_id'],
+                    'status_id' => 5, //inprogress
+                ]
+            ]);
             $shipperId = $order->orderOffer->user_id; // assuming Order model has shipper relation
             $shippingTypeId = $order->service_type=='buy_for_me'?1:2;
             $admin = User::whereHas('roles', function($q) {

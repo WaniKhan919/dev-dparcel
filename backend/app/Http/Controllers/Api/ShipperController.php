@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderOffer;
+use App\Models\OrderTracking;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -75,7 +76,12 @@ class ShipperController extends Controller
 
             // Prepare data for email template
             $order = Order::with('user')->where('id', $request->id)->first();
-
+            OrderTracking::insert([
+                [
+                    'order_id' => $request->id,
+                    'status_id' => 2,//Offer Placed
+                ]
+            ]);
             $emailData = [
                 'user_name'         => $order->user->name,
                 'order_number'      => $order->request_number,

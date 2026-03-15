@@ -34,7 +34,7 @@ class OrderController extends Controller
                 'orderDetails.product',
                 'acceptedOffer',
                 'orderPayment',
-                'OrderStatus',
+                'orderStatus',
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
                 'shipFromCity:id,name',
@@ -99,7 +99,8 @@ class OrderController extends Controller
 
             $query = Order::with([
                 'orderDetails.product',
-                'orderOffer.shipper',
+                'offers.shipper',
+                'offers.additionalPrices',
                 'user',
                 'orderStatus',
                 'shipFromCountry:id,name',
@@ -374,6 +375,19 @@ class OrderController extends Controller
             $offer->status = $request->status;
             $offer->save();
             if ($request->status == "accepted") {
+                $order = Order::findOrFail($offer->order_id);
+                $order->status = 3;
+                $order->save();
+                OrderTracking::insert([
+                    [
+                        'order_id' => $offer->order_id,
+                        'status_id' => 3,
+                    ],
+                    [
+                        'order_id' => $offer->order_id,
+                        'status_id' => 4,
+                    ]
+                ]);
                 $shipper_title = "Your Offer Was Accepted";
                 $shipper_message = "Your offer for request #{$offer->order->request_number} has been accepted by the shopper.";
                 $shopper_title = "You Accepted an Offer";

@@ -24,7 +24,7 @@ interface Request {
     weight?: string;
     product: { id: number; title: string; weight?: string };
   }[];
-  order_offer: any;
+  offers: any;
   order_status: { name: string } | null;
   user: { id: number; name: string };
   ship_from_country?: { name: string };
@@ -170,32 +170,153 @@ export default function ViewAllRequests() {
 
       {/* Order Detail Modal */}
       {openDetailModal && orderData && (
-        <Modal isOpen={openDetailModal} onClose={() => setOpenDetailModal(false)} className="max-w-2xl p-6">
-          <h2 className="text-xl font-semibold mb-4">Request Details - {orderData.request_number}</h2>
-          <div className="mb-3">
-            <strong>Ship Type:</strong>{" "}
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${orderData.service_type === "ship_for_me" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"}`}>
-              {orderData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
-            </span>
+        <Modal
+          isOpen={openDetailModal}
+          onClose={() => setOpenDetailModal(false)}
+          className="max-w-4xl p-8"
+        >
+          <h2 className="text-2xl font-semibold mb-6">
+            Request Details - {orderData.request_number}
+          </h2>
+
+          {/* Order Info */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <strong>Ship Type:</strong>{" "}
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${orderData.service_type === "ship_for_me"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-green-100 text-green-800"
+                    }`}
+                >
+                  {orderData.service_type === "ship_for_me"
+                    ? "Ship For Me"
+                    : "Buy For Me"}
+                </span>
+              </div>
+
+              <div>
+                <strong>Status:</strong>{" "}
+                {orderData.order_status?.name ?? "Pending"}
+              </div>
+
+              <div>
+                <strong>From:</strong>{" "}
+                {orderData.ship_from_country?.name},{" "}
+                {orderData.ship_from_state?.name},{" "}
+                {orderData.ship_from_city?.name}
+              </div>
+
+              <div>
+                <strong>To:</strong>{" "}
+                {orderData.ship_to_country?.name},{" "}
+                {orderData.ship_to_state?.name},{" "}
+                {orderData.ship_to_city?.name}
+              </div>
+
+              <div>
+                <strong>Total Weight:</strong> {orderData.total_aprox_weight} g
+              </div>
+
+              <div>
+                <strong>Total Price:</strong> ${orderData.total_price}
+              </div>
+
+              <div>
+                <strong>Shopper:</strong> {orderData.user?.name}
+              </div>
+            </div>
           </div>
-          <div className="mb-3">
-            <div><strong>From:</strong> {orderData.ship_from_country?.name}, {orderData.ship_from_state?.name}, {orderData.ship_from_city?.name}</div>
-            <div><strong>To:</strong> {orderData.ship_to_country?.name}, {orderData.ship_to_state?.name}, {orderData.ship_to_city?.name}</div>
+
+          {/* Products */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-3">
+              Products ({orderData.order_details?.length})
+            </h3>
+
+            <div className="border rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2 text-left">Product</th>
+                    <th className="p-2 text-left">Qty</th>
+                    <th className="p-2 text-left">Price</th>
+                    <th className="p-2 text-left">Weight</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {orderData.order_details?.map((item) => (
+                    <tr key={item.id} className="border-t">
+                      <td className="p-2">{item.product?.title}</td>
+                      <td className="p-2">{item.quantity}</td>
+                      <td className="p-2">${item.price}</td>
+                      <td className="p-2">{item.weight} g</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="mb-3">
-            <strong>Products:</strong>
-            <ul className="list-disc list-inside">
-              {orderData.order_details?.map((d) => (
-                <li key={d.id}>{d.product?.title} - Qty: {d.quantity} - Price: {d.price} - Weight: {d.weight}g</li>
-              ))}
-            </ul>
+
+          {/* Offers Summary */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-3">Offers</h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 p-4 rounded-xl">
+                <p className="text-sm text-gray-500">Total Offers</p>
+                <p className="text-xl font-semibold">
+                  {orderData.offers?.length ?? 0}
+                </p>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-xl">
+                <p className="text-sm text-gray-500">Accepted Offer</p>
+                <p className="text-xl font-semibold">
+                  {orderData.offers?.find((o:any) => o.status === "accepted")
+                    ? "Yes"
+                    : "No"}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="mb-3 flex gap-6">
-            <div><strong>Total Weight:</strong> {orderData.total_aprox_weight} g</div>
-            <div><strong>Total Price:</strong> ${orderData.total_price}</div>
-          </div>
-          <div className="mb-3"><strong>Shopper:</strong> {orderData.user?.name}</div>
-          <div><strong>Status:</strong> {orderData.order_status?.name ?? "Pending"}</div>
+
+          {/* Accepted Offer Detail */}
+          {orderData.offers?.find((o:any) => o.status === "accepted") && (
+            <div className="border rounded-xl p-4">
+              <h3 className="font-semibold text-lg mb-3">Accepted Offer</h3>
+
+              {orderData.offers
+                .filter((o:any) => o.status === "accepted")
+                .map((offer:any) => (
+                  <div key={offer.id}>
+                    <div className="mb-3">
+                      <strong>Shipper:</strong> {offer.shipper?.name}
+                    </div>
+
+                    <div className="mb-3">
+                      <strong>Offer Price:</strong> ${offer.offer_price}
+                    </div>
+
+                    {/* Additional Prices */}
+                    {offer.additional_prices?.length > 0 && (
+                      <div className="mb-3">
+                        <strong>Additional Charges</strong>
+                        <ul className="list-disc list-inside text-sm text-gray-600">
+                          {offer.additional_prices.map((p:any) => (
+                            <li key={p.id}>
+                              {p.title} - ${p.price}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
         </Modal>
       )}
     </>

@@ -14,22 +14,23 @@ class ManageMultipleLocationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'city_ids' => 'required|array|min:1',
-            'city_ids.*' => 'exists:cities,id',
+            'country_ids' => 'required|array|min:1',
+            'country_ids.*' => 'exists:countries,id',
         ]);
 
         $userId = Auth::id();
-        $cityIds = $request->input('city_ids');
+        $countryIds = $request->input('country_ids');
 
         try {
-            DB::transaction(function () use ($userId, $cityIds) {
+            DB::transaction(function () use ($userId, $countryIds) {
+
                 // Delete old service areas for this shipper
                 ShipperServiceArea::where('shipper_id', $userId)->delete();
 
                 // Prepare data for new insert
-                $data = collect($cityIds)->map(fn($cityId) => [
+                $data = collect($countryIds)->map(fn($countryId) => [
                     'shipper_id' => $userId,
-                    'city_id' => $cityId,
+                    'country_id' => $countryId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ])->toArray();
@@ -43,6 +44,7 @@ class ManageMultipleLocationController extends Controller
                 'message' => 'Service areas saved successfully.',
             ], 200);
         } catch (Exception $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to save service areas.',

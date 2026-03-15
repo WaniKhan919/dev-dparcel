@@ -10,7 +10,7 @@ class ShipperServiceArea extends Model
 
     protected $fillable = [
         'shipper_id',
-        'city_id',
+        'country_id',
     ];
 
     public $timestamps = true;

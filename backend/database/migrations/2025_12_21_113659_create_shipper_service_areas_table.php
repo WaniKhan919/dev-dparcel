@@ -9,16 +9,16 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::create('shipper_service_areas', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('shipper_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('city_id')->constrained('cities')->cascadeOnDelete();
-            $table->unique(['shipper_id', 'city_id']);
-            $table->timestamps();
-        });
-    }
+        public function up(): void
+        {
+            Schema::create('shipper_service_areas', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('shipper_id')->constrained('users')->cascadeOnDelete();
+                $table->foreignId('country_id')->constrained('countries')->cascadeOnDelete();
+                $table->unique(['shipper_id', 'country_id']);
+                $table->timestamps();
+            });
+        }
 
     /**
      * Reverse the migrations.

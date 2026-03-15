@@ -9,6 +9,7 @@ interface Option {
 interface MultiSelectProps {
   label: string;
   options: Option[];
+  value?: string[]; 
   defaultSelected?: string[];
   onChange?: (selected: string[]) => void;
   disabled?: boolean;
@@ -17,20 +18,24 @@ interface MultiSelectProps {
 const MultiSelect: React.FC<MultiSelectProps> = ({
   label,
   options,
+  value,
   defaultSelected = [],
   onChange,
   disabled = false,
 }) => {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(defaultSelected);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>(value || defaultSelected);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
 
   // Sync with defaultSelected when it changes
   useEffect(() => {
-    setSelectedOptions(defaultSelected);
-  }, [defaultSelected]);
+    if (value) {
+      setSelectedOptions(value);
+    }
+  }, [value]);
 
   // Focus search input when dropdown opens
   useEffect(() => {
