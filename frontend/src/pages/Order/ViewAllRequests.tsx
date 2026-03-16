@@ -10,6 +10,7 @@ import AdminOrderMessages from "../../utils/Drawers/Order/AdminOrderMessages";
 import OrdedrSearchFilter from "../../utils/Drawers/Order/OrdedrSearchFilter";
 import { ChatBubbleLeftIcon, EyeIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import { Modal } from "../../components/ui/modal";
+import { useNavigate } from "react-router";
 
 interface Request {
   id: number;
@@ -36,6 +37,7 @@ interface Request {
 }
 
 export default function ViewAllRequests() {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { data, meta, loading } = useSelector((state: any) => state.allOrder);
 
@@ -66,8 +68,10 @@ export default function ViewAllRequests() {
     setOpenDetailModal(true);
   };
 
-  const trackOrder = (record: Request) => {
-    console.log("Track order", record.id);
+  const trackOrder = (order_id:any) => {
+    navigate("/admin/track-order", {
+      state: { orderId: order_id },
+    });
   };
 
   const handleSearch = (searchFilters: any) => {
@@ -143,7 +147,7 @@ export default function ViewAllRequests() {
           <button title="View Details" onClick={() => openDetails(record)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200">
             <EyeIcon className="h-5 w-5 text-gray-800 stroke-2" />
           </button>
-          <button title="Track Order" onClick={() => trackOrder(record)} className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100">
+          <button title="Track Order" onClick={() => trackOrder(record.id)} className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100">
             <MapPinIcon className="h-5 w-5 text-blue-700" />
           </button>
           <button title="Messages" onClick={() => openMessage(record)} className="p-2 rounded-lg bg-green-50 hover:bg-green-100">

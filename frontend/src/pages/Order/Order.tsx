@@ -21,6 +21,7 @@ import { fetchStates } from "../../slices/statesSlice";
 import { fetchCities } from "../../slices/citiesSlice";
 import Select from "../../components/ui/dropdown/Select";
 import Spin from "../../components/ui/spin/Spin";
+import { useNavigate } from "react-router";
 
 const steps = ["Shipping Info", "Shipping Address", "Product Details", "Additional Services"];
 
@@ -135,6 +136,7 @@ const productSchema = yup.object().shape({
 });
 
 export default function Order() {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { services } = useSelector((state: any) => state.services);
   const { data: paymentPlanData } = useSelector((state: any) => state.paymentPlan);
@@ -299,6 +301,7 @@ export default function Order() {
         reset();
         setProducts([]);
         setCurrentStep(0);
+        navigate("/shopper/view/request");
       } else {
         toast.error(res.data.message || "Failed to place order ❌");
       }

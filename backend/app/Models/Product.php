@@ -19,4 +19,9 @@ class Product extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function productTracking()
+    {
+        return $this->belongsTo(ProductTracking::class,'id','product_id');
+    }
+
 }

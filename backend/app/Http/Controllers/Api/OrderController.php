@@ -13,11 +13,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\OrderResource;
 use App\Models\Attachment;
 use App\Models\OrderOffer;
 use App\Models\OrderService;
 use App\Models\OrderStatus;
 use App\Models\PaymentSetting;
+use App\Models\ProductTracking;
 use App\Models\Service;
 use App\Models\User;
 
@@ -165,11 +167,11 @@ class OrderController extends Controller
             $validated = $request->validate([
                 'service_type' => 'required|in:buy_for_me,ship_for_me',
                 'ship_from_country_id' => 'required|exists:countries,id',
-                'ship_from_state_id'   => 'required|exists:states,id',
-                'ship_from_city_id'    => 'required|exists:cities,id',
-                'ship_to_country_id'   => 'required|exists:countries,id',
-                'ship_to_state_id'     => 'required|exists:states,id',
-                'ship_to_city_id'      => 'required|exists:cities,id',
+                'ship_from_state_id' => 'required|exists:states,id',
+                'ship_from_city_id' => 'required|exists:cities,id',
+                'ship_to_country_id' => 'required|exists:countries,id',
+                'ship_to_state_id' => 'required|exists:states,id',
+                'ship_to_city_id' => 'required|exists:cities,id',
                 'products' => 'required|array|min:1',
                 'products.*.title' => 'required|string|max:255',
                 'products.*.product_url' => 'required|string',
@@ -371,7 +373,7 @@ class OrderController extends Controller
             $request->validate([
                 'status' => 'required|in:accepted,rejected',
             ]);
-            $offer = OrderOffer::with(['order','shipper'])->findOrFail($offerId);
+            $offer = OrderOffer::with(['order', 'shipper'])->findOrFail($offerId);
             $offer->status = $request->status;
             $offer->save();
             if ($request->status == "accepted") {
@@ -417,12 +419,12 @@ class OrderController extends Controller
             $shipper = $offer->shipper;
 
             $emailData = [
-                'shipper_name'   => $shipper->name,
-                'order_number'   => $offer->order->request_number,
-                'tracking_number'=> $offer->order->tracking_number,
-                'offer_price'    => $offer->offer_price,
-                'status'         => $request->status,
-                'dashboard_url'  => env('REACT_APP') . '/shipper/requests'
+                'shipper_name' => $shipper->name,
+                'order_number' => $offer->order->request_number,
+                'tracking_number' => $offer->order->tracking_number,
+                'offer_price' => $offer->offer_price,
+                'status' => $request->status,
+                'dashboard_url' => env('REACT_APP') . '/shipper/requests'
             ];
 
             $template = $request->status === 'accepted'
@@ -528,32 +530,32 @@ class OrderController extends Controller
                 $tracking = $trackings->get($status->id);
 
                 return [
-                    'status_id'   => $status->id,
+                    'status_id' => $status->id,
                     'status_name' => $status->name,
                     'description' => $status->description,
 
                     'is_completed' => $tracking ? true : false,
 
                     'tracking' => $tracking ? [
-                        'remarks'         => $tracking->remarks,
-                        'attachments'     => $tracking->attachments,
+                        'remarks' => $tracking->remarks,
+                        'attachments' => $tracking->attachments,
                         'tracking_number' => $tracking->tracking_number,
-                        'created_at'      => $tracking->created_at,
-                        'updated_at'      => $tracking->updated_at,
+                        'created_at' => $tracking->created_at,
+                        'updated_at' => $tracking->updated_at,
                     ] : null
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'data'    => $timeline
+                'data' => $timeline
             ]);
         } catch (Exception $e) {
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get order tracking',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -561,16 +563,14 @@ class OrderController extends Controller
     public function getOrderDetail($id)
     {
         try {
+
             $order = Order::with([
-                'orderDetails.product',
+                'orderDetails.product.productTracking',
                 'orderServices.service',
+                'acceptedOffer.additionalPrices',
+                'acceptedOffer.shipper',
                 'orderTrackings.status',
-                'customDeclaration.fromCountry',
-                'customDeclaration.fromState',
-                'customDeclaration.fromCity',
-                'customDeclaration.toCountry',
-                'customDeclaration.toState',
-                'customDeclaration.toCity',
+                'customDeclaration',
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
                 'shipFromCity:id,name',
@@ -581,12 +581,83 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $order,
+                'data' => new OrderResource($order)
             ]);
+
         } catch (Exception $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get order',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function insertProductTracking(Request $request)
+    {
+        try {
+            
+            DB::beginTransaction();
+
+            $products = $request->products;
+
+            if (!$products || !is_array($products)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Products data is required'
+                ], 422);
+            }
+
+            foreach ($products as $index => $product) {
+
+                $receiptPath = null;
+
+                // Handle file upload
+                if ($request->hasFile("products.$index.product_receipt")) {
+
+                    $file = $request->file("products.$index.product_receipt");
+
+                    // unique filename
+                    $filename = time() . '_' . $file->getClientOriginalName();
+
+                    // destination path
+                    $destinationPath = public_path('order/product/invoices');
+
+                    // create folder if not exists
+                    if (!file_exists($destinationPath)) {
+                        mkdir($destinationPath, 0755, true);
+                    }
+
+                    // move file
+                    $file->move($destinationPath, $filename);
+
+                    $receiptPath = 'order/product/invoices/' . $filename;
+                }
+
+                ProductTracking::create([
+                    'product_id' => $product['product_id'],
+                    'purchase_status' => $product['purchase_status'],
+                    'tracking_link' => $product['tracking_link'] ?? null,
+                    'tracking_id' => $product['tracking_id'] ?? null,
+                    'product_receipt' => $receiptPath,
+                    'status' => 0
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product tracking added successfully'
+            ], 200);
+
+        } catch (Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to insert product tracking',
                 'error' => $e->getMessage()
             ], 500);
         }

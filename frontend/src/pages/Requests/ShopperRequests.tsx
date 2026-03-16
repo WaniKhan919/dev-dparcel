@@ -13,6 +13,7 @@ import { useNavigate } from "react-router";
 import { ChatBubbleLeftRightIcon, Cog6ToothIcon, DocumentTextIcon, Squares2X2Icon,EyeIcon } from "@heroicons/react/24/outline";
 import Tooltip from "../../components/ui/tooltip/Tooltip";
 import { Modal } from "../../components/ui/modal";
+import ViewOrderDetailDrawer from "../../utils/Drawers/Offers/ViewOrderDetailDrawer";
 
 interface Request {
   id: number;
@@ -45,7 +46,8 @@ export default function ShopperRequests() {
   const [orderData, setOrderData] = useState([])
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
-
+  const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false)
+  const [orderId, setOrderId] = useState(0)
 
   useEffect(() => {
     dispatch(fetchOffers({ page: 1, per_page: 10 }));
@@ -153,10 +155,7 @@ export default function ShopperRequests() {
           {/* View Details Modal */}
           <Tooltip text="View Details">
             <button
-              onClick={() => {
-                setSelectedRecord(record);
-                setIsDetailsOpen(true);
-              }}
+              onClick={() => viewOrderDetails(record.id)}
               className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
             >
               <EyeIcon className="h-5 w-5 text-gray-700" />
@@ -178,7 +177,7 @@ export default function ShopperRequests() {
           {record.status === "accepted" &&
             <Tooltip text="Manage Order">
               <button
-                onClick={() => manageOrder(record)}
+                onClick={() => manageOrder(record.id)}
                 className="p-2 rounded-lg bg-green-50 hover:bg-green-100"
               >
                 <Cog6ToothIcon className="h-5 w-5 text-green-700" />
@@ -217,19 +216,28 @@ export default function ShopperRequests() {
     }
   ];
 
+  const viewOrderDetails = (id: number) => {
+    setOrderId(id)
+    setOpenOrderDetailDrawer(true)
+  }
+
   const viewOffers = (record: any) => {
     setOrderData(record)
     setOpenOfferDrawer(true)
   }
-  const manageOrder = (record: any) => {
-    setOrderData(record)
-    setOpenManageOfferDrawer(true)
+  const manageOrder = (order_id: any) => {
+    // setOrderData(record)
+    // setOpenManageOfferDrawer(true)
+    navigate("/shipper/manage-request", {
+      state: { orderId: order_id },
+    });
   }
 
   const onClose = () => {
     setOpenOfferDrawer(false)
     setOpenMessageDrawer(false)
     setOpenManageOfferDrawer(false)
+    setOpenOrderDetailDrawer(false)
   }
 
   return (
@@ -239,6 +247,14 @@ export default function ShopperRequests() {
       <div className="space-y-6">
         <ComponentCard title="View Requests">
           <DParcelTable columns={columns} data={requests} />
+          {
+            openOrderDetailDrawer &&
+            <ViewOrderDetailDrawer
+              isOpen={openOrderDetailDrawer}
+              onClose={onClose}
+              orderId={orderId}
+            />
+          }
           {
             openOfferDrawer &&
             <ViewShopperOffersDrawer
@@ -265,48 +281,6 @@ export default function ShopperRequests() {
           }
         </ComponentCard>
       </div>
-      {
-        isDetailsOpen &&
-          <Modal
-            isOpen={isDetailsOpen}
-            onClose={() => {
-              setIsDetailsOpen(false);
-              setSelectedRecord(null);
-            }}
-            className="max-w-2xl p-6"
-          >
-            {selectedRecord?.order && (
-              <>
-                <h2 className="text-xl font-semibold mb-4">
-                  Order Details
-                </h2>
-
-                <div className="grid grid-cols-2 gap-4 text-sm mb-6">
-                  <div><strong>Request Number:</strong> {selectedRecord.order.request_number}</div>
-                  <div><strong>Service Type:</strong> {selectedRecord.order.service_type === "ship_for_me" ? "Ship For Me" : "Shop For Me"}</div>
-                  <div><strong>Total Price:</strong> ${selectedRecord.order.total_price}</div>
-                  <div><strong>Approx Weight:</strong> {selectedRecord.order.total_aprox_weight} g</div>
-                  <div><strong>Ship From:</strong> {selectedRecord?.order?.ship_from_city?.name}, {selectedRecord?.order?.ship_from_state?.name}, {selectedRecord?.order?.ship_from_country?.name}</div>
-                  <div><strong>Ship To:</strong> {selectedRecord?.order?.ship_to_city?.name}, {selectedRecord?.order?.ship_to_state?.name}, {selectedRecord?.order?.ship_to_country?.name}</div>
-                </div>
-
-                <h3 className="font-medium mb-2">Products</h3>
-                <div className="space-y-2">
-                  {selectedRecord.order.order_details?.map((item: any) => (
-                    <div key={item.id} className="border rounded-lg p-3 text-sm">
-                      <div className="font-medium">{item.product?.title}</div>
-                      <div>Qty: {item.quantity}</div>
-                      <div>Weight: {item.weight} g</div>
-                      <div>Price: ${item.price}</div>
-                      <div>Request Details #: {item.request_details_number}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </Modal>
-
-      }
 
     </>
   );

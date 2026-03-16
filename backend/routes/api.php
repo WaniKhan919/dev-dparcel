@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\AdminDashboardController;
 use App\Http\Controllers\Api\Admin\BlogController;
+use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\ShipperLevelController;
 use App\Http\Controllers\Api\CustomDeclarationController;
 use App\Http\Controllers\Api\LocationController;
@@ -84,6 +85,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('{id}', [BlogController::class, 'destroy']);
             Route::get('broadcast-email/{id}', [BlogController::class, 'broadcastEmail']);
         });
+        Route::prefix('/order')->group(function () {
+            Route::post('/approve/product', [AdminOrderController::class, 'approveProduct']);
+        });
 
         Route::get('/get-wallet', [WalletController::class, 'adminWallet']);
         Route::post('/release-payment', [WalletController::class, 'releaseShipperPayment']);
@@ -139,6 +143,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update-status',  'updateStatus');
         Route::get('/get-order-tracking/{id}',  'getOrderTracking');
         Route::get('/get-order-detail/{id}',  'getOrderDetail');
+        Route::post('/product/insert-tracking',  'insertProductTracking');
     });
     // Shipper Routes
     Route::prefix('shipper')->group(function () {

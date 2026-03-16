@@ -47,3 +47,14 @@ if (!function_exists('decrypt')) {
     }
 }
 
+//public path 
+if (!function_exists('public_file_url')) {
+    function public_file_url($path)
+    {
+        if (!$path) {
+            return null;
+        }
+
+        return url($path);
+    }
+}
