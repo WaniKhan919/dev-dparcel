@@ -26,6 +26,6 @@ class OrderOffer extends Model
     }
     public function additionalPrices()
     {
-        return $this->hasMany(OrderOfferPrice::class);
+        return $this->hasMany(OrderOfferPrice::class,'order_offer_id','id');
     }
 }

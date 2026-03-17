@@ -99,9 +99,10 @@ export default function ViewOrder() {
     setOrderData(record)
     setOpenOfferDrawer(true)
   }
-  const trackOrder = (record: any) => {
-    setOrderData(record)
-    setOpenTrackOrderDrawer(true)
+  const trackOrder = (order_id: any) => {
+    navigate("/shopper/track/order", {
+      state: { orderId: order_id },
+    });
   }
   const onClose = () => {
     setOpenOfferDrawer(false)
@@ -178,7 +179,7 @@ export default function ViewOrder() {
           {/* Track Order */}
           <button
             title="Track Order"
-            onClick={() => trackOrder(record)}
+            onClick={() => trackOrder(record.id)}
             className="p-2 rounded-lg bg-purple-50 hover:bg-purple-100"
           >
             <MapPinIcon className="h-5 w-5 text-purple-700" />

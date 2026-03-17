@@ -87,11 +87,7 @@ interface OrderData {
     ship_from: Ship;
     ship_to: Ship;
 }
-type OrderStatusFormData = {
-    status: string;
-    tracking_number?: string;
-    remarks?: string;
-};
+
 export default function TrackOrder() {
     const location = useLocation();
     const orderId = location.state?.orderId;
@@ -120,16 +116,16 @@ export default function TrackOrder() {
 
             const response = await ApiHelper("POST", "/admin/order/approve/product", payload);
             if (response.status === 200 && response.data.status) {
-    toast.success(response.data.message, {
-        duration: 3000,
-        position: "top-right",
-        icon: "🎉",
-    });
-    fetchOrderDetails();
-    setIsActionModalOpen(false)
-} else {
-    toast.error(response.data.message);
-}
+                toast.success(response.data.message, {
+                    duration: 3000,
+                    position: "top-right",
+                    icon: "🎉",
+                });
+                fetchOrderDetails();
+                setIsActionModalOpen(false)
+            } else {
+                toast.error(response.data.message);
+            }
 
         } catch (error) {
             console.error(error);
@@ -433,35 +429,38 @@ export default function TrackOrder() {
                                                             "-"
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-2 text-sm">
-                                                        {item.product.tracking.status == 0 ? (
-                                                            <div className="flex gap-2">
+                                                    {
+                                                        item?.product?.tracking &&
+                                                        <td className="px-4 py-2 text-sm">
+                                                            {item?.product?.tracking?.status == 0 ? (
+                                                                <div className="flex gap-2">
 
-                                                                <button
-                                                                    onClick={() => openActionModal(item.id, 1)}
-                                                                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                                                                >
-                                                                    Approve
-                                                                </button>
+                                                                    <button
+                                                                        onClick={() => openActionModal(item.id, 1)}
+                                                                        className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                                    >
+                                                                        Approve
+                                                                    </button>
 
-                                                                <button
-                                                                    onClick={() => openActionModal(item.id, 2)}
-                                                                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                                                                >
-                                                                    Reject
-                                                                </button>
+                                                                    <button
+                                                                        onClick={() => openActionModal(item.id, 2)}
+                                                                        className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                                                    >
+                                                                        Reject
+                                                                    </button>
 
-                                                            </div>
-                                                        ) : item.product.tracking.status == 1 ? (
-                                                            <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-                                                                Approved
-                                                            </span>
-                                                        ) : (
-                                                            <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
-                                                                Rejected
-                                                            </span>
-                                                        )}
-                                                    </td>
+                                                                </div>
+                                                            ) : item?.product?.tracking?.status == 1 ? (
+                                                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                                                                    Approved
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
+                                                                    Rejected
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    }
 
                                                 </tr>
                                             ))}

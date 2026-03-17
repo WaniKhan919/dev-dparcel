@@ -39,6 +39,9 @@ import CreateBlogs from "./pages/Admin/CreateBlogs";
 import EditBlogs from "./pages/Admin/EditBlogs";
 import ManageRequest from "./pages/Requests/ManageRequest";
 import TrackOrder from "./pages/Order/TrackOrder";
+import ShopperTrackOrder from "./pages/Shopper/ShopperTrackOrder";
+import ShopperGuideLine from "./pages/Shopper/ShopperGuideLine";
+import ShipperGuideLine from "./pages/Shipper/ShipperGuideLine";
 
 export default function App() {
   return (
@@ -93,7 +96,9 @@ export default function App() {
             <Route path="/shopper/request" element={<Order />} />
             <Route path="/shopper/messages" element={<ShopperMessages />} />
             <Route path="/shopper/view/request" element={<ViewOrder />} />
+            <Route path="/shopper/track/order" element={<ShopperTrackOrder />} />
             <Route path="/shopper/payment" element={<ShopperPayments />} />
+            <Route path="/shopper/guideline" element={<ShopperGuideLine />} />
             <Route path="/custom/declaration" element={<CustomDeclaration />} />
 
             {/* Shipper Routes */}
@@ -101,6 +106,7 @@ export default function App() {
             <Route path="/shipper/requests" element={<ShopperRequests />} />
             <Route path="shipper/manage-request" element={<ManageRequest />} />
             <Route path="/shipper/messages" element={<ShipperMessages />} />
+            <Route path="/shipper/guideline" element={<ShipperGuideLine />} />
             <Route path="/custom-declaration" element={<ShopperCustomDeclaration />} />
             <Route path="/shipper/subscription" element={<Subscription />} />
             <Route path="/shipper/service-areas" element={<ManageMultipleLocations />} />

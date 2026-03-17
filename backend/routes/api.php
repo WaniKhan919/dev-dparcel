@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\Shipper\ManageMultipleLocationController;
 use App\Http\Controllers\Api\Shipper\ShipperDashboardController;
 use App\Http\Controllers\Api\Shopper\ShopperDashboardController;
+use App\Http\Controllers\Api\Shopper\ShopperOrderController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -187,6 +188,10 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         Route::get('/payments', [PaymentController::class, 'index']);
+
+        Route::prefix('/order')->controller(ShopperOrderController::class)->group(function(){
+            Route::get('/get-order-detail/{order_id}','getOrderDetail');
+        });
     });
     Route::post('/create-payment-intent', [StripeController::class, 'createPaymentIntent']);
     Route::post('/store-payment', [StripeController::class, 'storePayment']);

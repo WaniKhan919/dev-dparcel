@@ -95,33 +95,6 @@ class User extends Authenticatable
 
         $allOrders = collect();
 
-        // foreach ($subscriptions as $subscription) {
-        //     $level = $subscription->level;
-
-        //     if (!$level) continue; // safeguard
-
-        //     // Get allowed service slugs
-        //     $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
-
-        //     if (!empty($allowedServices)) {
-        //         $orders = Order::with([
-        //             'orderDetails.product',
-        //             'user',
-        //             'shipFromCountry',
-        //             'shipFromState',
-        //             'shipFromCity',
-        //             'shipToCountry',
-        //             'shipToState',
-        //             'shipToCity'
-        //         ])
-        //             ->whereNotIn('id', $excludedOrders)
-        //             ->whereIn('service_type', $allowedServices)
-        //             ->orderBy('id', 'desc')
-        //             ->get();
-
-        //         $allOrders = $allOrders->merge($orders);
-        //     }
-        // }
 
         foreach ($subscriptions as $subscription) {
             $level = $subscription->level;
@@ -130,23 +103,24 @@ class User extends Authenticatable
             $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
             if (!empty($allowedServices)) {
 
-                $serviceCityIds = $this->serviceAreas()->pluck('city_id')->toArray(); // NEW
+                $serviceCountryIds = $this->serviceAreas()->pluck('country_id')->toArray();// NEW
 
                 $orders = Order::with([
+                   'orderServices.service',
                     'orderDetails.product',
                     'user',
-                    'shipFromCountry',
-                    'shipFromState',
-                    'shipFromCity',
-                    'shipToCountry',
-                    'shipToState',
-                    'shipToCity'
+                    'shipFromCountry:id,name',
+                    'shipFromState:id,name',
+                    'shipFromCity:id,name',
+                    'shipToCountry:id,name',
+                    'shipToState:id,name',
+                    'shipToCity:id,name'
                 ])
                 ->whereNotIn('id', $excludedOrders)
                 ->whereIn('service_type', $allowedServices)
-                ->where(function ($query) use ($serviceCityIds) {
-                    $query->whereIn('ship_from_city_id', $serviceCityIds)
-                        ->orWhereIn('ship_to_city_id', $serviceCityIds);
+                ->where(function ($query) use ($serviceCountryIds) {
+                    $query->whereIn('ship_from_country_id', $serviceCountryIds)
+                        ->orWhereIn('ship_to_country_id', $serviceCountryIds);
                 })
                 ->orderBy('id', 'desc')
                 ->get();

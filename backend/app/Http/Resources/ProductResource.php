@@ -17,6 +17,7 @@ class ProductResource extends JsonResource
             'product_url' => $this->product_url,
 
             'tracking' => new ProductTrackingResource($this->whenLoaded('productTracking')),
+            'approved_product_tracking' => new ProductTrackingResource($this->whenLoaded('approvedProductTracking')),
         ];
     }
 }

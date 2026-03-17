@@ -19,6 +19,7 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
 import { BanknotesIcon, LinkIcon, NewspaperIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { CopyIcon } from "lucide-react";
 
 type SubNavItem = {
   name: string;
@@ -146,6 +147,13 @@ const navItems: NavItem[] = [
     roles: ["shopper"],
     permissions: ["shopper_payment"],
   },
+  {
+    name: "Guideline",
+    icon: <CopyIcon />,
+    path: "/shopper/guideline",
+    roles: ["shopper"],
+    permissions: ["create_request"],
+  },
 
   // shipper navigation
   {
@@ -182,6 +190,14 @@ const navItems: NavItem[] = [
     name: "Payments",
     icon: <BanknotesIcon className="w-4 h-4" />,
     path: "/shipper/payment",
+    roles: ["shipper"],
+    permissions: ["shipper_payment"],
+  },
+  
+  {
+    name: "Guideline",
+    icon: <CopyIcon />,
+    path: "/shipper/guideline",
     roles: ["shipper"],
     permissions: ["shipper_payment"],
   },

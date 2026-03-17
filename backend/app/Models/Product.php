@@ -23,5 +23,10 @@ class Product extends Model
     {
         return $this->belongsTo(ProductTracking::class,'id','product_id');
     }
+    public function approvedProductTracking()
+    {
+        return $this->belongsTo(ProductTracking::class, 'id', 'product_id')
+                    ->where('status', 1);
+    }
 
 }

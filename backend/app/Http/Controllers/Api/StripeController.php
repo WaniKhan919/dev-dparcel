@@ -82,10 +82,10 @@ class StripeController extends Controller
  
             $order = Order::with('orderOffer')->findOrFail($validated['order_id']);
             
-            $order_offer_id = $order->orderOffer->id;
-            $offer = OrderOffer::find($order_offer_id);
-            $offer->status = 4;
-            $offer->save();
+            // $order_offer_id = $order->orderOffer->id;
+            // $offer = OrderOffer::find($order_offer_id);
+            // $offer->status = 4;
+            // $offer->save();
             OrderTracking::insert([
                 [
                     'order_id' => $validated['order_id'],
@@ -153,9 +153,9 @@ class StripeController extends Controller
                     ]);
                 }
             }
-            $order_offer_id = $order->orderOffer->id;
-            $offer->status = 5;
-            $offer->save();
+            // $order_offer_id = $order->orderOffer->id;
+            // $offer->status = 5;
+            // $offer->save();
  
             DB::commit();
             $shopper = Auth::user();

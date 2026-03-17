@@ -11,4 +11,10 @@ class OrderOfferPrice extends Model
         'title',
         'price',
     ];
+
+    public function orderOffer()
+    {
+        return $this->belongsTo(OrderOffer::class,'order_offer_id', 'id');
+    }
+    
 }

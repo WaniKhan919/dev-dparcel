@@ -22,7 +22,7 @@ class OrderOfferResource extends JsonResource
             'status' => $this->status,
             'offer_price' => $this->offer_price,
             'shipper' => $this->shipper,
-            'additional_prices' => $this->additional_prices ?? [],
+            'additional_prices' => $this->additionalPrices ?? [],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

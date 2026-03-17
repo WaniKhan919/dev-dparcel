@@ -90,14 +90,14 @@ export default function Subscription() {
             <div className="space-y-6">
                 <ComponentCard 
                     title="Subscription Plans"
-                    actions={
-                        <Link
-                            to="/shipper/service-areas"
-                            className="px-6 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 inline-block text-center"
-                            >
-                            Add Service Areas
-                        </Link>
-                    }
+                    // actions={
+                    //     <Link
+                    //         to="/shipper/service-areas"
+                    //         className="px-6 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 inline-block text-center"
+                    //         >
+                    //         Add Service Areas
+                    //     </Link>
+                    // }
                 >
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {levels.map((level) => {
