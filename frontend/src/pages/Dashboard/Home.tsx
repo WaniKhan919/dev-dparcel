@@ -103,50 +103,59 @@ export default function Home() {
     }
   };
 
-    const columns = [
-      { key: "request_number", header: "Request Number" },
-      {
-        key: "service_type",
-        header: "Ship Type",
-        render: (record: Request) => {
-          const label = record.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me";
-          const color = record.service_type === "ship_for_me" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
-          return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color} w-max`}>{label}</span>;
-        },
+  const columns = [
+    { key: "request_number", header: "Request Number" },
+    {
+      key: "service_type",
+      header: "Ship Type",
+      render: (record: Request) => {
+        const label = record.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me";
+        const color = record.service_type === "ship_for_me" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
+        return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color} w-max`}>{label}</span>;
       },
-      {
-        key: "ship_from_to",
-        header: "Ship From / To",
-        render: (record: Request) => (
-          <div className="text-sm">
-            <div><strong>From:</strong> {record.ship_from_country?.name ?? "-"}, {record.ship_from_state?.name ?? "-"}, {record.ship_from_city?.name ?? "-"}</div>
-            <div><strong>To:</strong> {record.ship_to_country?.name ?? "-"}, {record.ship_to_state?.name ?? "-"}, {record.ship_to_city?.name ?? "-"}</div>
-          </div>
-        ),
+    },
+    {
+      key: "ship_from_to",
+      header: "Ship From / To",
+      render: (record: Request) => (
+        <div className="text-sm">
+          <div><strong>From:</strong> {record.ship_from_country?.name ?? "-"}, {record.ship_from_state?.name ?? "-"}, {record.ship_from_city?.name ?? "-"}</div>
+          <div><strong>To:</strong> {record.ship_to_country?.name ?? "-"}, {record.ship_to_state?.name ?? "-"}, {record.ship_to_city?.name ?? "-"}</div>
+        </div>
+      ),
+    },
+    { key: "total_price", header: "Total Price" },
+    {
+      key: "status",
+      header: "Status",
+      render: (record: Request) => {
+        const rawStatus = record.order_status?.name ?? "Pending";
+        const status = rawStatus.toLowerCase();
+        const statusColors: Record<string, string> = {
+          pending: "bg-yellow-100 text-yellow-800",
+
+          "offer placed": "bg-blue-100 text-blue-800",
+          "offer accepted": "bg-green-100 text-green-800",
+
+          "payment pending": "bg-orange-100 text-orange-800",
+
+          inprogress: "bg-purple-100 text-purple-800",
+          processed: "bg-indigo-100 text-indigo-800",
+
+          forwarded: "bg-cyan-100 text-cyan-800",
+          received: "bg-teal-100 text-teal-800",
+
+          completed: "bg-green-200 text-green-900",
+        };
+        return <span
+          className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || "bg-gray-100 text-gray-800"
+            }`}
+        >
+          {rawStatus}
+        </span>;
       },
-      { key: "total_price", header: "Total Price" },
-      {
-        key: "status",
-        header: "Status",
-        render: (record: Request) => {
-          const status = (record.order_status?.name ?? "Pending").toLowerCase();
-          const statusColors: Record<string, string> = {
-            pending: "bg-yellow-100 text-yellow-800",
-            "awaiting payment": "bg-orange-100 text-orange-800",
-            paid: "bg-blue-100 text-blue-800",
-            purchased: "bg-indigo-100 text-indigo-800",
-            "in warehouse": "bg-teal-100 text-teal-800",
-            packed: "bg-purple-100 text-purple-800",
-            shipped: "bg-cyan-100 text-cyan-800",
-            "in transit": "bg-sky-100 text-sky-800",
-            delivered: "bg-green-100 text-green-800",
-            cancelled: "bg-gray-200 text-gray-800",
-            returned: "bg-red-100 text-red-800",
-          };
-          return <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || "bg-gray-100 text-gray-800"}`}>{status}</span>;
-        },
-      },
-    ];
+    }
+  ];
 
   useEffect(() => {
     dispatch(fetchAllOrders({ page, per_page: 12 }));
@@ -241,7 +250,7 @@ export default function Home() {
 
               </div>
               <div className="flex justify-end mt-4">
-                
+
                 <Link
                   to="/admin/wallet"
                   className="text-blue-600 font-medium text-sm"
@@ -250,7 +259,7 @@ export default function Home() {
                 </Link>
               </div>
             </div>
-            
+
             {/* Balance */}
             <div className="bg-white rounded-2xl shadow-md p-4 border-b-4 border-red-500 flex flex-col justify-between">
               <div className="flex justify-between items-start">
@@ -277,7 +286,7 @@ export default function Home() {
         </div>
 
       </div>
-      
+
       <div className="grid grid-cols-12 gap-4 md:gap-6 mt-5">
         <div className="col-span-12">
           <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm">

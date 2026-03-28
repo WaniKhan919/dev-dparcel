@@ -564,13 +564,21 @@ class OrderController extends Controller
     {
         try {
 
-            $order = Order::with([
+           $order = Order::with([
                 'orderDetails.product.productTracking',
                 'orderServices.service',
                 'acceptedOffer.additionalPrices',
                 'acceptedOffer.shipper',
                 'orderTrackings.status',
-                'customDeclaration',
+
+                // 👇 Custom Declaration with nested relations
+                'customDeclaration.fromCountry:id,name',
+                'customDeclaration.fromState:id,name',
+                'customDeclaration.fromCity:id,name',
+                'customDeclaration.toCountry:id,name',
+                'customDeclaration.toState:id,name',
+                'customDeclaration.toCity:id,name',
+
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
                 'shipFromCity:id,name',

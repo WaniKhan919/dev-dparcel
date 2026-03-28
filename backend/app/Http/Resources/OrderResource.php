@@ -38,6 +38,7 @@ class OrderResource extends JsonResource
 
             'acceptedOffer' =>  new OrderOfferResource($this->whenLoaded('acceptedOffer')),
 
+            'customDeclaration' => $this->customDeclaration,
             'created_at' => $this->created_at,
         ];
     }

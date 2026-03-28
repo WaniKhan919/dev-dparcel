@@ -630,14 +630,36 @@ export default function ShipperDashboard() {
 
                       {/* Statuses */}
                       <td className="px-5 py-4 flex flex-wrap gap-1">
-                        {order?.order_details?.map((item: any) => (
-                          <span
-                            key={item.id}
-                            className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-medium"
-                          >
-                            {item.status}
-                          </span>
-                        ))}
+                        {(() => {
+                          const rawStatus = order?.orderStatus?.name ?? "Pending";
+                          const status = rawStatus.toLowerCase();
+
+                          const statusColors: Record<string, string> = {
+                            pending: "bg-yellow-100 text-yellow-800",
+
+                            "offer placed": "bg-blue-100 text-blue-800",
+                            "offer accepted": "bg-green-100 text-green-800",
+
+                            "payment pending": "bg-orange-100 text-orange-800",
+
+                            inprogress: "bg-purple-100 text-purple-800",
+                            processed: "bg-indigo-100 text-indigo-800",
+
+                            forwarded: "bg-cyan-100 text-cyan-800",
+                            received: "bg-teal-100 text-teal-800",
+
+                            completed: "bg-green-200 text-green-900",
+                          };
+
+                          return (
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status] || "bg-gray-100 text-gray-800"
+                                }`}
+                            >
+                              {rawStatus}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* View */}
@@ -934,35 +956,34 @@ export default function ShipperDashboard() {
             {/* Header */}
             <div className="relative border-b pb-4 pr-10">
 
-            {/* Close space reserved using pr-10 */}
+              {/* Close space reserved using pr-10 */}
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Order Details
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Complete information about this order
-                </p>
-              </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Order Details
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Complete information about this order
+                  </p>
+                </div>
 
-              {/* Shipping Type Badge */}
-              <span
-                className={`inline-block px-4 py-1 text-xs rounded-full font-semibold whitespace-nowrap
-                  ${
-                    selectedOrder.service_type === "buy_for_me"
+                {/* Shipping Type Badge */}
+                <span
+                  className={`inline-block px-4 py-1 text-xs rounded-full font-semibold whitespace-nowrap
+                  ${selectedOrder.service_type === "buy_for_me"
                       ? "bg-purple-100 text-purple-700"
                       : "bg-indigo-100 text-indigo-700"
-                  }`}
-              >
-                {selectedOrder.service_type === "buy_for_me"
-                  ? "Buy For Me"
-                  : "Ship For Me"}
-              </span>
+                    }`}
+                >
+                  {selectedOrder.service_type === "buy_for_me"
+                    ? "Buy For Me"
+                    : "Ship For Me"}
+                </span>
 
+              </div>
             </div>
-          </div>
 
             {/* Route Section */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 shadow-sm">

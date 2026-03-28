@@ -46,6 +46,9 @@ interface Request {
     amount: string;
     status: string;
   } | null;
+  order_status: {
+    name: string;
+  };
 
   // New relationships
   ship_from_country?: { id: number; name: string };
@@ -60,7 +63,7 @@ interface Request {
 export default function ViewOrder() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { data,loading,meta} = useSelector((state: any) => state.order);
+  const { data, loading, meta } = useSelector((state: any) => state.order);
   const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false)
   const [openOfferDrawer, setOpenOfferDrawer] = useState(false)
   const [orderData, setOrderData] = useState([])
@@ -141,11 +144,41 @@ export default function ViewOrder() {
       ),
     },
     {
+      key: "status",
+      header: "Status",
+      render: (record: Request) => {
+        const rawStatus = record.order_status?.name ?? "Pending";
+        const status = rawStatus.toLowerCase();
+        const statusColors: Record<string, string> = {
+          pending: "bg-yellow-100 text-yellow-800",
+
+          "offer placed": "bg-blue-100 text-blue-800",
+          "offer accepted": "bg-green-100 text-green-800",
+
+          "payment pending": "bg-orange-100 text-orange-800",
+
+          inprogress: "bg-purple-100 text-purple-800",
+          processed: "bg-indigo-100 text-indigo-800",
+
+          forwarded: "bg-cyan-100 text-cyan-800",
+          received: "bg-teal-100 text-teal-800",
+
+          completed: "bg-green-200 text-green-900",
+        };
+        return <span
+          className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status] || "bg-gray-100 text-gray-800"
+            }`}
+        >
+          {rawStatus}
+        </span>;
+      },
+    },
+    {
       key: "actions",
       header: "Actions",
       render: (record: Request) => (
         <div className="flex items-center gap-2">
-          
+
           {/* View Details */}
           <button
             title="View Details"
@@ -189,7 +222,12 @@ export default function ViewOrder() {
           {record.accepted_offer && (
             <button
               title="Messages"
-              onClick={() => openMessage(record)}
+              // onClick={() => openMessage(record)}
+              onClick={() =>
+                navigate("/shopper/messages", {
+                  state: { orderId: record.id },
+                })
+              }
               className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100"
             >
               <ChatBubbleLeftRightIcon className="h-5 w-5 text-indigo-700" />
@@ -197,13 +235,13 @@ export default function ViewOrder() {
           )}
 
           {/* Custom Declaration */}
-          <button
+          {/* <button
             title="Custom Declaration"
             onClick={() => handleCustomDeclaration(record)}
             className="p-2 rounded-lg bg-orange-50 hover:bg-orange-100"
           >
             <ClipboardDocumentCheckIcon className="h-5 w-5 text-orange-700" />
-          </button>
+          </button> */}
         </div>
       ),
     }
@@ -217,10 +255,10 @@ export default function ViewOrder() {
       <PageBreadcrumb pageTitle="Requests" />
       <div className="space-y-6">
         <ComponentCard title="Requests">
-          <DParcelTable 
-            columns={columns} 
-            data={data} 
-            loading={loading} 
+          <DParcelTable
+            columns={columns}
+            data={data}
+            loading={loading}
             rowsPerPage={10}
             meta={meta}
             onPageChange={(page: number) =>
@@ -263,14 +301,14 @@ export default function ViewOrder() {
               orderData={orderData}
             />
           }
-          {
+          {/* {
             openMessageDrawer &&
             <ShopperOrderMessages
               isOpen={openMessageDrawer}
               onClose={onClose}
               orderData={orderData}
             />
-          }
+          } */}
 
         </ComponentCard>
       </div>

@@ -186,10 +186,10 @@ export default function ShopperRequests() {
           }
 
           {/* Custom Declaration */}
-          {record.status === "accepted" && record.order_details?.[0]?.id && (
+          {record.status === "accepted" && record.order?.id && (
             <Tooltip text="Custom Declaration">
               <button
-                onClick={() => handleCustomDecleration(record.order_details[0].id)}
+                onClick={() => handleCustomDecleration(record.order.id)}
                 className="p-2 rounded-lg bg-purple-50 hover:bg-purple-100"
               >
                 <DocumentTextIcon className="h-5 w-5 text-purple-700" />

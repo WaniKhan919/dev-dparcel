@@ -20,11 +20,7 @@ return [
     'allowed_methods' => ['*'], 
 
     'allowed_origins' => [
-        'https://dparcelfrontend.vercel.app',
-        'https://dparcelfrontend.vercel',
-        'http://127.0.0.1:5173',
-        'http://localhost:5173',
-        'http://localhost:3000',
+        '*',
     ],
 
 

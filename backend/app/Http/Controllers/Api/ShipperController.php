@@ -174,7 +174,8 @@ class ShipperController extends Controller
                 'shipFromCity:id,name',
                 'shipToCountry:id,name',
                 'shipToState:id,name',
-                'shipToCity:id,name'
+                'shipToCity:id,name',
+                'orderStatus'
             ])
             ->whereHas('offers', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
@@ -208,6 +209,7 @@ class ShipperController extends Controller
                     'ship_to_city' => $order->shipToCity?->name,
                     'order_details' => $order->orderDetails,
                     'order_services' => $order->orderServices,
+                    'orderStatus' => $order->orderStatus,
                     'user' => $order->user,
                 ];
             });

@@ -71,7 +71,7 @@ class Order extends Model
     }
     public function orderStatus()
     {
-        return $this->belongsTo(OrderStatus::class, 'status_id', 'id');
+        return $this->belongsTo(OrderStatus::class, 'status', 'id');
     }
     public function shipFromCountry()
     {
@@ -105,7 +105,7 @@ class Order extends Model
 
     public function customDeclaration()
     {
-        return $this->hasOne(CustomDeclaration::class, 'order_id');
+        return $this->hasOne(CustomDeclaration::class, 'order_id','id');
     }
     public function messages()
     {
