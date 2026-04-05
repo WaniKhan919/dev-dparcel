@@ -5,6 +5,7 @@ import { ApiHelper } from "../../utils/ApiHelper";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
+import CustomDeclarationView from "./CustomDeclarationView";
 
 interface Service {
     id: number;
@@ -86,6 +87,7 @@ interface OrderData {
     order_services: OrderService[];
     ship_from: Ship;
     ship_to: Ship;
+    customDeclaration: any;
 }
 
 export default function TrackOrder() {
@@ -541,6 +543,15 @@ export default function TrackOrder() {
                     </div>
                 </div>
             </div>
+             {
+                orderData?.customDeclaration ? (
+                    <CustomDeclarationView
+                        data={orderData.customDeclaration}
+                        orderData={orderData}
+                        fetchOrderDetails={fetchOrderDetails}
+                    />
+                ):('')
+            }
             <Modal
                 isOpen={isActionModalOpen}
                 onClose={() => setIsActionModalOpen(false)}

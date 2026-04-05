@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CustomDeclaration;
 use App\Models\ProductTracking;
 use Exception;
 use Illuminate\Http\Request;
@@ -48,6 +49,38 @@ class OrderController extends Controller
             return response()->json([
                 'status'  => false,
                 'message' => 'Failed to update product status.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function approveCustomDecleration(Request $request)
+    {
+        $request->validate([
+            'status' => 'required|string',
+            'custom_decleration_id'     => 'required',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            $record = CustomDeclaration::where('id', $request->custom_decleration_id)->firstOrFail();
+
+            $record->status = $request->status;
+            $record->save();
+
+            DB::commit();
+            $statusMessage = $request->status;
+
+            return response()->json([
+                'status'  => true,
+                'message' => "Custom decleration has been {$statusMessage} successfully.",
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Failed to update custom decleration status.',
                 'error'   => $e->getMessage(),
             ], 500);
         }

@@ -36,6 +36,14 @@ export default function ShipperDashboard() {
   }>({
     accepted_orders: 0,
   });
+
+  const [customDeclState, setCustomDeclState] = useState({
+    data: [],
+    meta: null,
+    page: 1,
+    loading: false,
+  });
+
   const [balance, setBalance] = useState<{
     total_credit: number;
     total_debit: number;
@@ -151,6 +159,7 @@ export default function ShipperDashboard() {
     fetchOrdersStats();
     fetchBalanceStats();
     fetchOfferStats();
+    getCustomDecleration();
   }, []);
 
   const fetchOrdersStats = async () => {
@@ -168,6 +177,28 @@ export default function ShipperDashboard() {
     } catch (err: any) {
     } finally {
 
+    }
+  };
+
+  const getCustomDecleration = async (pageNumber = 1) => {
+    setCustomDeclState(prev => ({ ...prev, loading: true }));
+
+    try {
+      const res = await ApiHelper("GET", `/shipper/dashboard/get-custom-declarations??page=${pageNumber}&per_page=10`);
+
+      if (res.status === 200 && res.data.success) {
+        setCustomDeclState({
+          data: res.data.data,
+          meta: res.data.meta,
+          page: pageNumber,
+          loading: false,
+        });
+      } else {
+        setCustomDeclState(prev => ({ ...prev, data: [], loading: false }));
+      }
+    } catch (err) {
+      console.error(err);
+      setCustomDeclState(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -352,6 +383,77 @@ export default function ShipperDashboard() {
             <Card notifications={notification} />
           }
         </div> */}
+      </div>
+      {/* Custom Declaration */}
+      <div className="mt-6 bg-white rounded-3xl shadow-md p-5">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Shipment Tracking (Custom Declarations)
+          </h2>
+
+          <button className="text-sm text-blue-600 font-medium hover:underline">
+            See all
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="space-y-4">
+
+          {customDeclState.data.map((item: any) => (
+            <div
+              key={item.id}
+              className="border rounded-2xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 hover:shadow-sm transition"
+            >
+
+              {/* LEFT SIDE */}
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-semibold text-gray-800">
+                  Request #{item.order?.request_number}
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  To: {item.to_street}, 
+                  {item.to_city?.name || "N/A"}, {item.to_state?.name || "N/A"}, {item.to_country?.name || "N/A"}, {item.to_postcode}
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  Declared Value: ${item.total_declared_value} | Weight: {item.total_weight || "N/A"} kg
+                </p>
+              </div>
+
+              {/* STATUS */}
+              <div className="flex items-center gap-3">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${item.status === "approved"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-yellow-100 text-yellow-700"
+                    }`}
+                >
+                  {item.status === "approved" ? "Approved" : "Pending"}
+                </span>
+              </div>
+
+              {/* RIGHT SIDE ACTION */}
+              <div className="flex items-center gap-2">
+
+                <input
+                  type="text"
+                  placeholder="Enter tracking link..."
+                  className="px-3 py-2 border rounded-lg text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+
+                <button
+                  className="px-4 py-2 text-sm text-white rounded-lg bg-blue-600 hover:bg-blue-700"
+                >
+                  Attach
+                </button>
+
+              </div>
+            </div>
+          ))}
+
+        </div>
       </div>
       {/* 🔥 Messages + Requests Grid Container */}
       <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

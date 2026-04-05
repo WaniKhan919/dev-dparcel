@@ -1,17 +1,24 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
+import { Modal } from "../../components/ui/modal";
+import { userHasRole } from "../../utils/DparcelHelper";
+import { ApiHelper } from "../../utils/ApiHelper";
+import toast from "react-hot-toast";
 
 interface Props {
-  data: any;           // customDeclaration object
-  orderData: any;      // full order response (for products, request_number)
-  onEdit: () => void;
+  data: any; 
+  orderData: any;
+  fetchOrderDetails?: any;
 }
 
-const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
+const CustomDeclarationView: React.FC<Props> = ({ data, orderData, fetchOrderDetails }) => {
   const componentRef = useRef<HTMLDivElement>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
+  const [loading, setLoading] = React.useState(false);
 
   // Products come from orderData.products
-  const products: any[] = orderData?.products ?? [];
+  const products: any[] = data?.products ?? [];
   // Use request_number from orderData, fallback to declaration id
   const requestNumber = orderData?.request_number ?? `#${data?.id}`;
 
@@ -38,13 +45,13 @@ const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
     );
   }
 
-  const formatAddress = (prefix: "from" | "to") =>
+  const formatAddress = (prefix: "to") =>
     [
-      data[`${prefix}_street`],
-      data[`${prefix}_city`]?.name,
-      data[`${prefix}_state`]?.name,
-      data[`${prefix}_country`]?.name,
-      data[`${prefix}_postcode`],
+      data?.[`${prefix}_street`],
+      data?.[`${prefix}_city`]?.name,
+      data?.[`${prefix}_state`]?.name,
+      data?.[`${prefix}_country`]?.name,
+      data?.[`${prefix}_postcode`],
     ]
       .filter(Boolean)
       .join(", ");
@@ -57,13 +64,49 @@ const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
     { label: "Other", key: "category_other" },
   ].filter((c) => data[c.key]);
 
-  const flags = [
-    { label: "Prohibited Items", key: "contains_prohibited_items", danger: true },
-    { label: "Contains Liquids", key: "contains_liquids" },
-    { label: "Contains Batteries", key: "contains_batteries" },
-    { label: "Fragile", key: "is_fragile" },
-  ];
+  const totalWeight = products.reduce((sum: number, item: any) => {
+    const weight = parseFloat(item.product?.weight || 0);
+    const qty = parseFloat(item.product?.quantity || 0);
+    return sum + weight * qty;
+  }, 0);
 
+  const totalValue = products.reduce((sum: number, item: any) => {
+    const price = parseFloat(item.product?.price || 0);
+    const qty = parseFloat(item.product?.quantity || 0);
+    return sum + price * qty;
+  }, 0);
+
+  const handleConfirm = async () => {
+    if (!actionType) return;
+
+    setLoading(true); // 🔥 start loading
+
+    const payload = {
+      status: actionType === "approve" ? "approved" : "rejected",
+      custom_decleration_id: orderData.customDeclaration.id,
+    };
+
+    try {
+      const response = await ApiHelper("POST", "/admin/order/custom-decleration", payload);
+
+      if (response.status === 200 && response.data.status) {
+        toast.success(response.data.message, {
+          duration: 3000,
+          position: "top-right",
+          icon: "🎉",
+        });
+
+        setIsModalOpen(false);
+        fetchOrderDetails();
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error("Something went wrong");
+    } finally {
+      setLoading(false); // 🔥 stop loading
+    }
+  };
   return (
     <>
       {/* ── Screen-only: print button ── */}
@@ -101,19 +144,39 @@ const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
 
         {/* Action Bar */}
         <div className="no-print flex items-center justify-between mb-5">
+
+          {/* LEFT SIDE */}
           <div>
             <h2 className="text-lg font-semibold text-gray-800">Custom Declaration</h2>
             <p className="text-xs text-gray-400 mt-0.5">{requestNumber}</p>
           </div>
-          <button
-            onClick={() => handlePrint()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow hover:bg-blue-700 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M9 21h6v-6H9v6z" />
-            </svg>
-            Print / Save PDF
-          </button>
+
+          {/* RIGHT SIDE BUTTONS */}
+          <div className="flex items-center gap-3">
+
+            {userHasRole('admin') && data.status == 'pending' && (
+              <button
+                onClick={() => {
+                  setActionType("approve");
+                  setIsModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg shadow hover:bg-green-700 transition-colors"
+              >
+                Approve / Reject
+              </button>
+            )}
+
+            <button
+              onClick={() => handlePrint()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M9 21h6v-6H9v6z" />
+              </svg>
+              Print / Save PDF
+            </button>
+
+          </div>
         </div>
 
         {/* ── Printable Document ── */}
@@ -137,15 +200,9 @@ const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
 
             {/* Sender & Receiver */}
             <section className="page-break-avoid">
-              <SectionTitle>Sender &amp; Receiver</SectionTitle>
-              <div className="grid grid-cols-2 gap-4">
-                <AddressCard
-                  role="From (Sender)"
-                  name={data.from_name}
-                  business={data.from_business}
-                  address={formatAddress("from")}
-                  color="blue"
-                />
+              <SectionTitle>Receiver</SectionTitle>
+
+              <div className="grid grid-cols-1">
                 <AddressCard
                   role="To (Receiver)"
                   name={data.to_name}
@@ -209,38 +266,56 @@ const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
               <table className="print-table w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
                 <thead>
                   <tr className="bg-gray-100 text-gray-600 text-xs uppercase tracking-wide">
-                    <th className="border-b border-gray-200 px-3 py-2 text-left w-8">#</th>
                     <th className="border-b border-gray-200 px-3 py-2 text-left">Product</th>
                     <th className="border-b border-gray-200 px-3 py-2 text-center w-16">Qty</th>
                     <th className="border-b border-gray-200 px-3 py-2 text-center w-20">Weight</th>
                     <th className="border-b border-gray-200 px-3 py-2 text-right w-24">Price</th>
+                    <th className="border-b border-gray-200 px-3 py-2 text-left">HS Tariff Number</th>
+                    <th className="border-b border-gray-200 px-3 py-2 text-left">Country of Origin</th>
                   </tr>
                 </thead>
                 <tbody>
                   {products.length > 0 ? (
                     products.map((item: any, i: number) => (
                       <tr key={item.id ?? i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="border-b border-gray-100 px-3 py-2 text-gray-400">{i + 1}</td>
-                        <td className="border-b border-gray-100 px-3 py-2 font-medium text-gray-800">{item.product?.title || "-"}</td>
-                        <td className="border-b border-gray-100 px-3 py-2 text-center text-gray-600">{item.quantity}</td>
-                        <td className="border-b border-gray-100 px-3 py-2 text-center text-gray-600">{item.weight} kg</td>
-                        <td className="border-b border-gray-100 px-3 py-2 text-right text-gray-800 font-medium">${item.price}</td>
+
+
+                        <td className="border-b border-gray-100 px-3 py-2 font-medium text-gray-800">
+                          {item.product?.title || "-"}
+                        </td>
+
+                        <td className="border-b border-gray-100 px-3 py-2 text-center text-gray-600">
+                          {item.product?.quantity ?? "-"}
+                        </td>
+
+                        <td className="border-b border-gray-100 px-3 py-2 text-center text-gray-600">
+                          {item.product?.weight ? `${item.product.weight} kg` : "-"}
+                        </td>
+
+                        <td className="border-b border-gray-100 px-3 py-2 text-right text-gray-800 font-medium">
+                          {item.product?.price ? `$${item.product.price}` : "-"}
+                        </td>
+
+                        {/* ✅ NEW */}
+                        <td className="border-b border-gray-100 px-3 py-2 text-gray-600">
+                          {item.hs_code || "-"}
+                        </td>
+
+                        {/* ✅ NEW */}
+                        <td className="border-b border-gray-100 px-3 py-2 text-gray-600">
+                          {item.origin_country || "-"}
+                        </td>
+
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-6 text-center text-gray-400 text-xs">No products listed</td>
+                      <td colSpan={6} className="py-6 text-center text-gray-400 text-xs">
+                        No products listed
+                      </td>
                     </tr>
                   )}
                 </tbody>
-                {/* {products.length > 0 && (
-                  <tfoot>
-                    <tr className="bg-gray-50">
-                      <td colSpan={4} className="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Declared Value</td>
-                      <td className="px-3 py-2 text-right font-bold text-gray-800">{data.total_declared_value} {data.currency || "USD"}</td>
-                    </tr>
-                  </tfoot>
-                )} */}
               </table>
             </section>
 
@@ -248,33 +323,15 @@ const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
             <section className="page-break-avoid">
               <SectionTitle>Declaration Summary</SectionTitle>
               <div className="grid grid-cols-3 gap-3 mb-3">
-                <SummaryCard label="Total Value" value={`${data.total_declared_value} ${data.currency || "USD"}`} />
-                <SummaryCard label="Total Weight" value={`${data.total_weight} ${data.unit_of_weight || "kg"}`} />
+                <SummaryCard label="Total Value" value={`${totalValue} ${"USD"}`} />
+                <SummaryCard label="Total Weight" value={`${totalWeight} g`} />
                 <SummaryCard
                   label="Status"
                   value={data.status || "Pending"}
-                  highlight={data.status === "Approved" ? "green" : data.status === "Rejected" ? "red" : "yellow"}
+                  highlight={data.status === "approved" ? "green" : data.status === "rejected" ? "red" : "yellow"}
                 />
               </div>
 
-              {/* Flags */}
-              <div className="grid grid-cols-4 gap-2">
-                {flags.map((f) => (
-                  <div
-                    key={f.key}
-                    className={`print-badge flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium
-                      ${data[f.key]
-                        ? f.danger
-                          ? "bg-red-50 border-red-200 text-red-700"
-                          : "bg-amber-50 border-amber-200 text-amber-700"
-                        : "bg-gray-50 border-gray-100 text-gray-400"
-                      }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${data[f.key] ? (f.danger ? "bg-red-500" : "bg-amber-400") : "bg-gray-300"}`} />
-                    {f.label}: {data[f.key] ? "Yes" : "No"}
-                  </div>
-                ))}
-              </div>
             </section>
 
             {/* Submitted At */}
@@ -287,6 +344,93 @@ const CustomDeclarationView: React.FC<Props> = ({ data, orderData }) => {
           </div>
         </div>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        className="max-w-md mx-auto p-6"
+        closeOnOutsideClick={false}
+      >
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          Confirm Action
+        </h2>
+
+        <p className="text-sm text-gray-500 mb-6">
+          Are you sure you want to {" "}
+          <span className={`font-semibold ${actionType === "approve" ? "text-green-600" : "text-red-600"}`}>
+            {actionType}
+          </span>{" "}
+          this custom declaration?
+        </p>
+
+        {/* Switch buttons */}
+        <div className="flex gap-2 mt-4 mb-4">
+          <button
+            onClick={() => setActionType("approve")}
+            className={`flex-1 py-2 rounded-lg text-sm ${actionType === "approve"
+              ? "bg-green-100 text-green-700 border border-green-300"
+              : "bg-gray-100 text-gray-500"
+              }`}
+          >
+            Approve
+          </button>
+
+          <button
+            onClick={() => setActionType("reject")}
+            className={`flex-1 py-2 rounded-lg text-sm ${actionType === "reject"
+              ? "bg-red-100 text-red-700 border border-red-300"
+              : "bg-gray-100 text-gray-500"
+              }`}
+          >
+            Reject
+          </button>
+        </div>
+        {/* Buttons */}
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setIsModalOpen(false)}
+            className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={() => handleConfirm()}
+            disabled={loading}
+            className={`px-4 py-2 text-sm text-white rounded-lg flex items-center justify-center gap-2
+    ${actionType === "approve"
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-red-600 hover:bg-red-700"
+              }
+    ${loading ? "opacity-70 cursor-not-allowed" : ""}
+  `}
+          >
+            {loading && (
+              <svg
+                className="w-4 h-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
+              </svg>
+            )}
+
+            {loading ? "Processing..." : "Confirm"}
+          </button>
+        </div>
+
+      </Modal>
     </>
   );
 };

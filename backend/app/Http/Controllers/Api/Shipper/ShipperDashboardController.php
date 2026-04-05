@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Shipper;
 
 use App\Http\Controllers\Controller;
+use App\Models\CustomDeclaration;
 use App\Models\OrderOffer;
 use App\Models\WalletTransaction;
 use Exception;
@@ -106,5 +107,51 @@ class ShipperDashboardController extends Controller
                 'message' => 'Failed to fetch offer stats.',
             ], 500);
         }
+    }
+    public function getShipperCustomDeclarations(Request $request){
+    try {
+        $shipperId = Auth::id();
+        $perPage = (int) $request->get('per_page', 12);
+
+        $declarations = CustomDeclaration::with([
+                'order:id,user_id,request_number,request_number,status',
+                'toCountry:id,name',
+                'toState:id,name',
+                'toCity:id,name',
+            ])
+            ->where('status', 'approved')
+            ->whereHas('order.offers', function ($q) use ($shipperId) {
+                $q->where('user_id', $shipperId)
+                  ->where('status', 'accepted');
+            })
+            ->orderBy('id', 'desc') // latest first
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $declarations->items(),
+            'meta' => [
+                'current_page' => $declarations->currentPage(),
+                'last_page' => $declarations->lastPage(),
+                'per_page' => $declarations->perPage(),
+                'total' => $declarations->total(),
+                'next_page_url' => $declarations->nextPageUrl(),
+                'prev_page_url' => $declarations->previousPageUrl(),
+            ],
+        ], 200);
+
+    } catch (\Exception $e) {
+
+        Log::error('Error fetching shipper custom declarations', [
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to get custom declarations',
+            'error' => $e->getMessage()
+        ], 500);
+    }
     }
 }

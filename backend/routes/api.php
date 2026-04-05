@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
         Route::prefix('/order')->group(function () {
             Route::post('/approve/product', [AdminOrderController::class, 'approveProduct']);
+            Route::post('/custom-decleration', [AdminOrderController::class, 'approveCustomDecleration']);
         });
 
         Route::get('/get-wallet', [WalletController::class, 'adminWallet']);
@@ -153,6 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/orders', 'orderCount');
             Route::get('/balance', 'balance');
             Route::get('/offers', 'offerCount');
+            Route::get('/get-custom-declarations', 'getShipperCustomDeclarations');
         });
 
         Route::controller(ShipperController::class)

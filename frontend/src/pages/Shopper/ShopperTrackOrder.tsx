@@ -1,6 +1,6 @@
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -17,63 +17,55 @@ import Input from "../../components/form/input/InputField";
 import Select from "../../components/ui/dropdown/Select";
 
 interface FormValues {
-    from_name: string;
-    from_business: string;
-    from_street: string;
-    from_postcode: string;
-    from_country: string;
-    from_state: string;
-    from_city: string;
     to_name: string;
     to_business: string;
     to_street: string;
     to_postcode: string;
-    to_country: string;
-    to_state: string;
-    to_city: string;
-    importer_reference?: string;
-    importer_contact?: string;
+    to_country: number;
+    to_state: number;
+    to_city: number;
+
     category_commercial_sample?: boolean;
     category_gift?: boolean;
     category_returned_goods?: boolean;
     category_documents?: boolean;
     category_other?: boolean;
+
     explanation?: string;
     comments?: string;
-    office_origin_posting?: string;
-    doc_licence?: boolean;
-    doc_certificate?: boolean;
-    doc_invoice?: boolean;
+
+    total_declared_value?: number;
+    total_weight?: number;
+    products?: any,
 }
 
 const validationSchema: Yup.ObjectSchema<FormValues> = Yup.object({
-    from_name: Yup.string().required("Name is required"),
-    from_business: Yup.string().required("Business is required"),
-    from_street: Yup.string().required("Street is required"),
-    from_postcode: Yup.string().required("Postcode is required"),
-    from_country: Yup.string().required("Country is required"),
-    from_state: Yup.string().required("State is required"),
-    from_city: Yup.string().required("City is required"),
     to_name: Yup.string().required("Name is required"),
     to_business: Yup.string().required("Business is required"),
     to_street: Yup.string().required("Street is required"),
     to_postcode: Yup.string().required("Postcode is required"),
-    to_country: Yup.string().required("Country is required"),
-    to_state: Yup.string().required("State is required"),
-    to_city: Yup.string().required("City is required"),
-    importer_reference: Yup.string().optional(),
-    importer_contact: Yup.string().optional(),
+
+    to_country: Yup.number().required("Country is required"),
+    to_state: Yup.number().required("State is required"),
+    to_city: Yup.number().required("City is required"),
+
     category_commercial_sample: Yup.boolean().optional(),
     category_gift: Yup.boolean().optional(),
     category_returned_goods: Yup.boolean().optional(),
     category_documents: Yup.boolean().optional(),
     category_other: Yup.boolean().optional(),
+
     explanation: Yup.string().optional(),
     comments: Yup.string().optional(),
-    office_origin_posting: Yup.string().optional(),
-    doc_licence: Yup.boolean().optional(),
-    doc_certificate: Yup.boolean().optional(),
-    doc_invoice: Yup.boolean().optional(),
+
+    total_declared_value: Yup.number().optional(),
+    total_weight: Yup.number().optional(),
+    products: Yup.array(
+        Yup.object({
+            hs_code: Yup.string().required("HS Tariff Number is required"),
+            origin_country: Yup.string().optional(),
+        })
+    ).optional(),
 });
 
 
@@ -88,22 +80,14 @@ export default function ShopperTrackOrder() {
     const [currentStep, setCurrentStep] = useState(0);
 
     const [step, setStep] = useState(1);
+    const stepRef = useRef(step);
     const [showForm, setShowForm] = useState(false);
     const dispatch = useDispatch<any>();
 
     const { data: countries } = useSelector((state: any) => state.countries);
-    const reduxStates = useSelector((state: any) => state.states.data);
-    const reduxCities = useSelector((state: any) => state.cities.data);
-    const [customDecleration, setCustomDecleration] = useState<any>(null);
-    const { order_id } = location.state || {};
-    
-    const [activeType, setActiveType] = useState<"from" | "to" | null>(null);
+    const { data: states } = useSelector((state: any) => state.states);
+    const { data: cities } = useSelector((state: any) => state.cities);
 
-    const [fromStates, setFromStates] = useState<any[]>([]);
-    const [toStates, setToStates] = useState<any[]>([]);
-
-    const [fromCities, setFromCities] = useState<any[]>([]);
-    const [toCities, setToCities] = useState<any[]>([]);
 
     const {
         register,
@@ -112,15 +96,18 @@ export default function ShopperTrackOrder() {
         trigger,
         control,
         reset,
+        getValues,
         formState: { errors, isSubmitting },
     } = useForm<FormValues>({
         resolver: yupResolver(validationSchema),
-        mode: "onBlur",
         defaultValues: {
-            from_country: "null",
-            from_state: "null",
-            from_city: "null",
-        }
+            to_country: 0,
+            to_state: 0,
+            to_city: 0,
+            products: orderData?.products?.map(() => ({ hs_code: "", origin_country: "" })) || [],
+
+        },
+        mode: "onBlur",
     });
 
     const nextStep = () => {
@@ -445,24 +432,8 @@ export default function ShopperTrackOrder() {
     }, [dispatch]);
 
     useEffect(() => {
-        if (!reduxStates) return;
-
-        if (activeType === "from") {
-            setFromStates(reduxStates);
-        } else if (activeType === "to") {
-            setToStates(reduxStates);
-        }
-    }, [reduxStates]);
-
-    useEffect(() => {
-        if (!reduxCities) return;
-
-        if (activeType === "from") {
-            setFromCities(reduxCities);
-        } else if (activeType === "to") {
-            setToCities(reduxCities);
-        }
-    }, [reduxCities]);
+        stepRef.current = step;
+    }, [step]);
 
     const fetchCustomDeclaration = async () => {
         try {
@@ -486,17 +457,26 @@ export default function ShopperTrackOrder() {
 
     // ✅ This prevents auto submit when step 5 loads
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
-        if (step < 5) return;
+        if (stepRef.current < 3) return;
+        if (step < 3) return;
         try {
             const payload = {
                 ...data,
-                order_id: orderId, // from previous screen
+                order_id: orderId,
                 shipping_type_id: orderData?.service_type === "buy_for_me" ? 1 : 2,
+
+                // ✅ orderData products se id map karo
+                products: orderData?.products?.map((item: any, index: number) => ({
+                    id: item.product_id ?? item.id,
+                    hs_code: data.products?.[index]?.hs_code ?? "",
+                    origin_country: data.products?.[index]?.origin_country ?? "",
+                })),
             };
             const res = await ApiHelper("POST", "/custom-declaration/store", payload);
             if (res.status === 200 && res.data.success) {
 
                 toast.success("Custom Declaration submitted successfully!");
+                fetchCustomDeclaration();
             } else {
                 toast.error(res.data.message);
             }
@@ -511,19 +491,16 @@ export default function ShopperTrackOrder() {
 
         switch (step) {
             case 1:
-                fieldsToValidate = ["from_name", "from_business", "from_street", "from_postcode", "from_country", "from_city"];
+                fieldsToValidate = ["to_name", "to_business", "to_street", "to_postcode", "to_country", "to_state", "to_city"];
                 break;
             case 2:
-                fieldsToValidate = ["to_name", "to_business", "to_street", "to_postcode", "to_country", "to_city"];
-                break;
+                const isValidStep2 = await trigger("products");
+                if (isValidStep2) {
+                    stepRef.current = 3; // ✅ pehle ref update karo
+                    setStep(3);
+                }
+                return;
             case 3:
-                setTimeout(() => setStep(5), 0);
-                return;
-            case 4:
-                setTimeout(() => setStep(5), 0);
-                return;
-            case 5:
-                setTimeout(() => setStep(5), 0);
                 break;
         }
 
@@ -531,54 +508,46 @@ export default function ShopperTrackOrder() {
         await new Promise((resolve) => setTimeout(resolve, 50));
 
         if (isValid) {
-            setStep((prev) => Math.min(prev + 1, 5));
+            setStep((prev) => Math.min(prev + 1, 3));
             await new Promise((resolve) => setTimeout(resolve, 0));
         }
     };
 
     useEffect(() => {
-        if (showForm && orderData?.customDeclaration) {
-            const data = orderData.customDeclaration;
-            // reset the form with existing values
-            reset({
-                from_name: data.from_name || "",
-                from_business: data.from_business || "",
-                from_street: data.from_street || "",
-                from_postcode: data.from_postcode || "",
-                from_country: data.from_country?.id || "",
-                from_state: data.from_state?.id || "",
-                from_city: data.from_city?.id || "",
-                to_name: data.to_name || "",
-                to_business: data.to_business || "",
-                to_street: data.to_street || "",
-                to_postcode: data.to_postcode || "",
-                to_country: data.to_country?.id || "",
-                to_state: data.to_state?.id || "",
-                to_city: data.to_city?.id || "",
-                importer_reference: data.importer_reference || "",
-                importer_contact: data.importer_contact || "",
-                category_commercial_sample: data.category_commercial_sample || false,
-                category_gift: data.category_gift || false,
-                category_returned_goods: data.category_returned_goods || false,
-                category_documents: data.category_documents || false,
-                category_other: data.category_other || false,
-                explanation: data.explanation || "",
-                comments: data.comments || "",
-                office_origin_posting: data.office_origin_posting || "",
-                doc_licence: data.doc_licence || false,
-                doc_certificate: data.doc_certificate || false,
-                doc_invoice: data.doc_invoice || false,
-            });
+        if (!orderData) return;
 
-            // Optional: fetch states and cities if country/state exist
-            if (data.from_country?.id) dispatch(fetchStates(data.from_country.id));
-            if (data.from_state?.id) dispatch(fetchCities(data.from_state.id));
-            if (data.to_country?.id) dispatch(fetchStates(data.to_country.id));
-            if (data.to_state?.id) dispatch(fetchCities(data.to_state.id));
-        }
-    }, [showForm, orderData, dispatch, reset]);
+        const declaration = orderData.customDeclaration;
 
+        reset({
+            to_name: declaration?.to_name || "",
+            to_business: declaration?.to_business || "",
+            to_street: declaration?.to_street || "",
+            to_postcode: declaration?.to_postcode || "",
+            to_country: declaration?.to_country?.id || 0,
+            to_state: declaration?.to_state?.id || 0,
+            to_city: declaration?.to_city?.id || 0,
 
+            category_commercial_sample: declaration?.category_commercial_sample || false,
+            category_gift: declaration?.category_gift || false,
+            category_returned_goods: declaration?.category_returned_goods || false,
+            category_documents: declaration?.category_documents || false,
+            category_other: declaration?.category_other || false,
+
+            explanation: declaration?.explanation || "",
+            comments: declaration?.comments || "",
+
+            total_declared_value: declaration?.total_declared_value || 0,
+            total_weight: declaration?.total_weight || 0,
+            products: orderData.products?.map(() => ({
+                hs_code: "",
+                origin_country: "",
+            })) || [],
+        });
+
+        if (declaration?.to_country?.id) dispatch(fetchStates(declaration.to_country.id));
+        if (declaration?.to_state?.id) dispatch(fetchCities(declaration.to_state.id));
+
+    }, [orderData]); // ✅ sirf orderData pe depend karo
     const customDeclerationPrevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
     return (
@@ -644,521 +613,392 @@ export default function ShopperTrackOrder() {
                     <CustomDeclarationView
                         data={orderData.customDeclaration}
                         orderData={orderData}
-                        onEdit={() => setShowForm(true)}
                     />
                 ) :
                     (
-                        
+
                         orderData && orderData?.status >= 5 ?
-                        (
-                            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 mt-6">
-    
-                                {/* 🔥 HEADER */}
-                                <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
-                                    <div>
-                                        <h2 className="text-xl font-semibold text-gray-900">
-                                            Custom Declaration
-                                        </h2>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Fill the required details for customs processing
-                                        </p>
+                            (
+                                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 mt-6">
+
+                                    {/* 🔥 HEADER */}
+                                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+                                        <div>
+                                            <h2 className="text-xl font-semibold text-gray-900">
+                                                Custom Declaration
+                                            </h2>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Fill the required details for customs processing
+                                            </p>
+                                        </div>
+
+                                        <span className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
+                                            CN22 / CN23
+                                        </span>
                                     </div>
-    
-                                    <span className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
-                                        CN22 / CN23
-                                    </span>
-                                </div>
-                                {/* Stepper */}
-                                <div className="flex justify-between items-center mb-10 relative">
-                                    {[
-                                        "From",
-                                        "To",
-                                        "Importer",
-                                        "Products",
-                                        "Declaration",
-                                    ].map((label, index) => (
-                                        <div key={index} className="flex-1 flex flex-col items-center relative">
-    
-                                            {index !== 4 && (
+                                    {/* Stepper */}
+                                    <div className="flex justify-between items-center mb-10 relative">
+                                        {["To", "Products", "Declaration"].map((label, index) => (
+                                            <div key={index} className="flex-1 flex flex-col items-center relative">
+
+                                                {index !== 4 && (
+                                                    <div
+                                                        className={`absolute top-5 left-1/2 w-full h-[2px] -z-10 transition-all  ${step > index + 1 ? "bg-blue-600" : "bg-gray-200"}`}
+                                                    />
+                                                )}
+
                                                 <div
-                                                    className={`absolute top-5 left-1/2 w-full h-[2px] -z-10 transition-all 
-                        ${step > index + 1 ? "bg-blue-600" : "bg-gray-200"}`}
-                                                />
-                                            )}
-    
-                                            <div
-                                                className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-sm font-medium transition-all
-                    ${step > index + 1
+                                                    className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-sm font-medium transition-all ${step > index + 1
                                                         ? "bg-blue-600 border-blue-600 text-white"
                                                         : step === index + 1
                                                             ? "border-blue-600 text-blue-600 bg-white"
                                                             : "border-gray-300 text-gray-400"
-                                                    }`}
-                                            >
-                                                {step > index + 1 ? "✓" : index + 1}
-                                            </div>
-    
-                                            <span
-                                                className={`mt-2 text-xs font-medium text-center 
+                                                        }`}
+                                                >
+                                                    {step > index + 1 ? "✓" : index + 1}
+                                                </div>
+
+                                                <span
+                                                    className={`mt-2 text-xs font-medium text-center 
                     ${step >= index + 1 ? "text-blue-600" : "text-gray-400"}`}
-                                            >
-                                                {label}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-    
-                                <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
-                                    {/* STEP 1 */}
-                                    {step === 1 && (
-                                        <div className="space-y-4">
-    
-                                            {/* 🔹 ROW 1 */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-    
-                                                {/* Name */}
-                                                <div>
-                                                    <Label className="text-xs text-gray-500 mb-1 block">Name</Label>
-                                                    <Input {...register("from_name")} />
-                                                    <p className="text-red-500 text-[11px] mt-0.5 min-h-[14px]">
-                                                        {errors.from_name?.message}
-                                                    </p>
-                                                </div>
-    
-                                                {/* Business */}
-                                                <div>
-                                                    <Label className="text-xs text-gray-500 mb-1 block">Business</Label>
-                                                    <Input {...register("from_business")} />
-                                                    <p className="text-red-500 text-[11px] mt-0.5 min-h-[14px]">
-                                                        {errors.from_business?.message}
-                                                    </p>
-                                                </div>
-    
-                                                {/* Postcode */}
-                                                <div>
-                                                    <Label className="text-xs text-gray-500 mb-1 block">Postcode</Label>
-                                                    <Input {...register("from_postcode")} />
-                                                    <p className="text-red-500 text-[11px] mt-0.5 min-h-[14px]">
-                                                        {errors.from_postcode?.message}
-                                                    </p>
-                                                </div>
-    
+                                                >
+                                                    {label}
+                                                </span>
                                             </div>
-    
-                                            {/* 🔹 ROW 2 */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-    
-                                                {/* Country */}
-                                                <Controller
-                                                    name="from_country"
-                                                    control={control}
-                                                    render={({ field }) => (
-                                                        <Select<number>
-                                                            label="Country"
-                                                            options={countries?.map((c: any) => ({
-                                                                value: c.id,
-                                                                label: c.name,
-                                                            })) || []}
-                                                            value={Number(field.value) || null}
-                                                            onChange={(val: any) => {
-                                                                field.onChange(val);
-                                                                setValue("from_country", val);
-                                                                setValue("from_state", '');
-                                                                setValue("from_city", '');
-    
-                                                                if (val) {
-                                                                    setActiveType("from");
-                                                                    dispatch(fetchStates(val));
-                                                                }
-                                                            }}
-                                                            placeholder="Country"
-                                                            error={errors.from_country?.message as string}
-                                                            clearable
+                                        ))}
+                                    </div>
+
+                                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+                                        {/* STEP 1 */}
+                                        {step === 1 && (
+                                            <>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                    <div>
+                                                        <Label>Name</Label>
+                                                        <Input type="text" {...register("to_name")} />
+                                                        <p className="text-red-500 text-sm">
+                                                            {errors.to_name?.message}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <Label>Business</Label>
+                                                        <Input type="text" {...register("to_business")} />
+                                                        <p className="text-red-500 text-sm">
+                                                            {errors.to_business?.message}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                    <div>
+                                                        <Label>Street</Label>
+                                                        <Input type="text" {...register("to_street")} />
+                                                        <p className="text-red-500 text-sm">
+                                                            {errors.to_street?.message}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <Label>Postcode</Label>
+                                                        <Input type="text" {...register("to_postcode")} />
+                                                        <p className="text-red-500 text-sm">
+                                                            {errors.to_postcode?.message}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                                                    {/* COUNTRY */}
+                                                    <div>
+                                                        <Controller
+                                                            name="to_country"
+                                                            control={control}
+                                                            render={({ field }) => (
+                                                                <Select<number>
+                                                                    label="Country"
+                                                                    options={countries?.map((c: any) => ({
+                                                                        value: c.id,
+                                                                        label: c.name,
+                                                                    })) || []}
+                                                                    value={field.value ? Number(field.value) : null}
+                                                                    onChange={(val: any) => {
+                                                                        field.onChange(val);
+                                                                        setValue("to_country", val);
+                                                                        setValue("to_state", 0);
+                                                                        setValue("to_city", 0);
+
+                                                                        if (val) {
+                                                                            dispatch(fetchStates(val));
+                                                                        }
+                                                                    }}
+                                                                    placeholder="Country"
+                                                                    error={errors.to_country?.message as string}
+                                                                    clearable
+                                                                />
+                                                            )}
                                                         />
-                                                    )}
-                                                />
-    
-                                                {/* State */}
-                                                <Controller
-                                                    name="from_state"
-                                                    control={control}
-                                                    render={({ field }) => (
-                                                        <Select<number>
-                                                            label="State"
-                                                            options={fromStates?.map((s: any) => ({
-                                                                value: s.id,
-                                                                label: s.name,
-                                                            })) || []}
-                                                            value={Number(field.value) || null}
-                                                            onChange={(val: any) => {
-                                                                field.onChange(val);
-                                                                setValue("from_state", val);
-                                                                setValue("from_city", '');
-    
-                                                                if (val){
-                                                                    setActiveType("from");
-                                                                    dispatch(fetchCities(val));
-                                                                }
-                                                            }}
-                                                            placeholder="State"
-                                                            error={errors.from_state?.message as string}
-                                                            clearable
+                                                    </div>
+
+                                                    {/* STATE */}
+                                                    <div>
+                                                        <Controller
+                                                            name="to_state"
+                                                            control={control}
+                                                            render={({ field }) => (
+                                                                <Select<number>
+                                                                    label="State"
+                                                                    options={states?.map((s: any) => ({
+                                                                        value: s.id,
+                                                                        label: s.name,
+                                                                    })) || []}
+                                                                    value={field.value ? Number(field.value) : null}
+                                                                    onChange={(val: any) => {
+                                                                        field.onChange(val);
+                                                                        setValue("to_state", val);
+                                                                        setValue("to_city", 0);
+
+                                                                        if (val) {
+                                                                            dispatch(fetchCities(val));
+                                                                        }
+                                                                    }}
+                                                                    placeholder="State"
+                                                                    error={errors.to_state?.message as string}
+                                                                    clearable
+                                                                />
+                                                            )}
                                                         />
-                                                    )}
-                                                />
-    
-                                                {/* City */}
-                                                <Controller
-                                                    name="from_city"
-                                                    control={control}
-                                                    render={({ field }) => (
-                                                        <Select<number>
-                                                            label="City"
-                                                            options={fromCities?.map((city: any) => ({
-                                                                value: city.id,
-                                                                label: city.name,
-                                                            })) || []}
-                                                            value={Number(field.value) || null}
-                                                            onChange={(val: any) => {
-                                                                field.onChange(val);
-                                                                setValue("from_city", val);
-                                                            }}
-                                                            placeholder="City"
-                                                            error={errors.from_city?.message as string}
-                                                            clearable
+                                                    </div>
+
+                                                    {/* CITY */}
+                                                    <div>
+                                                        <Controller
+                                                            name="to_city"
+                                                            control={control}
+                                                            render={({ field }) => (
+                                                                <Select<number>
+                                                                    label="City"
+                                                                    options={cities?.map((city: any) => ({
+                                                                        value: city.id,
+                                                                        label: city.name,
+                                                                    })) || []}
+                                                                    value={field.value ? Number(field.value) : null}
+                                                                    onChange={(val: any) => {
+                                                                        field.onChange(val);
+                                                                        setValue("to_city", val);
+                                                                    }}
+                                                                    placeholder="City"
+                                                                    error={errors.to_city?.message as string}
+                                                                    clearable
+                                                                />
+                                                            )}
                                                         />
-                                                    )}
-                                                />
-    
-                                            </div>
-    
-                                            {/* 🔹 ROW 3 (FULL WIDTH) */}
+                                                    </div>
+
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* STEP 2 */}
+                                        {step === 2 && (
                                             <div>
-                                                <Label className="text-xs text-gray-500 mb-1 block">
-                                                    Street Address
-                                                </Label>
-                                                <Input {...register("from_street")} />
-                                                <p className="text-red-500 text-[11px] mt-0.5 min-h-[14px]">
-                                                    {errors.from_street?.message}
-                                                </p>
-                                            </div>
-    
-                                        </div>
-                                    )}
-    
-                                    {/* STEP 2 */}
-                                    {step === 2 && (
-                                        <>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                <div>
-                                                    <Label>Name</Label>
-                                                    <Input type="text" {...register("to_name")} />
-                                                    <p className="text-red-500 text-sm">
-                                                        {errors.to_name?.message}
-                                                    </p>
-                                                </div>
-    
-                                                <div>
-                                                    <Label>Business</Label>
-                                                    <Input type="text" {...register("to_business")} />
-                                                    <p className="text-red-500 text-sm">
-                                                        {errors.to_business?.message}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                <div>
-                                                    <Label>Street</Label>
-                                                    <Input type="text" {...register("to_street")} />
-                                                    <p className="text-red-500 text-sm">
-                                                        {errors.to_street?.message}
-                                                    </p>
-                                                </div>
-    
-                                                <div>
-                                                    <Label>Postcode</Label>
-                                                    <Input type="text" {...register("to_postcode")} />
-                                                    <p className="text-red-500 text-sm">
-                                                        {errors.to_postcode?.message}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-    
-                                                {/* COUNTRY */}
-                                                <div>
-                                                    <Controller
-                                                        name="to_country"
-                                                        control={control}
-                                                        render={({ field }) => (
-                                                            <Select<number>
-                                                                options={countries?.map((c: any) => ({
-                                                                    value: c.id,
-                                                                    label: c.name,
-                                                                })) || []}
-                                                                value={field.value ? Number(field.value) : null}
-                                                                onChange={(val:any) => {
-                                                                    field.onChange(val);
-                                                                    setValue("to_country", val);
-                                                                    setValue("to_state", '');
-                                                                    setValue("to_city", '');
-    
-                                                                    if (val) {
-                                                                        setActiveType("to");
-                                                                        dispatch(fetchStates(val));
-                                                                    }
-                                                                }}
-                                                                placeholder="Country"
-                                                                error={errors.to_country?.message as string}
-                                                                clearable
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-    
-                                                {/* STATE */}
-                                                <div>
-                                                    <Controller
-                                                        name="to_state"
-                                                        control={control}
-                                                        render={({ field }) => (
-                                                            <Select<number>
-                                                                options={toStates?.map((s: any) => ({
-                                                                    value: s.id,
-                                                                    label: s.name,
-                                                                })) || []}
-                                                                value={field.value ? Number(field.value) : null}
-                                                                onChange={(val:any) => {
-                                                                    field.onChange(val);
-                                                                    setValue("to_state", val);
-                                                                    setValue("to_city", '');
-    
-                                                                    if (val){
-                                                                        setActiveType("to");
-                                                                        dispatch(fetchCities(val));
-                                                                    } 
-                                                                }}
-                                                                placeholder="State"
-                                                                error={errors.to_state?.message as string}
-                                                                clearable
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-    
-                                                {/* CITY */}
-                                                <div>
-                                                    <Controller
-                                                        name="to_city"
-                                                        control={control}
-                                                        render={({ field }) => (
-                                                            <Select<number>
-                                                                options={toCities?.map((city: any) => ({
-                                                                    value: city.id,
-                                                                    label: city.name,
-                                                                })) || []}
-                                                                value={field.value ? Number(field.value) : null}
-                                                                onChange={(val:any) => {
-                                                                    field.onChange(val);
-                                                                    setValue("to_city", val);
-                                                                }}
-                                                                placeholder="City"
-                                                                error={errors.to_city?.message as string}
-                                                                clearable
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-    
-                                            </div>
-                                        </>
-                                    )}
-    
-                                    {/* STEP 3 */}
-                                    {step === 3 && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <div>
-                                                <Label>Importer’s Reference (Optional)</Label>
-                                                <Input type="text" {...register("importer_reference")} />
-                                            </div>
-    
-                                            <div>
-                                                <Label>Importer’s Telephone / Fax / Email (If Known)</Label>
-                                                <Input type="text" {...register("importer_contact")} />
-                                            </div>
-                                        </div>
-                                    )}
-                                    {/* STEP 4 */}
-                                    {step === 4 && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4">Product Details</h3>
-    
-                                            {orderData?.order_details && orderData.order_details.length > 0 ? (
-                                                <div className="overflow-x-auto">
-                                                    <table className="min-w-full border border-gray-300 rounded-lg">
-                                                        <thead className="bg-gray-100">
-                                                            <tr>
-                                                                <th className="px-4 py-2 border">#</th>
-                                                                <th className="px-4 py-2 border">Product Name</th>
-                                                                <th className="px-4 py-2 border">Quantity</th>
-                                                                <th className="px-4 py-2 border">Price</th>
-                                                                <th className="px-4 py-2 border">Weight</th>
-                                                                <th className="px-4 py-2 border">Total Price</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {orderData.order_details.map((item: any, index: number) => (
-                                                                <tr key={item.id} className="text-center">
-                                                                    <td className="px-4 py-2 border">{index + 1}</td>
-                                                                    <td className="px-4 py-2 border">{item.product?.title}</td>
-                                                                    <td className="px-4 py-2 border">{item.quantity}</td>
-                                                                    <td className="px-4 py-2 border">{item.price}</td>
-                                                                    <td className="px-4 py-2 border">{item.weight} g</td>
-                                                                    <td className="px-4 py-2 border">${Number(item.price) * Number(item.quantity)}</td>
+                                                <h3 className="text-lg font-semibold mb-4">Product Details</h3>
+
+                                                {orderData && orderData.products.length > 0 ? (
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full border border-gray-300 rounded-lg">
+                                                            <thead className="bg-gray-100">
+
+                                                                {/* 🔥 TOP HEADER ROW */}
+                                                                <tr>
+                                                                    <th className="px-4 py-2 border" rowSpan={2}>Product Name</th>
+                                                                    <th className="px-4 py-2 border" rowSpan={2}>Quantity</th>
+                                                                    <th className="px-4 py-2 border" rowSpan={2}>Price</th>
+                                                                    <th className="px-4 py-2 border" rowSpan={2}>Weight</th>
+                                                                    <th className="px-4 py-2 border" rowSpan={2}>Total Price</th>
+
+                                                                    {/* 🔥 GROUP HEADER */}
+                                                                    <th className="px-4 py-2 border text-center" colSpan={2}>
+                                                                        For commercial items only
+                                                                    </th>
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+
+                                                                {/* 🔥 SUB HEADER */}
+                                                                <tr>
+                                                                    <th className="px-4 py-2 border">HS Tariff Number</th>
+                                                                    <th className="px-4 py-2 border">Country of Origin</th>
+                                                                </tr>
+                                                            </thead>
+
+                                                            <tbody>
+                                                                {orderData.products.map((item: any, index: number) => {
+                                                                    const totalPrice = Number(item.price) * Number(item.quantity);
+
+                                                                    return (
+                                                                        <tr key={item.id} className="text-center">
+
+                                                                            <td className="px-4 py-2 border">
+                                                                                {item.product?.title}
+                                                                            </td>
+
+                                                                            <td className="px-4 py-2 border">{item.quantity}</td>
+
+                                                                            <td className="px-4 py-2 border">{item.price}</td>
+
+                                                                            <td className="px-4 py-2 border">
+                                                                                {item.weight} g
+                                                                            </td>
+
+                                                                            <td className="px-4 py-2 border">
+                                                                                ${totalPrice}
+                                                                            </td>
+
+                                                                            {/* HS CODE */}
+                                                                            <td className="px-3 py-2 border">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="HS Code"
+                                                                                    {...register(`products.${index}.hs_code`)}
+                                                                                    className="border rounded px-2 py-1 text-xs w-full"
+                                                                                />
+                                                                                {(errors.products as any)?.[index]?.hs_code && (
+                                                                                    <p className="text-red-500 text-xs mt-1">
+                                                                                        {(errors.products as any)[index].hs_code.message}
+                                                                                    </p>
+                                                                                )}
+                                                                            </td>
+
+                                                                            {/* ORIGIN */}
+                                                                            <td className="px-3 py-2 border">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="Country"
+                                                                                    {...register(`products.${index}.origin_country`)}
+                                                                                    className="border rounded px-2 py-1 text-xs w-full"
+                                                                                />
+                                                                            </td>
+
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+
+                                                            {/* 🔥 FOOTER */}
+                                                            <tfoot>
+                                                                <tr className="bg-gray-50 font-semibold">
+                                                                    <td colSpan={3} className="px-4 py-2 border text-right">
+                                                                        Total:
+                                                                    </td>
+
+                                                                    {/* TOTAL WEIGHT */}
+                                                                    <td className="px-4 py-2 border">
+                                                                        {orderData.products.reduce(
+                                                                            (sum: number, item: any) =>
+                                                                                sum + (Number(item.weight || 0) * Number(item.quantity || 1)),
+                                                                            0
+                                                                        )}{" "}
+                                                                        g
+                                                                    </td>
+
+                                                                    {/* TOTAL VALUE */}
+                                                                    <td className="px-4 py-2 border">
+                                                                        $
+                                                                        {orderData.products.reduce(
+                                                                            (sum: number, item: any) =>
+                                                                                sum + Number(item.price) * Number(item.quantity),
+                                                                            0
+                                                                        )}
+                                                                    </td>
+
+                                                                    <td className="border"></td>
+                                                                    <td className="border"></td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-gray-500">No product details found.</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* STEP 3 */}
+                                        {step === 3 && (
+                                            <div className="space-y-6">
+
+                                                {/* Category */}
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                                                        Category of item
+                                                    </h3>
+
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {[
+                                                            { label: "Commercial Sample", name: "category_commercial_sample" },
+                                                            { label: "Gift", name: "category_gift" },
+                                                            { label: "Returned Goods", name: "category_returned_goods" },
+                                                            { label: "Documents", name: "category_documents" },
+                                                            { label: "Other", name: "category_other" },
+                                                        ].map((item) => (
+                                                            <label key={item.name} className="flex items-center gap-2 px-3 py-2 border rounded-lg">
+                                                                <input type="checkbox" {...register(item.name as any)} />
+                                                                <span className="text-sm">{item.label}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
                                                 </div>
+
+                                                {/* Explanation */}
+                                                <div>
+                                                    <Label>Explanation</Label>
+                                                    <textarea {...register("explanation")} rows={3} className="w-full border p-3 rounded-lg" />
+                                                </div>
+
+                                                {/* Comments */}
+                                                <div>
+                                                    <Label>Comments</Label>
+                                                    <textarea {...register("comments")} rows={3} className="w-full border p-3 rounded-lg" />
+                                                </div>
+
+                                            </div>
+                                        )}
+                                        {/* Buttons */}
+                                        <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
+
+                                            {step > 1 ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={customDeclerationPrevStep}
+                                                    className="px-6 py-2.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 transition"
+                                                >
+                                                    Previous
+                                                </button>
+                                            ) : <div />}
+
+                                            {step < 3 ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={customDeclerationNextStep}
+                                                    className="px-6 py-2.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition"
+                                                >
+                                                    Next
+                                                </button>
                                             ) : (
-                                                <p className="text-gray-500">No product details found.</p>
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    className="px-6 py-2.5 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition"
+                                                >
+                                                    {isSubmitting ? "Submitting..." : "Submit"}
+                                                </button>
                                             )}
                                         </div>
-                                    )}
-    
-                                    {/* STEP 5 */}
-                                    {step === 5 && (
-                                        <div className="space-y-6">
-    
-                                            {/* Category */}
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                                                    Category of item
-                                                </h3>
-    
-                                                <div className="flex flex-wrap gap-3">
-                                                    {[
-                                                        { label: "Commercial Sample", name: "category_commercial_sample" },
-                                                        { label: "Gift", name: "category_gift" },
-                                                        { label: "Returned Goods", name: "category_returned_goods" },
-                                                        { label: "Documents", name: "category_documents" },
-                                                        { label: "Other", name: "category_other" },
-                                                    ].map((item) => (
-                                                        <label
-                                                            key={item.name}
-                                                            className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                {...register(item.name as any)}
-                                                                className="accent-blue-600"
-                                                            />
-                                                            <span className="text-sm">{item.label}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-    
-                                            {/* Explanation */}
-                                            <div>
-                                                <Label>Explanation</Label>
-                                                <textarea
-                                                    {...register("explanation")}
-                                                    rows={3}
-                                                    className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                    placeholder="Describe parcel contents..."
-                                                />
-                                            </div>
-    
-                                            {/* Comments */}
-                                            <div>
-                                                <Label>Comments</Label>
-                                                <textarea
-                                                    {...register("comments")}
-                                                    rows={3}
-                                                    className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                    placeholder="Additional notes..."
-                                                />
-                                            </div>
-    
-                                            {/* Office */}
-                                            <div>
-                                                <Label>Office of origin / Date of posting</Label>
-                                                <textarea
-                                                    {...register("office_origin_posting")}
-                                                    rows={2}
-                                                    className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                                                />
-                                            </div>
-    
-                                            {/* Documents */}
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                                                    Documents Attached
-                                                </h3>
-    
-                                                <div className="flex gap-4 flex-wrap">
-                                                    {[
-                                                        { label: "Licence", name: "doc_licence" },
-                                                        { label: "Certificate", name: "doc_certificate" },
-                                                        { label: "Invoice", name: "doc_invoice" },
-                                                    ].map((doc) => (
-                                                        <label
-                                                            key={doc.name}
-                                                            className="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                {...register(doc.name as any)}
-                                                                className="accent-blue-600"
-                                                            />
-                                                            <span className="text-sm">{doc.label}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-    
-    
-                                    {/* Buttons */}
-                                    <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
-    
-                                        {step > 1 ? (
-                                            <button
-                                                type="button"
-                                                onClick={customDeclerationPrevStep}
-                                                className="px-6 py-2.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 transition"
-                                            >
-                                                Previous
-                                            </button>
-                                        ) : <div />}
-    
-                                        {step < 5 ? (
-                                            <button
-                                                type="button"
-                                                onClick={customDeclerationNextStep}
-                                                className="px-6 py-2.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition"
-                                            >
-                                                Next
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                className="px-6 py-2.5 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition"
-                                            >
-                                                {isSubmitting ? "Submitting..." : "Submit"}
-                                            </button>
-                                        )}
-                                    </div>
-                                </form>
-                            </div>
+                                    </form>
+                                </div>
 
-                        ):(
-                            ''
-                        )
-                        
+                            ) : (
+                                ''
+                            )
+
 
                     )
             }

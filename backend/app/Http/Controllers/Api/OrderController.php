@@ -571,13 +571,11 @@ class OrderController extends Controller
                 'acceptedOffer.shipper',
                 'orderTrackings.status',
 
-                // 👇 Custom Declaration with nested relations
-                'customDeclaration.fromCountry:id,name',
-                'customDeclaration.fromState:id,name',
-                'customDeclaration.fromCity:id,name',
                 'customDeclaration.toCountry:id,name',
                 'customDeclaration.toState:id,name',
                 'customDeclaration.toCity:id,name',
+                'customDeclaration.products',
+                'customDeclaration.products.product',
 
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
