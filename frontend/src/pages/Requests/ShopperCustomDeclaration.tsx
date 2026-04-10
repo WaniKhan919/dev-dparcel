@@ -50,7 +50,6 @@ export default function ShopperCustomDeclaration() {
         <CustomDeclarationView
           data={orderData.customDeclaration}
           orderData={orderData}
-          onEdit={() => {}} // 👈 no edit action needed here, pass empty fn
         />
       )}
     </>

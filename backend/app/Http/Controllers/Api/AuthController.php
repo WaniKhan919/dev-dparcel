@@ -12,7 +12,9 @@ use App\Mail\ResetPasswordMail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
+use App\Mail\ShipperPendingApprovalMail;
 use App\Models\ShipperLevel;
+use App\Models\ShipperProfile;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -78,7 +80,7 @@ class AuthController extends Controller
                 'token'   => $onlyToken,
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong during login',
                 'error'   => $e->getMessage()
@@ -91,13 +93,25 @@ class AuthController extends Controller
     {
         DB::beginTransaction();
         try {
-            $validated = $request->validate([
+            $rules = [
                 'name'     => 'required|string|max:255',
                 'email'    => 'required|email|unique:users,email',
                 'password' => 'required|confirmed|min:8',
                 'role'     => 'required|string|exists:roles,name',
                 'phone'    => 'nullable|string|max:20',
-            ]);
+            ];
+
+            if ($request->role === 'shipper') {
+                $rules = array_merge($rules, [
+                    'mobile_number' => 'required|string|max:15',
+                    'facebook_url'  => 'required|url',
+                    'instagram_url' => 'required|url',
+                    'references'    => 'required|array|min:2',
+                    'references.*'  => 'required|string',
+                ]);
+            }
+
+            $validated = $request->validate($rules);
 
             // generate verification code
             $verificationCode = rand(100000, 999999);
@@ -118,6 +132,17 @@ class AuthController extends Controller
 
             // attach role
             $user->roles()->attach($role);
+            // SHIPPER PROFILE SAVE
+            if ($validated['role'] === 'shipper') {
+                ShipperProfile::create([
+                    'user_id'        => $user->id,
+                    'mobile_number'  => $validated['mobile_number'],
+                    'facebook_url'   => $validated['facebook_url'],
+                    'instagram_url'  => $validated['instagram_url'],
+                    'references'     => $validated['references'],
+                    'approval_status'=> 'pending',
+                ]);
+            }
 
             // send code (email/SMS placeholder)
             Mail::to($user->email)->send(new VerifyUserMail($user->name, $verificationCode));
@@ -165,11 +190,15 @@ class AuthController extends Controller
             if ($now > $expiresAt) {
                 return response()->json(['error' => 'Verification code expired.'], 400);
             }
+            $status = 'active';
 
+            if ($user->hasRole('shipper')) {
+                $status = 'inactive';
+            }
 
             $user->update([
                 'is_verified'       => true,
-                'status'            => 'active',
+                'status'            => $status,
                 'verification_code' => null,
                 'verification_expires_at' => null,
             ]);
@@ -186,6 +215,10 @@ class AuthController extends Controller
                         'status' => 'active',
                     ]);
                 }
+                // Send pending approval email
+                Mail::to($user->email)->send(new ShipperPendingApprovalMail($user->name));
+
+  
             }
 
             DB::commit();

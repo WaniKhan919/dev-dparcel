@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PaymentSettingController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\Shipper\PaymentController as ShipperPaymentController;
 use App\Http\Controllers\Api\Shipper\StripeConnectController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\Shipper\ManageMultipleLocationController;
 use App\Http\Controllers\Api\Shipper\ShipperDashboardController;
+use App\Http\Controllers\Api\Shipper\ShipperOrderController;
 use App\Http\Controllers\Api\Shopper\ShopperDashboardController;
 use App\Http\Controllers\Api\Shopper\ShopperOrderController;
 
@@ -90,6 +92,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/approve/product', [AdminOrderController::class, 'approveProduct']);
             Route::post('/custom-decleration', [AdminOrderController::class, 'approveCustomDecleration']);
         });
+        Route::prefix('/users')->group(function () {
+            Route::get('/shippers', [AdminUserController::class, 'getShippers']);
+            Route::get('/shoppers', [AdminUserController::class, 'getShoppers']);
+            Route::post('/{id}/status', [AdminUserController::class, 'updateShipperStatus']);
+        });
 
         Route::get('/get-wallet', [WalletController::class, 'adminWallet']);
         Route::post('/release-payment', [WalletController::class, 'releaseShipperPayment']);
@@ -147,6 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/get-order-detail/{id}',  'getOrderDetail');
         Route::post('/product/insert-tracking',  'insertProductTracking');
     });
+    
     // Shipper Routes
     Route::prefix('shipper')->group(function () {
         // Shipper Dashboard routes
@@ -157,8 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/get-custom-declarations', 'getShipperCustomDeclarations');
         });
 
-        Route::controller(ShipperController::class)
-        ->group(function () {
+        Route::controller(ShipperController::class)->group(function () {
             Route::get('/get/requests', 'getRequests');
             Route::post('/confirm/request', 'confirmRequest');
             Route::get('/get/offers', 'getMyOffers');
@@ -172,6 +179,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/get-wallet', [WalletController::class, 'shipperWallet']);
 
         Route::post('/service-area/store',[ManageMultipleLocationController::class,'store']);
+        Route::prefix('/order')->controller(ShipperOrderController::class)->group(function () {
+            Route::post('/{orderId}/tracking-link', 'attchTrackingLink');
+        });
     });
 
     // Shopper Routes
@@ -181,6 +191,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/orders', 'recordCount');
             Route::get('/offers', 'offerStats');
             Route::get('/pending/offers', 'shopperPendingOffers');
+            Route::get('/get/complete-orders', 'getShopperCompletedOrders');
         });
         //Shopper Messages
        Route::prefix('messages')->controller(ShopperMessageController::class)->group(function(){
@@ -193,6 +204,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::prefix('/order')->controller(ShopperOrderController::class)->group(function(){
             Route::get('/get-order-detail/{order_id}','getOrderDetail');
+            Route::post('/{orderId}/mark-completed', 'markOrderCompleted');
         });
     });
     Route::post('/create-payment-intent', [StripeController::class, 'createPaymentIntent']);

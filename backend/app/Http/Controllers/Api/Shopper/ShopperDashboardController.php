@@ -134,4 +134,56 @@ class ShopperDashboardController extends Controller
             ], 500);
         }
     }
+    public function getShopperCompletedOrders(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+            $perPage = (int) $request->get('per_page', 10);
+
+            $orders = Order::with([
+                    'orderStatus:id,name',
+                    'orderDetails.product.customDeclerationProduct'
+                ])
+                ->where('user_id', $userId)
+                ->where('status', '>=', 7)
+                ->select(
+                    'id',
+                    'service_type',
+                    'total_aprox_weight',
+                    'total_price',
+                    'request_number',
+                    'tracking_link',
+                    'status'
+                )
+                ->orderBy('id', 'desc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders->items(),
+                'meta' => [
+                    'current_page' => $orders->currentPage(),
+                    'last_page' => $orders->lastPage(),
+                    'per_page' => $orders->perPage(),
+                    'total' => $orders->total(),
+                    'next_page_url' => $orders->nextPageUrl(),
+                    'prev_page_url' => $orders->previousPageUrl(),
+                ],
+            ], 200);
+
+        } catch (Exception $e) {
+
+            Log::error('Error fetching shopper completed orders', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get orders',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
 }

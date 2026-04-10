@@ -27,6 +27,9 @@ interface Notification {
   total_price: number;
   order_details: any;
   order_services: any;
+  total_deductions: any;
+  remening_earning: any;
+  payment_setting: any;
   user: any;
 }
 
@@ -81,6 +84,8 @@ export default function ShipperDashboard() {
     { id: Date.now(), title: "", price: "" },
   ]);
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const [trackingLinks, setTrackingLinks] = useState<Record<number, string>>({});
+  const [attachingId, setAttachingId] = useState<number | null>(null);
 
   const formattedAdditionalPrices = priceRows
     .filter(
@@ -146,6 +151,13 @@ export default function ShipperDashboard() {
   };
 
   useEffect(() => {
+    fetchOrdersStats();
+    fetchBalanceStats();
+    fetchOfferStats();
+    getCustomDecleration();
+  }, []);
+
+  useEffect(() => {
     dispatch(fetchRequests());
     dispatch(fetchLatestMessages());
     dispatch(fetchOrderStatus());
@@ -155,12 +167,6 @@ export default function ShipperDashboard() {
     dispatch(fetchNewOffers({ page, perPage: 12, status: filterStatus }));
   }, [dispatch, page, perPage, filterStatus]);
 
-  useEffect(() => {
-    fetchOrdersStats();
-    fetchBalanceStats();
-    fetchOfferStats();
-    getCustomDecleration();
-  }, []);
 
   const fetchOrdersStats = async () => {
 
@@ -184,7 +190,7 @@ export default function ShipperDashboard() {
     setCustomDeclState(prev => ({ ...prev, loading: true }));
 
     try {
-      const res = await ApiHelper("GET", `/shipper/dashboard/get-custom-declarations??page=${pageNumber}&per_page=10`);
+      const res = await ApiHelper("GET", `/shipper/dashboard/get-custom-declarations?page=${pageNumber}&per_page=10`);
 
       if (res.status === 200 && res.data.success) {
         setCustomDeclState({
@@ -245,21 +251,79 @@ export default function ShipperDashboard() {
 
   const notification: Notification[] = useMemo(() => {
     if (!requests) return [];
+
     return requests.map((item: any) => ({
       id: Number(item.id),
+
+      // user
       name: item.user?.name || "Unknown",
+      email: item.user?.email || "",
+
+      // location
       ship_from_country: item.ship_from_country,
       ship_from_state: item.ship_from_state,
       ship_from_city: item.ship_from_city,
       ship_to_country: item.ship_to_country,
       ship_to_state: item.ship_to_state,
       ship_to_city: item.ship_to_city,
+
+      // order
       service_type: item.service_type,
       total_aprox_weight: Number(item.total_aprox_weight),
       total_price: Number(item.total_price),
+
+      // ✅ earnings (IMPORTANT)
+      total_deductions: Number(item.total_deductions ?? 0),
+      remening_earning: Number(item.remening_earning ?? 0),
+
+      // extra
+      tracking_number: item.tracking_number,
+      request_number: item.request_number,
+      status: item.status,
+
+      // nested
+      order_details: item.order_details || [],
+      order_services: item.order_services || [],
+      payment_setting: item.payment_setting || [],
     }));
   }, [requests]);
 
+  const handleAttachTrackingLink = async (orderId: number) => {
+    const trackingLink = trackingLinks[orderId]?.trim();
+
+    // Validation
+    if (!trackingLink) {
+      toast.error("Tracking link is required.");
+      return;
+    }
+
+    const urlPattern = /^(https?:\/\/)[\w.-]+(?:\.[\w.-]+)+[\w\-._~:/?#[\]@!$&'()*+,;=%]+$/;
+    if (!urlPattern.test(trackingLink)) {
+      toast.error("Please enter a valid URL (must start with http:// or https://).");
+      return;
+    }
+
+    try {
+      setAttachingId(orderId);
+
+      const response = await ApiHelper("POST", `/shipper/order/${orderId}/tracking-link`, {
+        tracking_link: trackingLink,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Tracking link attached successfully!");
+        setTrackingLinks((prev) => ({ ...prev, [orderId]: "" }));
+        getCustomDecleration()
+      } else {
+        toast.error(response.data?.message || "Failed to attach tracking link.");
+      }
+
+    } catch (error: any) {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setAttachingId(null);
+    }
+  };
 
   return (
     <>
@@ -347,7 +411,7 @@ export default function ShipperDashboard() {
 
               <div className="flex justify-end mt-3">
                 <a
-                  href="/shipper/offers"
+                  href="/shipper/requests"
                   className="text-blue-600 font-medium text-sm hover:underline"
                 >
                   See all
@@ -370,9 +434,9 @@ export default function ShipperDashboard() {
 
               </div>
               <div className="flex justify-end mt-4">
-                <a href="#" className="text-blue-600 font-medium text-sm">
+                {/* <a href="#" className="text-blue-600 font-medium text-sm">
                   See all
-                </a>
+                </a> */}
               </div>
             </div>
           </div>
@@ -392,9 +456,9 @@ export default function ShipperDashboard() {
             Shipment Tracking (Custom Declarations)
           </h2>
 
-          <button className="text-sm text-blue-600 font-medium hover:underline">
+          <Link to="/shipper/all/custom-declarations" className="text-sm text-blue-600 font-medium hover:underline">
             See all
-          </button>
+          </Link>
         </div>
 
         {/* List */}
@@ -413,7 +477,7 @@ export default function ShipperDashboard() {
                 </p>
 
                 <p className="text-xs text-gray-500">
-                  To: {item.to_street}, 
+                  To: {item.to_street},
                   {item.to_city?.name || "N/A"}, {item.to_state?.name || "N/A"}, {item.to_country?.name || "N/A"}, {item.to_postcode}
                 </p>
 
@@ -426,8 +490,8 @@ export default function ShipperDashboard() {
               <div className="flex items-center gap-3">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${item.status === "approved"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-yellow-100 text-yellow-700"
                     }`}
                 >
                   {item.status === "approved" ? "Approved" : "Pending"}
@@ -436,19 +500,65 @@ export default function ShipperDashboard() {
 
               {/* RIGHT SIDE ACTION */}
               <div className="flex items-center gap-2">
+                {item.order?.tracking_link ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 max-w-xs">
+                      <a
+                        href={item.order.tracking_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={item.order.tracking_link}
+                        className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 transition min-w-0 group"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span className="truncate underline underline-offset-2 group-hover:no-underline">
+                          {item.order.tracking_link}
+                        </span>
+                      </a>
 
-                <input
-                  type="text"
-                  placeholder="Enter tracking link..."
-                  className="px-3 py-2 border rounded-lg text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-
-                <button
-                  className="px-4 py-2 text-sm text-white rounded-lg bg-blue-600 hover:bg-blue-700"
-                >
-                  Attach
-                </button>
-
+                      {/* Copy Button */}
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.order.tracking_link);
+                          toast.success("Link copied!");
+                        }}
+                        title="Copy link"
+                        className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap">
+                      ✓ Link Attached
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Enter tracking link..."
+                      value={trackingLinks[item.order?.id] || ""}
+                      onChange={(e) =>
+                        setTrackingLinks((prev) => ({
+                          ...prev,
+                          [item.order?.id]: e.target.value,
+                        }))
+                      }
+                      className="px-3 py-2 border rounded-lg text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => handleAttachTrackingLink(item.order?.id)}
+                      disabled={attachingId === item.order?.id}
+                      className="px-4 py-2 text-sm text-white rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {attachingId === item.order?.id ? "Attaching..." : "Attach"}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -552,22 +662,18 @@ export default function ShipperDashboard() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center">
                       <span className="text-white font-bold">
-                        {order.name?.charAt(0)}
+                        {order.user?.name?.charAt(0)}
                       </span>
                     </div>
-
                     <div>
                       <p className="font-medium text-gray-800 text-sm">
-                        {order.name}
+                        {order.user?.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {order.service_type === "ship_for_me"
-                          ? "Ship For Me"
-                          : "Buy For Me"}
+                        {order.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
                       </p>
                     </div>
                   </div>
-
                   <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
                     NEW
                   </span>
@@ -580,34 +686,72 @@ export default function ShipperDashboard() {
                   <b>To:</b> {order.ship_to_country}, {order.ship_to_state}, {order.ship_to_city}
                 </div>
 
-                {/* Price + Weight */}
-                <div className="flex justify-between items-center mt-4">
-                  <div>
-                    <p className="text-blue-600 font-semibold">
-                      ${order.total_price}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Weight: {order.total_aprox_weight} kg
-                    </p>
+                {/* Price Breakdown */}
+                <div className="mt-4 bg-gray-50 rounded-2xl p-3 space-y-2">
+
+                  {/* Price + Weight + View Details */}
+                  <div className="flex justify-between items-center mt-3">
+                    <div>
+                      <p className="text-blue-600 font-semibold">${Number(order.total_price).toFixed(2)}</p>
+                      <p className="text-xs text-gray-500">Weight: {order.total_aprox_weight} kg</p>
+                    </div>
+                    <button
+                      onClick={() => handleViewDetails(order)}
+                      className="text-sm text-blue-600 font-medium underline hover:text-blue-800"
+                    >
+                      View Details
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => handleViewDetails(order)}
-                    className="text-sm text-blue-600 font-medium underline hover:text-blue-800"
-                  >
-                    View Details
-                  </button>
+                  {/* Divider */}
+                  <div className="border-t border-gray-200" />
+
+                  {/* Each Fee */}
+                  {order.payment_setting?.map((fee: any) => (
+                    <div key={fee.id} className="flex justify-between items-center text-sm">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500">{fee.title}</span>
+                        <span className="text-xs text-gray-400">
+                          ({fee.type === "percent" ? `${fee.amount}%` : "fixed"})
+                        </span>
+                      </div>
+                      <span className="text-red-500 font-medium">
+                        -${Number(fee.deducted_amount).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200" />
+
+                  {/* Total Deductions */}
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Total Deductions</span>
+                    <span className="text-red-600 font-semibold">
+                      -${Number(order.total_deductions).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Shipper Earning */}
+                  <div className="flex justify-between items-center text-sm bg-blue-50 rounded-xl px-3 py-2">
+                    <span className="text-blue-700 font-medium">Remaning Amount</span>
+                    <span className="text-blue-700 font-bold text-base">
+                      ${Number(order.remening_earning).toFixed(2)}
+                    </span>
+                  </div>
+
                 </div>
 
-                {/* 🔥 ACTION BUTTONS */}
+                {/* Weight */}
+                <p className="text-xs text-gray-400 mt-2">
+                  Weight: {order.total_aprox_weight} kg
+                </p>
+
+                {/* Action Buttons */}
                 <div className="flex gap-3 mt-4">
                   <button
                     onClick={() =>
-                      setConfirmModal({
-                        open: true,
-                        id: order.id,          // ✅ correct
-                        status: "cancelled",
-                      })
+                      setConfirmModal({ open: true, id: order.id, status: "cancelled" })
                     }
                     className="w-1/2 py-2.5 rounded-full bg-gray-200 hover:bg-gray-300 text-sm font-medium"
                   >
@@ -616,11 +760,7 @@ export default function ShipperDashboard() {
 
                   <button
                     onClick={() =>
-                      setConfirmModal({
-                        open: true,
-                        id: order.id,          // ✅ correct
-                        status: "inprogress",
-                      })
+                      setConfirmModal({ open: true, id: order.id, status: "inprogress" })
                     }
                     style={{
                       backgroundImage: "linear-gradient(180deg, #003bff 25%, #0061ff 100%)",
@@ -1050,68 +1190,41 @@ export default function ShipperDashboard() {
           setIsModalOpen(false);
           setSelectedOrder(null);
         }}
-        className="max-w-3xl p-8"
+        className="max-w-3xl p-8 max-h-[90vh] overflow-y-auto"
       >
         {selectedOrder && (
           <div className="space-y-6">
 
             {/* Header */}
             <div className="relative border-b pb-4 pr-10">
-
-              {/* Close space reserved using pr-10 */}
-
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Order Details
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Complete information about this order
-                  </p>
+                  <h2 className="text-2xl font-bold text-gray-800">Order Details</h2>
+                  <p className="text-sm text-gray-500">Complete information about this order</p>
                 </div>
-
-                {/* Shipping Type Badge */}
                 <span
-                  className={`inline-block px-4 py-1 text-xs rounded-full font-semibold whitespace-nowrap
-                  ${selectedOrder.service_type === "buy_for_me"
+                  className={`inline-block px-4 py-1 text-xs rounded-full font-semibold whitespace-nowrap ${selectedOrder.service_type === "buy_for_me"
                       ? "bg-purple-100 text-purple-700"
                       : "bg-indigo-100 text-indigo-700"
                     }`}
                 >
-                  {selectedOrder.service_type === "buy_for_me"
-                    ? "Buy For Me"
-                    : "Ship For Me"}
+                  {selectedOrder.service_type === "buy_for_me" ? "Buy For Me" : "Ship For Me"}
                 </span>
-
               </div>
             </div>
 
             {/* Route Section */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 shadow-sm">
-              <p className="text-sm font-semibold text-gray-700 mb-4">
-                Shipping Route
-              </p>
-
+              <p className="text-sm font-semibold text-gray-700 mb-4">Shipping Route</p>
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <div>
                   <p className="font-medium text-gray-800">From</p>
-                  <p>
-                    {selectedOrder.ship_from_country},{" "}
-                    {selectedOrder.ship_from_state},{" "}
-                    {selectedOrder.ship_from_city}
-                  </p>
+                  <p>{selectedOrder.ship_from_country}, {selectedOrder.ship_from_state}, {selectedOrder.ship_from_city}</p>
                 </div>
-
                 <div className="text-gray-400 text-xl">→</div>
-
                 <div className="text-right">
                   <p className="font-medium text-gray-800">To</p>
-                  <p>
-                    {selectedOrder.ship_to_country},{" "}
-                    {selectedOrder.ship_to_state},{" "}
-                    {selectedOrder.ship_to_city}
-                  </p>
+                  <p>{selectedOrder.ship_to_country}, {selectedOrder.ship_to_state}, {selectedOrder.ship_to_city}</p>
                 </div>
               </div>
             </div>
@@ -1119,10 +1232,7 @@ export default function ShipperDashboard() {
             {/* Products Section */}
             {selectedOrder.order_details && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Products
-                </h3>
-
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Products</h3>
                 <div className="space-y-4">
                   {selectedOrder.order_details.map((product: any, index: number) => {
                     const price = Number(product.product.price);
@@ -1130,121 +1240,147 @@ export default function ShipperDashboard() {
                     const total = price * qty;
 
                     return (
-                      <div
-                        key={index}
-                        className="border rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-semibold text-gray-800">
-                              {product.product.title}
-                            </p>
+                <div
+                  key={index}
+                  className="border rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-gray-800">{product.product.title}</p>
+                      {product.product.description && (
+                        <p className="text-sm text-gray-500 mt-1">{product.product.description}</p>
+                      )}
+                    </div>
+                    <a
+                      href={product.product.product_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 font-medium hover:underline"
+                    >
+                      View Product
+                    </a>
+                  </div>
 
-                            {product.product.description && (
-                              <p className="text-sm text-gray-500 mt-1">
-                                {product.product.description}
-                              </p>
-                            )}
-                          </div>
-
-                          <a
-                            href={product.product.product_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 font-medium hover:underline"
-                          >
-                            View Product
-                          </a>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
-                          <div>
-                            <p className="text-gray-500">Price</p>
-                            <p className="font-medium">${price}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-gray-500">Quantity</p>
-                            <p className="font-medium">{qty}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-gray-500">Weight</p>
-                            <p className="font-medium">
-                              {product.product.weight} kg
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-gray-500">Total</p>
-                            <p className="font-semibold text-green-600">
-                              ${total}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Price</p>
+                      <p className="font-medium">${price}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Quantity</p>
+                      <p className="font-medium">{qty}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Weight</p>
+                      <p className="font-medium">{product.product.weight} kg</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Total</p>
+                      <p className="font-semibold text-green-600">${total}</p>
+                    </div>
+                  </div>
                 </div>
+                );
+            })}
               </div>
-            )}
+        </div>
+        )}
 
-            {/* Services & Summary */}
-            <div className="grid md:grid-cols-2 gap-6">
+        {/* Services & Summary */}
+        <div className="grid md:grid-cols-2 gap-6">
 
-              {/* Extra Services */}
-              {selectedOrder.order_services && (
-                <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
-                  <h4 className="font-semibold text-gray-800 mb-3">
-                    Additional Services
-                  </h4>
-
-                  <div className="space-y-2 text-sm">
-                    {selectedOrder.order_services.map(
-                      (services: any, index: number) => (
-                        <div
-                          key={index}
-                          className="flex justify-between border-b pb-2"
-                        >
-                          <span>{services.service.title}</span>
-                          <span className="font-medium">
-                            ${services.service.price}
-                          </span>
-                        </div>
-                      )
-                    )}
+          {/* Extra Services */}
+          {selectedOrder.order_services && selectedOrder.order_services.length > 0 && (
+            <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
+              <h4 className="font-semibold text-gray-800 mb-3">Additional Services</h4>
+              <div className="space-y-2 text-sm">
+                {selectedOrder.order_services.map((services: any, index: number) => (
+                  <div key={index} className="flex justify-between border-b pb-2">
+                    <span>{services.service.title}</span>
+                    <span className="font-medium">${services.service.price}</span>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+          )}
 
-              {/* Order Summary */}
-              <div className="bg-black text-white rounded-2xl p-6 shadow-lg">
-                <h4 className="font-semibold mb-4">Order Summary</h4>
+          {/* Order Summary */}
+          <div className="bg-black text-white rounded-2xl p-6 shadow-lg">
+            <h4 className="font-semibold mb-4">Order Summary</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Order Total</span>
+                <span className="font-semibold text-lg">
+                  ${Number(selectedOrder.total_price).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Customer</span>
+                <span className="font-medium">
+                  {selectedOrder?.user?.name || selectedOrder?.name || "N/A"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Total Price</span>
-                    <span className="font-semibold text-lg">
-                      ${selectedOrder.total_price}
+        {/* Payment Breakdown Section */}
+        {selectedOrder.payment_setting && selectedOrder.payment_setting.length > 0 && (
+          <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
+            <h4 className="font-semibold text-gray-800 mb-4">Payment Breakdown</h4>
+
+            <div className="space-y-3">
+
+              {/* Original Total */}
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">Order Total</span>
+                <span className="font-semibold text-gray-800">
+                  ${Number(selectedOrder.total_price).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="border-t border-gray-200" />
+
+              {/* Each Fee */}
+              {selectedOrder.payment_setting.map((fee: any) => (
+                <div key={fee.id} className="flex justify-between items-center text-sm">
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-600">{fee.title}</span>
+                    <span className="text-xs text-gray-400">
+                      ({fee.type === "percent" ? `${fee.amount}%` : "fixed"})
                     </span>
                   </div>
-
-                  <div className="flex justify-between">
-                    <span>Customer</span>
-                    <span className="font-medium">
-                      {selectedOrder?.user?.name ||
-                        selectedOrder?.name ||
-                        "N/A"}
-                    </span>
-                  </div>
+                  <span className="text-red-500 font-medium">
+                    -${Number(fee.deducted_amount).toFixed(2)}
+                  </span>
                 </div>
+              ))}
+
+              <div className="border-t border-gray-200" />
+
+              {/* Total Deductions */}
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 font-medium">Total Deductions</span>
+                <span className="text-red-600 font-semibold">
+                  -${Number(selectedOrder.total_deductions).toFixed(2)}
+                </span>
+              </div>
+
+              {/* You Earn */}
+              <div className="flex justify-between items-center bg-blue-600 text-white rounded-xl px-4 py-3 mt-1">
+                <span className="font-medium text-sm">Remening Amount</span>
+                <span className="font-bold text-lg">
+                  ${Number(selectedOrder.remening_earning).toFixed(2)}
+                </span>
               </div>
 
             </div>
-
           </div>
         )}
-      </Modal>
+
+      </div>
+  )}
+    </Modal >
 
     </>
   );

@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import { InfoIcon } from "../../icons";
 import { ApiHelper } from "../../utils/ApiHelper";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchShopperLatestMessages } from "../../slices/shopper/shopperLatestChatsSlice";
 import { AppDispatch } from "../../store";
 import { Modal } from "../../components/ui/modal";
 import toast from "react-hot-toast";
+
 
 export default function ShopperDashboard() {
 
@@ -36,6 +37,18 @@ export default function ShopperDashboard() {
 
   const [loading, setLoading] = useState(false);
   const [pendingOffers, setPendingOffers] = useState([]);
+  const [shipmentsState, setShipmentsState] = useState({
+    data: [],
+    meta: null,
+    page: 1,
+    loading: false,
+  });
+
+  const [confirmShipmentModal, setConfirmShipmentModal] = useState<{
+    open: boolean;
+    orderId: number | null;
+    loading: boolean;
+  }>({ open: false, orderId: null, loading: false });
 
   const { data: shopperLatestChats, loading: latestChatLoading } = useSelector((state: any) => state.shopperLatestChats);
   const navigate = useNavigate();
@@ -49,6 +62,7 @@ export default function ShopperDashboard() {
     fetchOffersCount();
     fetchPendingOffers();
     fetchOrdersStats();
+    fetchCompleteOrders();
   }, []);
 
   useEffect(() => {
@@ -86,6 +100,28 @@ export default function ShopperDashboard() {
         setPendingOffers([]);
       }
     } catch (err: any) {
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchCompleteOrders = async (pageNumber = 1) => {
+    setLoading(true);
+    try {
+      const res = await ApiHelper("GET", "/shopper/dashboard/get/complete-orders");
+
+      if (res.status === 200 && res.data.success) {
+        setShipmentsState({
+          data: res.data.data,
+          meta: res.data.meta,
+          page: pageNumber,
+          loading: false,
+        });
+      } else {
+        setShipmentsState((prev) => ({ ...prev, data: [], loading: false }));
+      }
+    } catch (err: any) {
+
+      setShipmentsState((prev) => ({ ...prev, loading: false }));
     } finally {
       setLoading(false);
     }
@@ -152,6 +188,28 @@ export default function ShopperDashboard() {
         icon: "⚠️",
       });
     } finally {
+    }
+  };
+
+  const handleConfirmReceived = async () => {
+    if (!confirmShipmentModal.orderId) return;
+
+    setConfirmShipmentModal((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const response = await ApiHelper("POST",`/shopper/order/${confirmShipmentModal.orderId}/mark-completed`);
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Order marked as completed!");
+        setConfirmShipmentModal({ open: false, orderId: null, loading: false });
+        fetchCompleteOrders(shipmentsState.page);
+      } else {
+        toast.error(response.data?.message || "Failed to mark order as completed.");
+        setConfirmShipmentModal((prev) => ({ ...prev, loading: false }));
+      }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setConfirmShipmentModal((prev) => ({ ...prev, loading: false }));
     }
   };
 
@@ -496,22 +554,22 @@ export default function ShopperDashboard() {
                     <h2 className="text-lg font-semibold text-gray-800">
                       Request # {viewModal.data.request_number}
                     </h2>
-                    
-                  {/* Status Badge */}
-                  <span
-                    className={`text-xs px-3 py-1 rounded-full font-semibold
+
+                    {/* Status Badge */}
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-semibold
               ${viewModal.data.offer_status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : viewModal.data.offer_status === "accepted"
-                          ? "bg-green-100 text-green-700"
-                          : viewModal.data.offer_status === "rejected"
-                            ? "bg-red-100 text-red-600"
-                            : "bg-blue-100 text-blue-700"
-                      }`}
-                  >
-                    {viewModal.data.offer_status}
-                  </span>
-                    
+                          ? "bg-yellow-100 text-yellow-700"
+                          : viewModal.data.offer_status === "accepted"
+                            ? "bg-green-100 text-green-700"
+                            : viewModal.data.offer_status === "rejected"
+                              ? "bg-red-100 text-red-600"
+                              : "bg-blue-100 text-blue-700"
+                        }`}
+                    >
+                      {viewModal.data.offer_status}
+                    </span>
+
                   </div>
 
 
@@ -583,6 +641,230 @@ export default function ShopperDashboard() {
         </Modal>
 
       </div>
+      {/* 📦 My Shipments (Compact List) */}
+      <div className="pt-4 space-y-4">
+        {shipmentsState.loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : shipmentsState.data.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+            <p className="text-gray-400 text-sm">No shipments found.</p>
+          </div>
+        ) : (
+          shipmentsState.data.map((item: any) => {
+            const isCompleted = item.order_status?.name === "Received" || item.order_status?.name === "Completed";
+
+            return (
+              <div
+                key={item.id}
+                className="bg-white rounded-2xl shadow-sm border hover:shadow-md transition p-5 space-y-4"
+              >
+                {/* TOP ROW */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Request Number</p>
+                    <p className="text-sm font-bold text-gray-800">
+                      {item.request_number}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${isCompleted
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                        }`}
+                    >
+                      {item.order_status?.name || "In Transit"}
+                    </span>
+
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${item.service_type === "buy_for_me"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                        }`}
+                    >
+                      {item.service_type === "buy_for_me" ? "Buy For Me" : "Ship For Me"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* PRODUCTS */}
+                <div>
+                  <p className="text-xs text-gray-400 mb-2">Products</p>
+                  <div className="divide-y rounded-xl border overflow-hidden">
+                    {item.order_details?.map((od: any) => (
+                      <div
+                        key={od.id}
+                        className="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-800">
+                            {od.product?.title}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            Qty: {od.quantity} · Weight: {od.weight} kg · ${od.price}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs text-gray-500">
+                            HS: {od.product?.custom_decleration_product?.hs_code || "—"}
+                          </span>
+                          <br />
+                          <span className="text-xs text-gray-400">
+                            {od.product?.custom_decleration_product?.origin_country || ""}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* BOTTOM ROW */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+
+                  {/* Tracking Link */}
+                  {item.tracking_link ? (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <a
+                        href={item.tracking_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={item.tracking_link}
+                        className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 transition min-w-0 group"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span className="truncate underline underline-offset-2 group-hover:no-underline max-w-[220px]">
+                          {item.tracking_link}
+                        </span>
+                      </a>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.tracking_link);
+                          toast.success("Link copied!");
+                        }}
+                        title="Copy link"
+                        className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-400 italic">No tracking link available</span>
+                  )}
+
+                  {/* Summary + Action */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-500">
+                      {item.total_aprox_weight} kg · ${item.total_price}
+                    </span>
+
+                    {!isCompleted && (
+                      <button
+                        onClick={() =>
+                          setConfirmShipmentModal({ open: true, orderId: item.id, loading: false })
+                        }
+                        className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition"
+                      >
+                        Mark as Received
+                      </button>
+                    )}
+
+                    {isCompleted && (
+                      <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        ✓ Received
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Pagination */}
+        {shipmentsState.meta && (shipmentsState.meta as any).last_page > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-sm text-gray-500">
+              Page {shipmentsState.page} of {(shipmentsState.meta as any).last_page}
+            </p>
+            <div className="flex gap-2">
+              <button
+                disabled={shipmentsState.page === 1}
+                onClick={() => fetchCompleteOrders(shipmentsState.page - 1)}
+                className="px-4 py-2 text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <button
+                disabled={shipmentsState.page === (shipmentsState.meta as any).last_page}
+                onClick={() => fetchCompleteOrders(shipmentsState.page - 1)}
+                className="px-4 py-2 text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div >
+      {/* Confirm Modal */}
+      <Modal
+        isOpen={confirmShipmentModal.open}
+        onClose={() => !confirmShipmentModal.loading && setConfirmShipmentModal({ open: false, orderId: null, loading: false })}
+        className="max-w-md w-full m-4"
+        closeOnOutsideClick={!confirmShipmentModal.loading}
+      >
+        <div className="bg-white p-6 rounded-2xl">
+          {/* Icon */}
+          <div className="flex justify-center mb-4">
+            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-bold text-gray-800 text-center mb-1">
+            Confirm Order Received
+          </h3>
+          <p className="text-sm text-gray-500 text-center mb-6">
+            By confirming, you acknowledge that you have received your order and are satisfied. This will close the order.
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmShipmentModal({ open: false, orderId: null, loading: false })}
+
+              disabled={confirmShipmentModal.loading}
+              className="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-medium transition disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmReceived}
+              disabled={confirmShipmentModal.loading}
+              className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition disabled:opacity-50"
+            >
+              {confirmShipmentModal.loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Confirming...
+                </span>
+              ) : (
+                "Yes, I Received It"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal >
     </>
   );
 }

@@ -42,6 +42,10 @@ import TrackOrder from "./pages/Order/TrackOrder";
 import ShopperTrackOrder from "./pages/Shopper/ShopperTrackOrder";
 import ShopperGuideLine from "./pages/Shopper/ShopperGuideLine";
 import ShipperGuideLine from "./pages/Shipper/ShipperGuideLine";
+import ShopperAllCustomDeclaration from "./pages/Requests/ShopperAllCustomDeclaration";
+import ShipperSignUp from "./pages/AuthPages/ShipperSignUp";
+import Shippers from "./pages/Admin/Users/Shippers";
+import Shoppers from "./pages/Admin/Users/Shoppers";
 
 export default function App() {
   return (
@@ -52,6 +56,7 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/shipper/signup" element={<ShipperSignUp />} />
           <Route path="/verify" element={<VerifyOtp />} />
 
           {/* Dashboard Layout */}
@@ -79,6 +84,8 @@ export default function App() {
             />
             <Route index path="/roles" element={<Roles />} />
             <Route index path="/permissions" element={<Permissions />} />
+            <Route index path="/shoppers" element={<Shoppers />} />
+            <Route index path="/shippers" element={<Shippers />} />
             <Route path="/view/requests" element={<ViewAllRequests />} />
             <Route path="/admin/track-order" element={<TrackOrder />} />
             <Route path="/payments" element={<AllPayments />} />
@@ -107,6 +114,7 @@ export default function App() {
             <Route path="shipper/manage-request" element={<ManageRequest />} />
             <Route path="/shipper/messages" element={<ShipperMessages />} />
             <Route path="/shipper/guideline" element={<ShipperGuideLine />} />
+            <Route path="/shipper/all/custom-declarations" element={<ShopperAllCustomDeclaration />} />
             <Route path="/custom-declaration" element={<ShopperCustomDeclaration />} />
             <Route path="/shipper/subscription" element={<Subscription />} />
             <Route path="/shipper/service-areas" element={<ManageMultipleLocations />} />

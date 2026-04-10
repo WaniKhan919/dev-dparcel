@@ -15,6 +15,7 @@ import {
   FolderIcon,
   SettingsIcon,
   ChatIcon,
+  UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { userHasPermission, userHasRole } from "../utils/DparcelHelper";
@@ -54,6 +55,15 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Roles", path: "/roles" },
       { name: "Permissions", path: "/permissions" },
+    ],
+    roles: ["admin"],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Users",
+    subItems: [
+      { name: "Shopper", path: "/shoppers" },
+      { name: "Shipper", path: "/shippers" },
     ],
     roles: ["admin"],
   },

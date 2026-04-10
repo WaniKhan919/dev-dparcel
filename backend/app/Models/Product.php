@@ -28,5 +28,9 @@ class Product extends Model
         return $this->belongsTo(ProductTracking::class, 'id', 'product_id')
                     ->where('status', 1);
     }
+    public function customDeclerationProduct()
+    {
+        return $this->hasOne(CustomDeclarationProduct::class,'product_id', 'id' );
+    }
 
 }

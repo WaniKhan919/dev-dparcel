@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -90,11 +91,11 @@ class User extends Authenticatable
 
         // Orders that are already processed for this shipper
         $excludedOrders = OrderOffer::where('user_id', $this->id)
-            ->whereIn('status', ['inprogress','accepted', 'rejected', 'cancelled', 'ignored'])
+            ->whereIn('status', ['inprogress', 'accepted', 'rejected', 'cancelled', 'ignored'])
             ->pluck('order_id');
 
         $allOrders = collect();
-
+        $shipperRoleId = DB::table('user_roles')->where('user_id', $this->id)->value('role_id');
 
         foreach ($subscriptions as $subscription) {
             $level = $subscription->level;
@@ -103,10 +104,10 @@ class User extends Authenticatable
             $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
             if (!empty($allowedServices)) {
 
-                $serviceCountryIds = $this->serviceAreas()->pluck('country_id')->toArray();// NEW
+                $serviceCountryIds = $this->serviceAreas()->pluck('country_id')->toArray();
 
                 $orders = Order::with([
-                   'orderServices.service',
+                    'orderServices.service',
                     'orderDetails.product',
                     'user',
                     'shipFromCountry:id,name',
@@ -116,41 +117,97 @@ class User extends Authenticatable
                     'shipToState:id,name',
                     'shipToCity:id,name'
                 ])
-                ->whereNotIn('id', $excludedOrders)
-                ->whereIn('service_type', $allowedServices)
-                ->where(function ($query) use ($serviceCountryIds) {
-                    $query->whereIn('ship_from_country_id', $serviceCountryIds)
-                        ->orWhereIn('ship_to_country_id', $serviceCountryIds);
-                })
-                ->orderBy('id', 'desc')
-                ->get();
+                    ->whereNotIn('id', $excludedOrders)
+                    ->whereIn('service_type', $allowedServices)
+                    ->where(function ($query) use ($serviceCountryIds) {
+                        $query->whereIn('ship_from_country_id', $serviceCountryIds)
+                            ->orWhereIn('ship_to_country_id', $serviceCountryIds);
+                    })
+                    ->orderBy('id', 'desc')
+                    ->get();
 
                 $allOrders = $allOrders->merge($orders);
             }
         }
 
+        // Agar koi orders nahi mile toh early return
+        if ($allOrders->isEmpty()) {
+            return [
+                'subscriptions' => $subscriptions,
+                'orders' => collect(),
+            ];
+        }
+
+        // Sirf 2 queries — N+1 se bachao
+        $shippingTypes = ShippingType::whereIn('slug', $allOrders->pluck('service_type')->unique())
+            ->get()
+            ->keyBy('slug');
+
+        $paymentSettings = PaymentSetting::where('role_id', $shipperRoleId)
+            ->where('active', 1)
+            ->whereIn('shipping_types_id', $shippingTypes->pluck('id'))
+            ->get()
+            ->groupBy('shipping_types_id');
+
         return [
             'subscriptions' => $subscriptions,
-            'orders' => $allOrders->unique('id')->values()->map(function ($order) {
+            'orders' => $allOrders->unique('id')->values()->map(function ($order) use ($shippingTypes, $paymentSettings) {
+
+                $shippingType   = $shippingTypes->get($order->service_type);
+                $paymentSetting = $shippingType ? $paymentSettings->get($shippingType->id) : null;
+
+                $totalPrice = (float) $order->total_price;
+                $totalDeductions = 0;
+                $formattedPaymentSettings = [];
+
+                if ($paymentSetting) {
+                    foreach ($paymentSetting as $p) {
+                        $deduction = 0;
+
+                        if ($p->type === 'percent') {
+                            $deduction = round(($p->amount / 100) * $totalPrice, 2); // % of original total
+                        } elseif ($p->type === 'fixed') {
+                            $deduction = round((float) $p->amount, 2);
+                        }
+
+                        $totalDeductions += $deduction;
+
+                        $formattedPaymentSettings[] = [
+                            'id'              => $p->id,
+                            'title'           => $p->title,
+                            'amount'          => $p->amount,
+                            'type'            => $p->type,
+                            'description'     => $p->description,
+                            'deducted_amount' => $deduction, // kitna kata
+                        ];
+                    }
+                }
+
+                $shipperEarning = round($totalPrice - $totalDeductions, 2); // shipper ko milega
+
                 return [
-                    'id' => $order->id,
-                    'user_id' => $order->user_id,
-                    'service_type' => $order->service_type,
-                    'total_aprox_weight' => $order->total_aprox_weight,
-                    'total_price' => $order->total_price,
-                    'tracking_number' => $order->tracking_number,
-                    'request_number' => $order->request_number,
-                    'status' => $order->status,
-                    'created_at' => $order->created_at,
-                    'updated_at' => $order->updated_at,
-                    'ship_from_country' => $order->shipFromCountry?->name,
-                    'ship_from_state' => $order->shipFromState?->name,
-                    'ship_from_city' => $order->shipFromCity?->name,
-                    'ship_to_country' => $order->shipToCountry?->name,
-                    'ship_to_state' => $order->shipToState?->name,
-                    'ship_to_city' => $order->shipToCity?->name,
-                    'order_details' => $order->orderDetails,
-                    'user' => $order->user,
+                    'id'                  => $order->id,
+                    'user_id'             => $order->user_id,
+                    'service_type'        => $order->service_type,
+                    'total_aprox_weight'  => $order->total_aprox_weight,
+                    'total_price'         => $totalPrice,
+                    'tracking_number'     => $order->tracking_number,
+                    'request_number'      => $order->request_number,
+                    'status'              => $order->status,
+                    'created_at'          => $order->created_at,
+                    'updated_at'          => $order->updated_at,
+                    'ship_from_country'   => $order->shipFromCountry?->name,
+                    'ship_from_state'     => $order->shipFromState?->name,
+                    'ship_from_city'      => $order->shipFromCity?->name,
+                    'ship_to_country'     => $order->shipToCountry?->name,
+                    'ship_to_state'       => $order->shipToState?->name,
+                    'ship_to_city'        => $order->shipToCity?->name,
+                    'order_details'       => $order->orderDetails,
+                    'order_services'       => $order->orderServices,
+                    'user'                => $order->user,
+                    'total_deductions'    => $totalDeductions,
+                    'remening_earning'     => $shipperEarning,
+                    'payment_setting'     => $formattedPaymentSettings,
                 ];
             }),
         ];
@@ -166,8 +223,12 @@ class User extends Authenticatable
     public function activeSubscription()
     {
         return $this->hasOne(ShipperSubscription::class, 'shipper_id')
-                    ->with('level')
-                    ->where('status', 'active')
-                    ->orderBy('start_date', 'desc');
+            ->with('level')
+            ->where('status', 'active')
+            ->orderBy('start_date', 'desc');
+    }
+    public function shipperProfile()
+    {
+        return $this->hasOne(ShipperProfile::class);
     }
 }

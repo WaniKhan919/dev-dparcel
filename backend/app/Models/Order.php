@@ -20,6 +20,7 @@ class Order extends Model
         'total_price',
         'tracking_number',
         'request_number',
+        'tracking_link',
         'status',
     ];
 

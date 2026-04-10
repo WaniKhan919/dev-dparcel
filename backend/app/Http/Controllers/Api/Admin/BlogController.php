@@ -18,19 +18,23 @@ class BlogController extends Controller
     {
         try {
             $perPage = (int) $request->get('per_page', 10);
-            $blogs = Blog::paginate($perPage);
+
+            $shippers = User::with('shipperProfile')
+                ->whereHas('shipperProfile')
+                ->latest()
+                ->paginate($perPage);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Blogs fetched successfully',
-                'data'    => $blogs->items(),
+                'message' => 'Shippers fetched successfully',
+                'data'    => $shippers->items(),
                 'meta'    => [
-                    'current_page' => $blogs->currentPage(),
-                    'last_page'    => $blogs->lastPage(),
-                    'per_page'     => $blogs->perPage(),
-                    'total'        => $blogs->total(),
-                    'next_page_url'=> $blogs->nextPageUrl(),
-                    'prev_page_url'=> $blogs->previousPageUrl(),
+                    'current_page'  => $shippers->currentPage(),
+                    'last_page'     => $shippers->lastPage(),
+                    'per_page'      => $shippers->perPage(),
+                    'total'         => $shippers->total(),
+                    'next_page_url' => $shippers->nextPageUrl(),
+                    'prev_page_url' => $shippers->previousPageUrl(),
                 ],
             ], 200);
 
