@@ -178,7 +178,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscription', [SubscriptionController::class, 'shipperActiveSubscription']);
         Route::get('/get-wallet', [WalletController::class, 'shipperWallet']);
 
+        Route::get('/service-area',[ManageMultipleLocationController::class,'index']);
         Route::post('/service-area/store',[ManageMultipleLocationController::class,'store']);
+        
         Route::prefix('/order')->controller(ShipperOrderController::class)->group(function () {
             Route::post('/{orderId}/tracking-link', 'attchTrackingLink');
         });

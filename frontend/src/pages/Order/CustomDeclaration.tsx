@@ -230,7 +230,6 @@ export default function CustomDeclarationForm() {
           <CustomDeclarationView
             data={orderData.custom_declaration}
             orderData={orderData.order_details}
-            onEdit={() => setShowForm(true)} // 👈 open edit mode
           />
         ) :
           (

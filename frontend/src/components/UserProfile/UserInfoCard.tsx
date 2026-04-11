@@ -49,9 +49,9 @@ export default function ProfilePage() {
 
   const dispatch = useDispatch<any>();
   const [loading, setLoading] = useState<boolean>(false);
-  const [shipperSubscripition, setShipperSubscripition] = useState<Subscription | null>(null);;
+  const [shipperSubscripition, setShipperSubscripition] = useState<Subscription | null>(null);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [maxLocation, setMaxLocation] = useState<number>(10);
+  const [maxLocation, setMaxLocation] = useState<number>(0);
   const { data: countries, loading: countriesLoading } = useSelector((state: any) => state.countries);
 
   const { data: states, loading: statesLoading } = useSelector((state: any) => state.states);
@@ -142,6 +142,20 @@ export default function ProfilePage() {
     }
   }, [selectedStateId, dispatch, setValue]);
 
+  useEffect(() => {
+    if (userHasRole('shipper')) {
+      getShipperServiceAreas()
+      getShipperSubscription()
+    }
+  }, []);
+  useEffect(() => {
+    if (shipperSubscripition?.level?.max_locations) {
+      setMaxLocation(shipperSubscripition.level.max_locations);
+    }
+  }, [shipperSubscripition]);
+
+  const isDisabled = loading || selectedCountries.length === 0 || selectedCountries.length > (shipperSubscripition?.level?.max_locations ?? 0);
+
   const onUpdateProfile = async (data: any) => {
     try {
       const payload = {
@@ -172,6 +186,30 @@ export default function ProfilePage() {
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Password update failed!");
+    }
+  };
+
+  const getShipperSubscription = async () => {
+    try {
+      const res = await ApiHelper("GET", "/shipper/subscription");
+      if (res.status === 200) {
+        setShipperSubscripition(res.data.data)
+      } else {
+        setShipperSubscripition(null)
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message);
+    }
+  };
+  const getShipperServiceAreas = async () => {
+    try {
+      const res = await ApiHelper("GET", "/shipper/service-area");
+      if (res.status === 200) {
+        const countryIds = res.data.data.map((area: any) => String(area.country_id));
+        setSelectedCountries(countryIds);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message);
     }
   };
 
@@ -477,7 +515,19 @@ export default function ProfilePage() {
                             text: c.name,
                           }))}
                           value={selectedCountries}
-                          onChange={(val) => setSelectedCountries(val)}
+                          // onChange={(val) => setSelectedCountries(val)}
+                          onChange={(val) => {
+                            const maxAllowed = shipperSubscripition?.level?.max_locations ?? 0;
+                            if (val.length > maxAllowed) {
+                              toast.error(`Your plan allows maximum ${maxAllowed} location(s)`, {
+                                duration: 3000,
+                                position: "top-right",
+                                icon: "⚠️",
+                              });
+                              // return;
+                            }
+                            setSelectedCountries(val);
+                          }}
                         />
                       )}
                     />
@@ -511,11 +561,10 @@ export default function ProfilePage() {
                 <div className="flex justify-end mt-6">
                   <button
                     onClick={handleSave}
-                    disabled={loading || selectedCountries.length === 0}
-                    className={`px-6 py-2 rounded-lg text-white ${loading || selectedCountries.length === 0
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
+                    disabled={isDisabled}
+                    className={`px-6 py-2 rounded-lg text-white ${
+                      isDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
                     {loading ? "Saving..." : "Save"}
                   </button>

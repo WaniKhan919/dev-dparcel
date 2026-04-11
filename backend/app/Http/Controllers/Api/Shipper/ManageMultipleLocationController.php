@@ -11,6 +11,26 @@ use Illuminate\Support\Facades\DB;
 
 class ManageMultipleLocationController extends Controller
 {
+    public function index()
+    {
+        $userId = Auth::id();
+        try {
+            $serviceAreas = ShipperServiceArea::with('country')
+                ->where('shipper_id', $userId)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $serviceAreas,
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch service areas.',
+                'error' => $e->getMessage(),
+            ], 500);
+            }
+    }
     public function store(Request $request)
     {
         $request->validate([
