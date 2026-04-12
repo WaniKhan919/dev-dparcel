@@ -27,6 +27,13 @@ interface OrderService {
     updated_at: string;
     service: Service;
 }
+interface PriceBreakDown {
+    initial_total: number;
+    shipper_offer_price: number;
+    shipper_additional_charges: number;
+    shipper_total: number;
+    total_payable: number;
+}
 
 interface Product {
     id: number;
@@ -80,7 +87,7 @@ interface OrderData {
     id: number;
     user_id: number;
     service_type: string;
-    total_aprox_weight: string;
+    total_weight: string;
     total_price: string;
     tracking_number: string;
     request_number: string;
@@ -88,6 +95,7 @@ interface OrderData {
     products: any[];
     acceptedOffer: AcceptedOffer;
     order_services: OrderService[];
+    price_breakdown: PriceBreakDown;
     ship_from: Ship;
     ship_to: Ship;
 }
@@ -119,6 +127,7 @@ export default function ManageRequest() {
     const [orderData, setOrderData] = useState<OrderData | null>(null);
     const [orderTracking, setOrderTracking] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const steps = ["Order Detail", "Offer", "Products", "Order Status", "Order Tracking"];
     const [currentStep, setCurrentStep] = useState(0);
     const [productStates, setProductStates] = useState<any[]>([]);
@@ -126,7 +135,6 @@ export default function ManageRequest() {
         { id: number; name: string; disabled: boolean }[]
     >([]);
 
-    const [orderTrackingData, setOrderTrackingData] = useState<any>([]);
     useEffect(() => {
         if (orderData?.products) {
             const initialStates = orderData.products.map((detail: any) => ({
@@ -166,7 +174,6 @@ export default function ManageRequest() {
             const res = await ApiHelper("GET", `/order/get-order-tracking/${orderId}`);
             if (res.status === 200) {
                 const trackingArray = res.data.data;
-                setOrderTrackingData(trackingArray);
                 const options = trackingArray
                     .filter((st: any) => !excludedStatuses.includes(st.status_name))
                     .map((st: any) => {
@@ -179,7 +186,7 @@ export default function ManageRequest() {
 
                 setOrderStatusOptions(options);
             } else {
-                setOrderTrackingData([]);
+                setOrderStatusOptions([]);
             }
         } catch {
             toast.error("Failed to fetch offers");
@@ -230,7 +237,9 @@ export default function ManageRequest() {
     if (!orderId) return <div className="p-10 text-center">No order selected</div>;
 
     if (loading || !orderData)
-        return <div className="p-10 text-center">Loading order details...</div>;
+        return <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>;
 
     const allTrackingExists = orderData?.products?.every(
         (item: any) => item.product?.tracking
@@ -238,6 +247,7 @@ export default function ManageRequest() {
 
     const submitProducts = async () => {
         try {
+            setIsLoading(true)
             const formData = new FormData();
 
             productStates.forEach((product: any, index: number) => {
@@ -258,12 +268,15 @@ export default function ManageRequest() {
             const res = await ApiHelper("POST", "/order/product/insert-tracking", formData, {}, true);
 
             if (res.status === 200) {
+                fetchOrderDetails();
                 toast.success(res.data.message || "Products submitted successfully 🎉");
             } else {
                 toast.error(res.data.message || "Submission failed ❌");
             }
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Something went wrong ❌");
+        } finally {
+            setIsLoading(false)
         }
     };
     const onStatusSubmit = async (data: OrderStatusFormData) => {
@@ -280,6 +293,7 @@ export default function ManageRequest() {
 
             if (res.status === 200) {
                 getOrderTrackingData()
+                
                 toast.success(res.data.message || "Status updated successfully 🎉");
                 reset();
             } else {
@@ -354,26 +368,72 @@ export default function ManageRequest() {
                                 <div className="space-y-6">
                                     {/* Summary Cards */}
                                     <div className="grid md:grid-cols-3 gap-4">
-                                        <div className="border-l-4 border-indigo-500 bg-indigo-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Service Type</p>
-                                            <p className="font-semibold text-indigo-700 mt-1 text-lg">
-                                                {orderData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
-                                            </p>
+
+                                        {/* LEFT SIDE (2 cards stacked) */}
+                                        <div className="md:col-span-1 flex flex-col gap-4 h-full">
+
+                                            <div className="border-l-4 border-indigo-500 bg-indigo-50 rounded-md p-4 shadow-sm flex-1 flex flex-col justify-center">
+                                                <p className="text-sm text-gray-500 uppercase tracking-wide">Service Type</p>
+                                                <p className="font-semibold text-indigo-700 mt-1 text-lg">
+                                                    {orderData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
+                                                </p>
+                                            </div>
+
+                                            <div className="border-l-4 border-green-500 bg-green-50 rounded-md p-4 shadow-sm flex-1 flex flex-col justify-center">
+                                                <p className="text-sm text-gray-500 uppercase tracking-wide">Total Weight</p>
+                                                <p className="font-semibold text-green-700 mt-1 text-lg">
+                                                    {orderData.total_weight} g
+                                                </p>
+                                            </div>
+
                                         </div>
 
-                                        <div className="border-l-4 border-green-500 bg-green-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Total Weight</p>
-                                            <p className="font-semibold text-green-700 mt-1 text-lg">
-                                                {orderData.total_aprox_weight} g
-                                            </p>
+                                        {/* RIGHT SIDE (BIG CARD) */}
+                                        <div className="md:col-span-2 border rounded-lg p-5 bg-gray-50 shadow-sm">
+                                            <h3 className="text-md font-semibold text-gray-700 mb-4">
+                                                Price Breakdown
+                                            </h3>
+
+                                            <div className="space-y-2 text-sm">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Order Price</span>
+                                                    <span className="font-medium text-gray-700">
+                                                        ${orderData?.price_breakdown?.initial_total ?? 0}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Shipper Offer</span>
+                                                    <span className="font-medium text-blue-600">
+                                                        ${orderData?.price_breakdown?.shipper_offer_price ?? 0}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Additional Charges</span>
+                                                    <span className="font-medium text-indigo-600">
+                                                        ${orderData?.price_breakdown?.shipper_additional_charges ?? 0}
+                                                    </span>
+                                                </div>
+
+                                                <div className="border-t my-2"></div>
+
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600 font-medium">Shipper Total</span>
+                                                    <span className="font-semibold text-purple-700">
+                                                        ${orderData?.price_breakdown?.shipper_total ?? 0}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex justify-between border-t pt-2 mt-2">
+                                                    <span className="text-gray-800 font-semibold">Total Payable</span>
+                                                    <span className="font-bold text-green-700 text-base">
+                                                        ${orderData?.price_breakdown?.total_payable ?? 0}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div className="border-l-4 border-yellow-500 bg-yellow-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Total Price</p>
-                                            <p className="font-semibold text-yellow-700 mt-1 text-lg">
-                                                ${orderData.total_price}
-                                            </p>
-                                        </div>
                                     </div>
 
                                     {/* Shipping Info */}
@@ -398,75 +458,63 @@ export default function ManageRequest() {
                             {currentStep === 1 && orderData?.acceptedOffer && (
                                 <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
 
-                                    {/* Offer Header */}
+                                    {/* Header */}
                                     <div className="flex justify-between items-center border-b pb-4">
                                         <h3 className="text-xl font-semibold text-gray-800">
-                                            Accepted Offer
+                                            Offer Breakdown
                                         </h3>
 
-                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium capitalize">
                                             {orderData.acceptedOffer.status}
                                         </span>
                                     </div>
 
-                                    {/* Offer Price */}
-                                    <div className="bg-blue-50 rounded-lg p-4 flex justify-between items-center">
-                                        <span className="text-gray-600 font-medium">Offer Price</span>
-
-                                        <span className="text-2xl font-bold text-blue-600">
+                                    {/* Offer Price (Base) */}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600 font-medium">Base Offer Price</span>
+                                        <span className="text-lg font-semibold text-blue-600">
                                             ${orderData.acceptedOffer.offer_price}
                                         </span>
                                     </div>
 
-                                    {/* Shipper Info */}
-                                    <div className="bg-gray-50 rounded-lg p-4">
-                                        <h4 className="font-semibold text-gray-700 mb-3">
-                                            Shipper Information
-                                        </h4>
-
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                            <div>
-                                                <p className="text-gray-500">Name</p>
-                                                <p className="font-medium">{orderData.acceptedOffer.shipper?.name}</p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-gray-500">Email</p>
-                                                <p className="font-medium">{orderData.acceptedOffer.shipper?.email}</p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-gray-500">Phone</p>
-                                                <p className="font-medium">{orderData.acceptedOffer.shipper?.phone}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Additional Prices */}
+                                    {/* Additional Charges */}
                                     {orderData.acceptedOffer.additional_prices?.length > 0 && (
-                                        <div>
-                                            <h4 className="font-semibold text-gray-700 mb-3">
-                                                Additional Charges
-                                            </h4>
-
-                                            <div className="space-y-3">
-                                                {orderData.acceptedOffer.additional_prices.map((item, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="flex justify-between items-center bg-yellow-50 p-3 rounded-lg"
-                                                    >
-                                                        <span className="text-gray-700 font-medium">
-                                                            {item.title}
-                                                        </span>
-
-                                                        <span className="text-yellow-700 font-semibold">
-                                                            ${item.price}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                        <div className="space-y-2">
+                                            {orderData.acceptedOffer.additional_prices.map((item, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex justify-between items-center text-sm bg-gray-50 px-3 py-2 rounded-md"
+                                                >
+                                                    <span className="text-gray-600">{item.title}</span>
+                                                    <span className="text-gray-800 font-medium">
+                                                        + ${item.price}
+                                                    </span>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
+
+                                    {/* Divider */}
+                                    <div className="border-t"></div>
+
+                                    {/* Total Offer (Offer + Additional) */}
+                                    {/* <div className="flex justify-between items-center">
+                                        <span className="text-gray-700 font-medium">Total Offer Price</span>
+                                        <span className="text-lg font-semibold text-purple-700">
+                                            ${orderData?.price_breakdown?.shipper_total ?? 0}
+                                        </span>
+                                    </div> */}
+
+                                    {/* Final Payable */}
+                                    <div className="flex justify-between items-center bg-green-50 p-4 rounded-lg border">
+                                        <span className="text-gray-800 font-semibold">
+                                            Total Offer Price
+                                        </span>
+                                        <span className="text-xl font-bold text-green-700">
+                                            ${orderData?.price_breakdown?.shipper_total ?? 0}
+                                        </span>
+                                    </div>
+
                                 </div>
                             )}
 
@@ -603,9 +651,36 @@ export default function ManageRequest() {
                                         <div className="mt-4 flex justify-end">
                                             <button
                                                 onClick={submitProducts}
-                                                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
+                                                disabled={isLoading}
+                                                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                             >
-                                                Submit
+                                                {isLoading ? (
+                                                    <>
+                                                        <svg
+                                                            className="animate-spin h-4 w-4 text-white"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <circle
+                                                                className="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                strokeWidth="4"
+                                                            ></circle>
+                                                            <path
+                                                                className="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8v8H4z"
+                                                            ></path>
+                                                        </svg>
+                                                        Submitting...
+                                                    </>
+                                                ) : (
+                                                    "Submit"
+                                                )}
                                             </button>
                                         </div>
                                     )}
@@ -707,9 +782,6 @@ export default function ManageRequest() {
                                                         </p>
                                                         {status.tracking && (
                                                             <div className="text-xs text-gray-500 mt-1 space-y-1">
-                                                                {status.tracking.tracking_number && (
-                                                                    <p>Tracking #: {status.tracking.tracking_number}</p>
-                                                                )}
                                                                 {status.tracking.created_at && (
                                                                     <p>{new Date(status.tracking.created_at).toLocaleString()}</p>
                                                                 )}

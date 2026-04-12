@@ -942,7 +942,7 @@ export default function Order() {
                 {productErrors.quantity && <p className="text-red-500 text-sm mt-1">{productErrors.quantity.message}</p>}
               </div>
               <div>
-                <Label>Price *</Label>
+                <Label>Price ($)*</Label>
                 <Input type="number" step="0.01" {...registerProduct("price")} />
                 {productErrors.price && <p className="text-red-500 text-sm mt-1">{productErrors.price.message}</p>}
               </div>

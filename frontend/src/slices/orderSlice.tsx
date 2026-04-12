@@ -47,12 +47,14 @@ const orderSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false;
+
         state.data = action.payload.data;
+
         state.meta = {
-          currentPage: action.payload.current_page,
-          lastPage: action.payload.last_page,
-          perPage: action.payload.per_page,
-          total: action.payload.total,
+          currentPage: action.payload.meta.current_page,
+          lastPage: action.payload.meta.last_page,
+          perPage: action.payload.meta.per_page,
+          total: action.payload.meta.total,
         };
       })
       .addCase(fetchOrders.rejected, (state, action) => {

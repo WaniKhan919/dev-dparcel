@@ -42,7 +42,7 @@ interface FormValues {
 const validationSchema: Yup.ObjectSchema<FormValues> = Yup.object({
     to_name: Yup.string().required("Name is required"),
     to_business: Yup.string().required("Business is required"),
-    to_street: Yup.string().required("Street is required"),
+    to_street: Yup.string().required("Address is required"),
     to_postcode: Yup.string().required("Postcode is required"),
 
     to_country: Yup.number().required("Country is required"),
@@ -125,7 +125,14 @@ export default function ShopperTrackOrder() {
     const renderStepContent = () => {
         switch (currentStep) {
             case 0:
-                if (!orderData) return <p>Loading order...</p>;
+                if (!orderData) {
+                    return (
+                        <div className="flex items-center justify-center h-64">
+                            <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+                            <p className="ml-3 text-gray-500 text-sm">Loading order...</p>
+                        </div>
+                    );
+                }
 
                 return (
                     <div className="grid md:grid-cols-3 gap-6">
@@ -135,19 +142,58 @@ export default function ShopperTrackOrder() {
                             <h3 className="text-lg font-semibold mb-3">Order Info</h3>
 
                             <p className="text-sm">Request #: {orderData.request_number}</p>
-                            <p className="text-sm">Tracking #: {orderData.tracking_number}</p>
-                            <p className="text-sm capitalize">Service: {orderData.service_type.replace("_", " ")}</p>
+                            <p className="text-sm capitalize">
+                                Service: {orderData.service_type == "shipe_for_me" ? "Ship For Me" : "Buy For Me"}
+                            </p>
                         </div>
 
-                        {/* Price Info */}
-                        <div className="bg-white border rounded-xl p-5 shadow-sm">
-                            <h3 className="font-semibold mb-3">Pricing</h3>
+                        {/* Price Info (🔥 UPDATED) */}
+                        <div className="bg-white border rounded-xl p-4 shadow-sm flex flex-col justify-between h-full">
 
-                            <p className="text-sm">Total Price</p>
-                            <p className="text-2xl font-bold text-green-600">${orderData.total_price}</p>
+                            {/* Header */}
+                            <div>
+                                <h3 className="font-semibold text-gray-800 mb-1">Pricing</h3>
 
-                            <p className="text-sm mt-2">Total Weight</p>
-                            <p className="font-medium">{orderData.total_weight} kg</p>
+                                {/* Total Payable */}
+                                <div className="flex items-end justify-between">
+                                    <p className="text-sm text-gray-500">Total Payable</p>
+                                    <p className="text-xl font-bold text-green-600">
+                                        ${orderData.price_breakdown?.total_payable ?? orderData.total_price}
+                                    </p>
+                                </div>
+
+                                {/* Breakdown */}
+                                <div className="mt-1 space-y-1.5 text-xs text-gray-600 bg-gray-50 rounded-lg p-1">
+
+                                    {orderData.service_type === "buy_for_me" && (
+                                        <div className="flex justify-between">
+                                            <span>Subtotal</span>
+                                            <span>${orderData.price_breakdown?.initial_total ?? 0}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between">
+                                        <span>Shipping</span>
+                                        <span>${orderData.price_breakdown?.shipper_total ?? 0}</span>
+                                    </div>
+
+                                    <div className="flex justify-between">
+                                        <span>Additional</span>
+                                        <span>${orderData.price_breakdown?.shipper_additional_charges ?? 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="mt-4 pt-3 border-t">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Total Weight</span>
+                                    <span className="font-medium text-gray-800">
+                                        {orderData.total_weight} g
+                                    </span>
+                                </div>
+                            </div>
+
                         </div>
 
                         {/* Shipping */}
@@ -179,6 +225,7 @@ export default function ShopperTrackOrder() {
                                 </div>
                             ))}
                         </div>
+
                     </div>
                 );
             case 1:
@@ -187,6 +234,7 @@ export default function ShopperTrackOrder() {
                 }
 
                 const offer = orderData.acceptedOffer;
+                const breakdown = orderData.price_breakdown;
 
                 return (
                     <div className="max-w-xl mx-auto">
@@ -195,13 +243,15 @@ export default function ShopperTrackOrder() {
 
                             <h3 className="text-xl font-semibold mb-4">Accepted Offer</h3>
 
-                            {/* Main Offer Price */}
-                            <div className="flex justify-between items-center mb-4">
+                            {/* Offer Price */}
+                            <div className="flex justify-between items-center mb-2">
                                 <span className="text-sm">Offer Price</span>
-                                <span className="text-2xl font-bold">${offer.offer_price}</span>
+                                <span className="text-2xl font-bold">
+                                    ${breakdown?.shipper_offer_price}
+                                </span>
                             </div>
 
-                            {/* Additional Prices */}
+                            {/* Additional Charges */}
                             {offer.additional_prices?.length > 0 && (
                                 <div className="bg-white/20 rounded-lg p-4 backdrop-blur mb-4">
 
@@ -209,15 +259,22 @@ export default function ShopperTrackOrder() {
                                         Additional Charges
                                     </h4>
 
-                                    {offer.additional_prices.map((item: any, index: number) => (
+                                    {offer.additional_prices.map((item: any) => (
                                         <div
-                                            key={index}
+                                            key={item.id}
                                             className="flex justify-between text-sm py-1 border-b border-white/30 last:border-none"
                                         >
                                             <span>{item.title}</span>
                                             <span>${item.price}</span>
                                         </div>
                                     ))}
+
+                                    {/* Shown from backend */}
+                                    <div className="flex justify-between text-sm pt-2 font-semibold">
+                                        <span>Total Shipping</span>
+                                        <span>${breakdown?.shipper_total}</span>
+                                    </div>
+
                                 </div>
                             )}
 
@@ -243,6 +300,12 @@ export default function ShopperTrackOrder() {
                                     Accepted at {new Date(offer.updated_at).toLocaleString()}
                                 </p>
 
+                            </div>
+
+                            {/* FINAL TOTAL 🔥 */}
+                            <div className="mt-4 border-t border-white/30 pt-3 flex justify-between font-bold text-lg">
+                                <span>Total Payable</span>
+                                <span>${breakdown?.total_payable}</span>
                             </div>
 
                         </div>
@@ -367,12 +430,6 @@ export default function ShopperTrackOrder() {
                                             {/* Tracking Info */}
                                             {status.tracking && (
                                                 <div className="mt-2 bg-gray-50 p-3 rounded-lg border text-xs text-gray-600">
-                                                    {status.tracking.tracking_number && (
-                                                        <p>
-                                                            <span className="font-medium">Tracking #:</span>{" "}
-                                                            {status.tracking.tracking_number}
-                                                        </p>
-                                                    )}
 
                                                     {status.tracking.created_at && (
                                                         <p>
@@ -497,9 +554,10 @@ export default function ShopperTrackOrder() {
                 const isValidStep2 = await trigger("products");
                 if (isValidStep2) {
                     stepRef.current = 3; // ✅ pehle ref update karo
-                    setStep(3);
+                    // setStep(3);
+                    break;
                 }
-                return;
+                return ;
             case 3:
                 break;
         }
@@ -592,6 +650,7 @@ export default function ShopperTrackOrder() {
                 {/* Buttons */}
                 <div className="flex justify-between">
                     <button
+                        type="button"
                         onClick={prevStep}
                         disabled={currentStep === 0}
                         className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
@@ -600,6 +659,7 @@ export default function ShopperTrackOrder() {
                     </button>
 
                     <button
+                        type="button"
                         onClick={nextStep}
                         disabled={currentStep === steps.length - 1}
                         className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
@@ -617,7 +677,7 @@ export default function ShopperTrackOrder() {
                 ) :
                     (
 
-                        orderData && orderData?.status >= 5 ?
+                        orderData && orderData?.status > 5 ?
                             (
                                 <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 mt-6">
 
@@ -668,7 +728,7 @@ export default function ShopperTrackOrder() {
                                         ))}
                                     </div>
 
-                                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+                                    <form onSubmit={step === 3 ? handleSubmit(onSubmit) : (e) => e.preventDefault()} className="space-y-10">
                                         {/* STEP 1 */}
                                         {step === 1 && (
                                             <>
@@ -691,7 +751,7 @@ export default function ShopperTrackOrder() {
                                                 </div>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                                     <div>
-                                                        <Label>Street</Label>
+                                                        <Label>Address</Label>
                                                         <Input type="text" {...register("to_street")} />
                                                         <p className="text-red-500 text-sm">
                                                             {errors.to_street?.message}

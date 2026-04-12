@@ -86,6 +86,7 @@ export default function ShipperDashboard() {
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
   const [trackingLinks, setTrackingLinks] = useState<Record<number, string>>({});
   const [attachingId, setAttachingId] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formattedAdditionalPrices = priceRows
     .filter(
@@ -101,6 +102,7 @@ export default function ShipperDashboard() {
 
   const confirmRequest = async (id: number, status: "inprogress" | "cancelled") => {
     try {
+      setIsSubmitting(true);
       const payload: any = {
         id,
         status,
@@ -131,6 +133,8 @@ export default function ShipperDashboard() {
     } catch (error) {
       setConfirmModal({ open: false, id: null, status: null });
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1142,18 +1146,17 @@ export default function ShipperDashboard() {
             >
               Cancel
             </button>
-
             <button
+              disabled={isSubmitting}
               onClick={() => {
-                if (confirmModal.status === "inprogress") {
+                if (isSubmitting) return; // extra safety
 
-                  // Main Price Validation
+                if (confirmModal.status === "inprogress") {
                   if (!offerPrice || Number(offerPrice) <= 0) {
                     setError("Offer price is required");
                     return;
                   }
 
-                  // Additional Rows Validation (Only if rows exist)
                   if (priceRows.length > 0) {
                     const newErrors: Record<number, string> = {};
 
@@ -1174,11 +1177,20 @@ export default function ShipperDashboard() {
                 setRowErrors({});
                 handleConfirm();
               }}
-              className="px-5 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
+              className={`px-5 py-2 text-sm rounded-lg text-white transition flex items-center justify-center gap-2
+    ${isSubmitting ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}
+  `}
             >
-              {confirmModal.status === "inprogress"
-                ? "Send Offer"
-                : "Confirm"}
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  Sending...
+                </>
+              ) : confirmModal.status === "inprogress" ? (
+                "Send Offer"
+              ) : (
+                "Confirm"
+              )}
             </button>
           </div>
         </div>
@@ -1204,8 +1216,8 @@ export default function ShipperDashboard() {
                 </div>
                 <span
                   className={`inline-block px-4 py-1 text-xs rounded-full font-semibold whitespace-nowrap ${selectedOrder.service_type === "buy_for_me"
-                      ? "bg-purple-100 text-purple-700"
-                      : "bg-indigo-100 text-indigo-700"
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-indigo-100 text-indigo-700"
                     }`}
                 >
                   {selectedOrder.service_type === "buy_for_me" ? "Buy For Me" : "Ship For Me"}
@@ -1240,147 +1252,147 @@ export default function ShipperDashboard() {
                     const total = price * qty;
 
                     return (
-                <div
-                  key={index}
-                  className="border rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-gray-800">{product.product.title}</p>
-                      {product.product.description && (
-                        <p className="text-sm text-gray-500 mt-1">{product.product.description}</p>
-                      )}
-                    </div>
-                    <a
-                      href={product.product.product_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 font-medium hover:underline"
-                    >
-                      View Product
-                    </a>
-                  </div>
+                      <div
+                        key={index}
+                        className="border rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-gray-800">{product.product.title}</p>
+                            {product.product.description && (
+                              <p className="text-sm text-gray-500 mt-1">{product.product.description}</p>
+                            )}
+                          </div>
+                          <a
+                            href={product.product.product_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 font-medium hover:underline"
+                          >
+                            View Product
+                          </a>
+                        </div>
 
-                  <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
-                    <div>
-                      <p className="text-gray-500">Price</p>
-                      <p className="font-medium">${price}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Quantity</p>
-                      <p className="font-medium">{qty}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Weight</p>
-                      <p className="font-medium">{product.product.weight} kg</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Total</p>
-                      <p className="font-semibold text-green-600">${total}</p>
-                    </div>
+                        <div className="grid grid-cols-4 gap-4 mt-4 text-sm">
+                          <div>
+                            <p className="text-gray-500">Price</p>
+                            <p className="font-medium">${price}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Quantity</p>
+                            <p className="font-medium">{qty}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Weight</p>
+                            <p className="font-medium">{product.product.weight} kg</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Total</p>
+                            <p className="font-semibold text-green-600">${total}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Services & Summary */}
+            <div className="grid md:grid-cols-2 gap-6">
+
+              {/* Extra Services */}
+              {selectedOrder.order_services && selectedOrder.order_services.length > 0 && (
+                <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
+                  <h4 className="font-semibold text-gray-800 mb-3">Additional Services</h4>
+                  <div className="space-y-2 text-sm">
+                    {selectedOrder.order_services.map((services: any, index: number) => (
+                      <div key={index} className="flex justify-between border-b pb-2">
+                        <span>{services.service.title}</span>
+                        <span className="font-medium">${services.service.price}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                );
-            })}
-              </div>
-        </div>
-        )}
+              )}
 
-        {/* Services & Summary */}
-        <div className="grid md:grid-cols-2 gap-6">
-
-          {/* Extra Services */}
-          {selectedOrder.order_services && selectedOrder.order_services.length > 0 && (
-            <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
-              <h4 className="font-semibold text-gray-800 mb-3">Additional Services</h4>
-              <div className="space-y-2 text-sm">
-                {selectedOrder.order_services.map((services: any, index: number) => (
-                  <div key={index} className="flex justify-between border-b pb-2">
-                    <span>{services.service.title}</span>
-                    <span className="font-medium">${services.service.price}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Order Summary */}
-          <div className="bg-black text-white rounded-2xl p-6 shadow-lg">
-            <h4 className="font-semibold mb-4">Order Summary</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Order Total</span>
-                <span className="font-semibold text-lg">
-                  ${Number(selectedOrder.total_price).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Customer</span>
-                <span className="font-medium">
-                  {selectedOrder?.user?.name || selectedOrder?.name || "N/A"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Breakdown Section */}
-        {selectedOrder.payment_setting && selectedOrder.payment_setting.length > 0 && (
-          <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
-            <h4 className="font-semibold text-gray-800 mb-4">Payment Breakdown</h4>
-
-            <div className="space-y-3">
-
-              {/* Original Total */}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Order Total</span>
-                <span className="font-semibold text-gray-800">
-                  ${Number(selectedOrder.total_price).toFixed(2)}
-                </span>
-              </div>
-
-              <div className="border-t border-gray-200" />
-
-              {/* Each Fee */}
-              {selectedOrder.payment_setting.map((fee: any) => (
-                <div key={fee.id} className="flex justify-between items-center text-sm">
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-600">{fee.title}</span>
-                    <span className="text-xs text-gray-400">
-                      ({fee.type === "percent" ? `${fee.amount}%` : "fixed"})
+              {/* Order Summary */}
+              <div className="bg-black text-white rounded-2xl p-6 shadow-lg">
+                <h4 className="font-semibold mb-4">Order Summary</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Order Total</span>
+                    <span className="font-semibold text-lg">
+                      ${Number(selectedOrder.total_price).toFixed(2)}
                     </span>
                   </div>
-                  <span className="text-red-500 font-medium">
-                    -${Number(fee.deducted_amount).toFixed(2)}
-                  </span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Customer</span>
+                    <span className="font-medium">
+                      {selectedOrder?.user?.name || selectedOrder?.name || "N/A"}
+                    </span>
+                  </div>
                 </div>
-              ))}
-
-              <div className="border-t border-gray-200" />
-
-              {/* Total Deductions */}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 font-medium">Total Deductions</span>
-                <span className="text-red-600 font-semibold">
-                  -${Number(selectedOrder.total_deductions).toFixed(2)}
-                </span>
               </div>
-
-              {/* You Earn */}
-              <div className="flex justify-between items-center bg-blue-600 text-white rounded-xl px-4 py-3 mt-1">
-                <span className="font-medium text-sm">Remening Amount</span>
-                <span className="font-bold text-lg">
-                  ${Number(selectedOrder.remening_earning).toFixed(2)}
-                </span>
-              </div>
-
             </div>
+
+            {/* Payment Breakdown Section */}
+            {selectedOrder.payment_setting && selectedOrder.payment_setting.length > 0 && (
+              <div className="bg-gray-50 rounded-2xl p-5 shadow-sm">
+                <h4 className="font-semibold text-gray-800 mb-4">Payment Breakdown</h4>
+
+                <div className="space-y-3">
+
+                  {/* Original Total */}
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Order Total</span>
+                    <span className="font-semibold text-gray-800">
+                      ${Number(selectedOrder.total_price).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="border-t border-gray-200" />
+
+                  {/* Each Fee */}
+                  {selectedOrder.payment_setting.map((fee: any) => (
+                    <div key={fee.id} className="flex justify-between items-center text-sm">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-600">{fee.title}</span>
+                        <span className="text-xs text-gray-400">
+                          ({fee.type === "percent" ? `${fee.amount}%` : "fixed"})
+                        </span>
+                      </div>
+                      <span className="text-red-500 font-medium">
+                        -${Number(fee.deducted_amount).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+
+                  <div className="border-t border-gray-200" />
+
+                  {/* Total Deductions */}
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600 font-medium">Total Deductions</span>
+                    <span className="text-red-600 font-semibold">
+                      -${Number(selectedOrder.total_deductions).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* You Earn */}
+                  <div className="flex justify-between items-center bg-blue-600 text-white rounded-xl px-4 py-3 mt-1">
+                    <span className="font-medium text-sm">Remening Amount</span>
+                    <span className="font-bold text-lg">
+                      ${Number(selectedOrder.remening_earning).toFixed(2)}
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
           </div>
         )}
-
-      </div>
-  )}
-    </Modal >
+      </Modal >
 
     </>
   );

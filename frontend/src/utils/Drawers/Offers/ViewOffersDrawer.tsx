@@ -182,15 +182,7 @@ export default function ViewOffersDrawer({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {offersData.offers?.length > 0 ? (
             offersData.offers.map((offer: any) => {
-              const basePrice = Number(offer.offer_price);
-              const additionalTotal =
-                offer.additional_prices?.reduce(
-                  (sum: number, item: any) =>
-                    sum + Number(item.price),
-                  0
-                ) || 0;
-
-              const grandTotal = basePrice + additionalTotal;
+              const breakdown = offer.price_breakdown;
               const isAccepted = offer.status === "accepted";
 
               return (
@@ -236,11 +228,14 @@ export default function ViewOffersDrawer({
 
                   {/* Price Breakdown */}
                   <div className="mt-4 text-sm space-y-2">
+
+                    {/* Offer Price */}
                     <div className="flex justify-between">
                       <span>Offer Price</span>
-                      <span>${basePrice}</span>
+                      <span>${offer.price_breakdown?.offer_price}</span>
                     </div>
 
+                    {/* Additional Charges */}
                     {offer.additional_prices?.map((item: any) => (
                       <div
                         key={item.id}
@@ -251,10 +246,25 @@ export default function ViewOffersDrawer({
                       </div>
                     ))}
 
-                    <div className="border-t pt-2 flex justify-between font-semibold text-blue-600">
-                      <span>Total</span>
-                      <span>${grandTotal}</span>
+                    {/* Divider */}
+                    <div className="border-t pt-2"></div>
+
+                    {/* Shipper Total */}
+                    <div className="flex justify-between text-blue-600">
+                      <span>Shipper Total</span>
+                      <span className="font-semibold">
+                        ${offer.price_breakdown?.shipper_total}
+                      </span>
                     </div>
+
+                    {/* FINAL TOTAL (MOST IMPORTANT 🔥) */}
+                    <div className="flex justify-between font-bold text-green-600 text-base">
+                      <span>Total Payable</span>
+                      <span>
+                        ${offer.price_breakdown?.total_payable}
+                      </span>
+                    </div>
+
                   </div>
 
                   {/* Buttons */}

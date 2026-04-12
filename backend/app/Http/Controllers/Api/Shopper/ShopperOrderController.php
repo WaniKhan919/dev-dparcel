@@ -18,6 +18,7 @@ class ShopperOrderController extends Controller
         try {
 
             $order = Order::with([
+                'orderStatus',
                 'orderDetails.product.approvedProductTracking',
                 'orderServices.service',
                 'acceptedOffer.additionalPrices',

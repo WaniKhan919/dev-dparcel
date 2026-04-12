@@ -49,12 +49,34 @@ export default function ViewOrderDetailDrawer({
 
       {/* Drawer */}
       <div className="relative bg-white shadow-xl h-full w-full sm:w-5/6 md:w-2/3 lg:w-1/2 rounded-l-2xl transition-transform duration-300">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Order Details
-          </h2>
+
+          {/* Left Title */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Order Details
+            </h2>
+
+            {/* Step Indicator */}
+            {
+              orderData &&
+                <div className="mt-1">
+                  {orderData.status == 3 ? (
+                    <p className="text-sm text-orange-600 font-medium">
+                      ⚠ Payment Pending — Next step: Complete Payment
+                    </p>
+                  ) : (
+                    <p className="text-sm text-green-600 font-medium">
+                      ✓ Payment Completed — Order in {orderData.status_title}
+                    </p>
+                  ) }
+                </div>
+            }
+          </div>
+
+          {/* Close Button */}
           <button
             onClick={onClose}
             className="text-gray-600 hover:text-red-600 text-2xl"
@@ -66,7 +88,9 @@ export default function ViewOrderDetailDrawer({
         {/* Body */}
         <div className="p-4 overflow-y-auto h-[calc(100%-64px)] space-y-6">
           {loading && (
-            <div className="text-center text-gray-500">Loading...</div>
+            <div className="flex justify-center py-6">
+                <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
           )}
 
           {!loading && orderData && (
@@ -74,7 +98,7 @@ export default function ViewOrderDetailDrawer({
 
               {/* ================= ORDER SUMMARY ================= */}
               <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl p-6 shadow-lg">
-                
+
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                   <div>
                     <p className="text-xs opacity-80">Request Number</p>
@@ -84,7 +108,7 @@ export default function ViewOrderDetailDrawer({
                   </div>
 
                   <span className="mt-3 sm:mt-0 bg-white/20 px-4 py-1 rounded-full text-xs font-semibold backdrop-blur">
-                    {orderData.status === 9 ? "Completed" : "Pending"}
+                    {orderData.status_title}
                   </span>
                 </div>
 
@@ -123,7 +147,7 @@ export default function ViewOrderDetailDrawer({
                   <div>
                     <p className="opacity-80 text-xs">Total Price</p>
                     <p className="font-semibold text-lg">
-                      ${orderData.total_price}
+                      ${orderData.price_breakdown?.total_payable ?? orderData.total_price}
                     </p>
                   </div>
 
@@ -217,6 +241,74 @@ export default function ViewOrderDetailDrawer({
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* ================= PAYMENT BREAKDOWN ================= */}
+              {orderData.price_breakdown && (
+                <div className="bg-white border rounded-2xl p-6 shadow-sm">
+                  <h4 className="text-lg font-semibold mb-5 text-gray-800">
+                    Payment Breakdown
+                  </h4>
+
+                  <div className="space-y-3 text-sm">
+
+                    {/* Buy For Me → show subtotal */}
+                    {orderData.service_type === "buy_for_me" && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Subtotal (Product + Services)</span>
+                          <span className="font-medium">
+                            ${orderData.price_breakdown.initial_total}
+                          </span>
+                        </div>
+
+                        <div className="border-t my-2"></div>
+                      </>
+                    )}
+
+                    {/* Shipper Offer */}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping Charges</span>
+                      <span className="font-medium">
+                        ${orderData.price_breakdown.shipper_offer_price}
+                      </span>
+                    </div>
+
+                    {/* Additional Charges */}
+                    {orderData.price_breakdown.shipper_additional_charges > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Additional Charges</span>
+                        <span className="font-medium">
+                          ${orderData.price_breakdown.shipper_additional_charges}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Divider */}
+                    <div className="border-t my-3"></div>
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center text-base font-semibold">
+                      <span>Total Payable</span>
+                      <span className="text-green-600 text-lg">
+                        ${orderData.price_breakdown.total_payable}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {orderData.accepted_offer?.additional_prices?.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {orderData.accepted_offer.additional_prices.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex justify-between text-xs text-gray-500"
+                    >
+                      <span>{item.title}</span>
+                      <span>${item.price}</span>
+                    </div>
+                  ))}
                 </div>
               )}
 

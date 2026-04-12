@@ -29,12 +29,11 @@ class OrderController extends Controller
     {
         try {
             $userId = Auth::id();
-
             $perPage = (int) $request->get('per_page', 12);
 
             $orders = Order::with([
                 'orderDetails.product',
-                'acceptedOffer',
+                'acceptedOffer.additionalPrices',
                 'orderPayment',
                 'orderStatus',
                 'shipFromCountry:id,name',
@@ -48,9 +47,51 @@ class OrderController extends Controller
                 ->orderBy('id', 'desc')
                 ->paginate($perPage);
 
+            // 🔥 Transform data
+            $orders->getCollection()->transform(function ($order) {
+
+                $initialTotal = (float) $order->total_price; // already handled (product + platform charges for buy_for_me)
+
+                $shipperOfferPrice = 0;
+                $shipperAdditional = 0;
+
+                if ($order->acceptedOffer) {
+                    $shipperOfferPrice = (float) $order->acceptedOffer->offer_price;
+
+                    // sum of additional prices
+                    $shipperAdditional = $order->acceptedOffer->additionalPrices->sum(function ($item) {
+                        return (float) $item->price;
+                    });
+                }
+
+                $shipperTotal = $shipperOfferPrice + $shipperAdditional;
+
+                // ✅ Final payable
+                if ($order->service_type === 'buy_for_me') {
+                    $totalPayable = $initialTotal + $shipperTotal;
+                } else {
+                    // ship_for_me
+                    // $totalPayable = $shipperTotal;
+                    $totalPayable = $initialTotal;
+                }
+
+                // 🧾 Attach calculation breakdown
+                $order->price_breakdown = [
+                    'initial_total' => $initialTotal,
+
+                    'shipper_offer_price' => $shipperOfferPrice,
+                    'shipper_additional_charges' => $shipperAdditional,
+
+                    'shipper_total' => $shipperTotal,
+                    'total_payable' => $totalPayable,
+                ];
+
+                return $order;
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $orders->items(), // actual records
+                'data' => $orders->items(),
                 'meta' => [
                     'current_page' => $orders->currentPage(),
                     'last_page' => $orders->lastPage(),
@@ -60,6 +101,7 @@ class OrderController extends Controller
                     'prev_page_url' => $orders->previousPageUrl(),
                 ],
             ], 200);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -344,6 +386,7 @@ class OrderController extends Controller
             $order = Order::with([
                 'offers.shipper',
                 'offers.additionalPrices',
+                'acceptedOffer.additionalPrices',
                 'orderStatus',
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
@@ -354,10 +397,71 @@ class OrderController extends Controller
             ])
                 ->where('id', $orderId)
                 ->firstOrFail();
+
+            $initialTotal = (float) $order->total_price;
+
+            // 🔥 LOOP EACH OFFER
+            $order->offers->transform(function ($offer) use ($order, $initialTotal) {
+
+                $offerPrice = (float) $offer->offer_price;
+
+                $additional = $offer->additionalPrices->sum(function ($item) {
+                    return (float) $item->price;
+                });
+
+                $shipperTotal = $offerPrice + $additional;
+
+                // ✅ Final payable logic
+                if ($order->service_type === 'buy_for_me') {
+                    $totalPayable = $initialTotal + $shipperTotal;
+                } else {
+                    // ship_for_me
+                    $totalPayable = $shipperTotal;
+                }
+
+                // 🔥 Attach breakdown per offer
+                $offer->price_breakdown = [
+                    'initial_total' => $initialTotal,
+                    'offer_price' => $offerPrice,
+                    'additional_charges' => $additional,
+                    'shipper_total' => $shipperTotal,
+                    'total_payable' => $totalPayable,
+                ];
+
+                return $offer;
+            });
+
+            // 🔥 OPTIONAL: accepted offer summary (useful for top UI)
+            if ($order->acceptedOffer) {
+
+                $acceptedOfferPrice = (float) $order->acceptedOffer->offer_price;
+
+                $acceptedAdditional = $order->acceptedOffer->additionalPrices->sum(function ($item) {
+                    return (float) $item->price;
+                });
+
+                $acceptedTotal = $acceptedOfferPrice + $acceptedAdditional;
+
+                if ($order->service_type === 'buy_for_me') {
+                    $acceptedFinal = $initialTotal + $acceptedTotal;
+                } else {
+                    $acceptedFinal = $acceptedTotal;
+                }
+
+                $order->accepted_price_breakdown = [
+                    'initial_total' => $initialTotal,
+                    'offer_price' => $acceptedOfferPrice,
+                    'additional_charges' => $acceptedAdditional,
+                    'shipper_total' => $acceptedTotal,
+                    'total_payable' => $acceptedFinal,
+                ];
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $order
             ], 200);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -477,6 +581,10 @@ class OrderController extends Controller
                 'remarks' => $request->remarks,
                 'tracking_number' => $request->tracking_number,
             ]);
+
+            $order = Order::find($request->order_id);
+            $order->status = $request->status_id;
+            $order->save();
 
             // 2. Handle attachments if provided
             if ($request->hasFile('files')) {

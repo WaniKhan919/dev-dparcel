@@ -116,47 +116,77 @@ class ShipperController extends Controller
             ], 500);
         }
     }
-    public function getMyOffers(Request $request)
-    {
-        try {
-            $userId = Auth::id();
+public function getMyOffers(Request $request)
+{
+    try {
+        $userId = Auth::id();
+        $perPage = (int) $request->get('per_page', 10);
 
-            $perPage = (int) $request->get('per_page', 10);
+        $orderOffers = OrderOffer::with([
+            'additionalPrices',
+            'order.orderServices.Service',
+            'order.orderStatus:id,name',
+            'order.orderDetails.product',
+            'order.shipFromCountry:id,name',
+            'order.shipFromState:id,name',
+            'order.shipFromCity:id,name',
+            'order.shipToCountry:id,name',
+            'order.shipToState:id,name',
+            'order.shipToCity:id,name',
+        ])
+            ->where('user_id', $userId)
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
 
-            $orderOffers = OrderOffer::with([
-                'order.orderDetails.product',
-                'order.shipFromCountry:id,name',
-                'order.shipFromState:id,name',
-                'order.shipFromCity:id,name',
-                'order.shipToCountry:id,name',
-                'order.shipToState:id,name',
-                'order.shipToCity:id,name',
-            ])
-                ->where('user_id', $userId)
-                ->orderBy('id', 'desc')
-                ->paginate($perPage);
+        // ✅ modify data here
+        $data = collect($orderOffers->items())->map(function ($offer) {
 
+            $offerPrice = (float) $offer->offer_price;
 
-            return response()->json([
-                'success' => true,
-                'data'    => $orderOffers->items(),
-                'meta'    => [
-                    'current_page'  => $orderOffers->currentPage(),
-                    'last_page'     => $orderOffers->lastPage(),
-                    'per_page'      => $orderOffers->perPage(),
-                    'total'         => $orderOffers->total(),
-                    'next_page_url' => $orderOffers->nextPageUrl(),
-                    'prev_page_url' => $orderOffers->previousPageUrl(),
-                ],
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get requests',
-                'error'   => $e->getMessage()
-            ], 500);
-        }
+            $additionalSum = collect($offer->additionalPrices)
+                ->sum(function ($item) {
+                    return (float) $item->price;
+                });
+
+            $totalOfferPrice = $offerPrice + $additionalSum;
+
+            $orderTotal = (float) optional($offer->order)->total_price;
+
+            $totalPayablePrice = $orderTotal + $totalOfferPrice;
+
+            // add new fields
+            $offer->price_breakdown = [
+                'offer_price' => $offerPrice,
+                'additional_total' => $additionalSum,
+                'total_offer_price' => $totalOfferPrice,
+                'order_price' => $orderTotal,
+                'total_payable_price' => $totalPayablePrice,
+            ];
+
+            return $offer;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data,
+            'meta'    => [
+                'current_page'  => $orderOffers->currentPage(),
+                'last_page'     => $orderOffers->lastPage(),
+                'per_page'      => $orderOffers->perPage(),
+                'total'         => $orderOffers->total(),
+                'next_page_url' => $orderOffers->nextPageUrl(),
+                'prev_page_url' => $orderOffers->previousPageUrl(),
+            ],
+        ], 200);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to get requests',
+            'error'   => $e->getMessage()
+        ], 500);
     }
+}
     public function getCurrentOffers(Request $request)
     {
         try {
