@@ -70,6 +70,7 @@ export default function Subscription() {
                 stripe_payment_method: 'nill',
                 status: "active",
             });
+            fetchLevelsAndSubscriptions()
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Something went wrong!", {
                 style: { background: "#f44336", color: "#fff", fontWeight: "bold" },

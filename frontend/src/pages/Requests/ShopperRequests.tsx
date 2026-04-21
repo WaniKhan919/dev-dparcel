@@ -6,17 +6,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../store";
 import { fetchOffers } from "../../slices/shipperOffersSlice";
-import ViewShopperOffersDrawer from "../../utils/Drawers/Offers/ViewShopperOffersDrawer";
 import { useNavigate } from "react-router";
 import {
   ChatBubbleLeftRightIcon,
   Cog6ToothIcon,
   DocumentTextIcon,
-  Squares2X2Icon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import Tooltip from "../../components/ui/tooltip/Tooltip";
-import ViewOrderDetailDrawer from "../../utils/Drawers/Offers/ViewOrderDetailDrawer";
+import ShipperViewOrderDetailDrawer from "../../utils/Drawers/Offers/ShipperViewOrderDetailDrawer";
 
 interface Product {
   id: number;
@@ -26,11 +24,14 @@ interface Product {
   product_url?: string;
 }
 interface PriceBrakdown {
-  order_price: number;
+  initial_price: number;
   offer_price: number;
-  additional_total: number;
-  total_offer_price?: number;
-  total_payable_price?: number;
+  stripe_fee: number;
+  service_fee: number;
+  grand_total: number;
+  selected_services: number;
+  additional_services: number;
+  total_payable?: number;
 }
 
 interface OrderDetail {
@@ -44,14 +45,11 @@ interface OrderDetail {
   status: string;
   product: Product;
 }
-interface OrderStatus {
-  id: number;
-  name: string;
-}
 
 interface LocationRef {
-  id: number;
-  name: string;
+  country: string;
+  state: string;
+  city: string;
 }
 
 interface OrderPayment {
@@ -60,26 +58,28 @@ interface OrderPayment {
   amount: string;
   status: string;
 }
+interface ShippingType {
+  id: number;
+  title: string;
+  slug: string;
+}
 
 interface Order {
-  id: number;
+  id: string;
   user_id: number;
-  service_type: string;
   total_aprox_weight: string;
   total_price: string;
   tracking_number: string;
   request_number: string;
   tracking_link: string | null;
   status: number;
-  order_status: OrderStatus;
-  ship_from_country: LocationRef;
-  ship_from_state: LocationRef;
-  ship_from_city: LocationRef;
-  ship_to_country: LocationRef;
-  ship_to_state: LocationRef;
-  ship_to_city: LocationRef;
+  status_title: string;
+  ship_from: LocationRef;
+  ship_to: LocationRef;
   order_details: OrderDetail[];
   order_payment: OrderPayment;
+  shipping_type: ShippingType;
+  price_breakdown: PriceBrakdown;
 }
 
 interface Offer {
@@ -90,20 +90,16 @@ interface Offer {
   status: "pending" | "accepted" | "rejected" | "inprogress";
   offer_price: string;
   order: Order;
-  price_breakdown: PriceBrakdown;
 }
 
 interface MappedRequest {
   id: number;
-  service_type: string;
   total_aprox_weight: string;
   total_price: string;
   status: "pending" | "accepted" | "rejected" | "inprogress";
   request_number: string;
   order_details: OrderDetail[];
-  order_status: OrderStatus;
   order: Order;
-  price_breakdown: PriceBrakdown;
   order_payment: OrderPayment;
 }
 
@@ -131,26 +127,6 @@ export const STATUS_LABELS: Record<string, string> = {
   Completed: "Completed",
 };
 
-const formatLocation = (
-  country?: LocationRef,
-  state?: LocationRef,
-  city?: LocationRef
-): string => {
-  return [country?.name, state?.name, city?.name]
-    .filter(Boolean)
-    .join(", ") || "-";
-};
-
-const formatServiceType = (type: string): string => {
-  const map: Record<string, string> = {
-    ship_for_me: "Ship For Me",
-    buy_for_me: "Buy For Me",
-    shop_for_me: "Shop For Me",
-  };
-  return map[type] ?? type;
-};
-
-
 export default function ShopperRequests() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -159,10 +135,8 @@ export default function ShopperRequests() {
     (state: RootState) => state.shipperOffers
   );
 
-  const [openOfferDrawer, setOpenOfferDrawer] = useState(false);
   const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false);
-  const [selectedOrderData, setSelectedOrderData] = useState<MappedRequest | null>(null);
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
 
   useEffect(() => {
     dispatch(fetchOffers({ page: 1, per_page: 10 }));
@@ -174,39 +148,32 @@ export default function ShopperRequests() {
 
     return data.map((offer: Offer) => ({
       id: offer.order_id,
-      service_type: offer.order?.service_type ?? "",
+      shipping_type: offer.order?.shipping_type ?? "",
       total_aprox_weight: offer.order?.total_aprox_weight ?? "",
       total_price: offer.order?.total_price ?? "",
       status: offer.status,
       request_number: offer.order?.request_number ?? "-",
-      order_status: offer.order?.order_status ?? [],
       order_details: offer.order?.order_details ?? [],
       order: offer.order,
-      price_breakdown: offer.price_breakdown,
-      order_payment: offer.order.order_payment,
+      order_payment: offer.order?.order_payment,
     }));
   }, [data]);
 
 
-  const handleViewDetails = useCallback((id: number) => {
+  const handleViewDetails = useCallback((id: string) => {
     setSelectedOrderId(id);
     setOpenOrderDetailDrawer(true);
   }, []);
 
-  const handleViewOffers = useCallback((record: MappedRequest) => {
-    setSelectedOrderData(record);
-    setOpenOfferDrawer(true);
-  }, []);
-
   const handleManageOrder = useCallback(
-    (order_id: number) => {
+    (order_id: string) => {
       navigate("/shipper/manage-request", { state: { orderId: order_id } });
     },
     [navigate]
   );
 
   const handleCustomDeclaration = useCallback(
-    (id: number) => {
+    (id: string) => {
       navigate("/custom-declaration", { state: { order_id: id } });
     },
     [navigate]
@@ -219,7 +186,6 @@ export default function ShopperRequests() {
     [navigate]
   );
 
-  const closeOfferDrawer = useCallback(() => setOpenOfferDrawer(false), []);
   const closeOrderDetailDrawer = useCallback(() => setOpenOrderDetailDrawer(false), []);
 
   const columns = useMemo(
@@ -234,11 +200,11 @@ export default function ShopperRequests() {
         ),
       },
       {
-        key: "service_type",
+        key: "shipping_type",
         header: "Ship Type",
         render: (record: MappedRequest) => (
           <span className="font-medium text-sm">
-            {formatServiceType(record.service_type)}
+            {record?.order?.shipping_type?.title}
           </span>
         ),
       },
@@ -249,19 +215,15 @@ export default function ShopperRequests() {
           <div className="text-sm space-y-1">
             <div>
               <span className="font-semibold text-gray-700">From: </span>
-              {formatLocation(
-                record.order?.ship_from_country,
-                record.order?.ship_from_state,
-                record.order?.ship_from_city
-              )}
+              {record.order?.ship_from?.country} {", "}
+              {record.order?.ship_from?.state} {", "}
+              {record.order?.ship_from?.city}
             </div>
             <div>
               <span className="font-semibold text-gray-700">To: </span>
-              {formatLocation(
-                record.order?.ship_to_country,
-                record.order?.ship_to_state,
-                record.order?.ship_to_city
-              )}
+              {record.order?.ship_to?.country} {", "}
+              {record.order?.ship_to?.state} {", "}
+              {record.order?.ship_to?.city}
             </div>
           </div>
         ),
@@ -270,7 +232,7 @@ export default function ShopperRequests() {
         key: "total_price",
         header: "Price",
         render: (record: MappedRequest) => {
-          const pb = record.price_breakdown;
+          const pb = record.order.price_breakdown;
 
           return (
             <div className="text-xs space-y-1">
@@ -278,7 +240,7 @@ export default function ShopperRequests() {
               <div className="flex justify-between">
                 <span className="text-gray-500">Order:</span>
                 <span className="font-medium text-gray-700">
-                  ${pb?.order_price ?? 0}
+                  ${pb?.grand_total ?? 0}
                 </span>
               </div>
 
@@ -286,7 +248,7 @@ export default function ShopperRequests() {
               <div className="flex justify-between">
                 <span className="text-gray-500">Offer:</span>
                 <span className="font-medium text-blue-700">
-                  ${pb?.total_offer_price ?? 0}
+                  ${Number(pb?.offer_price)+Number(pb?.selected_services)+Number(pb?.additional_services)}
                 </span>
               </div>
 
@@ -294,7 +256,7 @@ export default function ShopperRequests() {
               <div className="flex justify-between border-t pt-1">
                 <span className="text-gray-600 font-semibold">Payable:</span>
                 <span className="font-bold text-green-700">
-                  ${pb?.total_payable_price ?? 0}
+                  ${pb?.total_payable ?? 0}
                 </span>
               </div>
             </div>
@@ -312,10 +274,10 @@ export default function ShopperRequests() {
 
             <div className="flex flex-col gap-1">
               <span
-                className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${STATUS_STYLES[record.order?.order_status?.name] ?? "bg-gray-100 text-gray-700"
+                className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${STATUS_STYLES[record.order?.status_title] ?? "bg-gray-100 text-gray-700"
                   }`}
               >
-                {STATUS_LABELS[record.order?.order_status?.name] ?? record.order?.order_status?.name}
+                {STATUS_LABELS[record.order?.status_title] ?? record.order?.status_title}
               </span>
               {isOfferAccepted && !record.order_payment && (
                 <span className="text-[11px] text-orange-600 font-medium flex items-center gap-1">
@@ -341,7 +303,7 @@ export default function ShopperRequests() {
             {/* View Details */}
             <Tooltip text="View Details">
               <button
-                onClick={() => handleViewDetails(record.id)}
+                onClick={() => handleViewDetails(record.order.id)}
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
                 aria-label="View order details"
               >
@@ -349,23 +311,12 @@ export default function ShopperRequests() {
               </button>
             </Tooltip>
 
-            {/* View Offers */}
-            {/* <Tooltip text="View Offers">
-              <button
-                onClick={() => handleViewOffers(record)}
-                className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
-                aria-label="View offers"
-              >
-                <Squares2X2Icon className="h-5 w-5 text-blue-700" />
-              </button>
-            </Tooltip> */}
-
             {/* Accepted-only actions */}
             {record.status === "accepted" && (
               <>
                 <Tooltip text="Manage Order">
                   <button
-                    onClick={() => handleManageOrder(record.id)}
+                    onClick={() => handleManageOrder(record.order.id)}
                     className="p-2 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
                     aria-label="Manage order"
                   >
@@ -402,7 +353,6 @@ export default function ShopperRequests() {
     ],
     [
       handleViewDetails,
-      handleViewOffers,
       handleManageOrder,
       handleCustomDeclaration,
       handleMessage,
@@ -411,7 +361,7 @@ export default function ShopperRequests() {
 
   return (
     <>
-      <PageMeta title="Delivering Parcel | View Requests" description="" />
+      <PageMeta title="Delivering Parcel | View Requests" description="International Package and mail Forwarding Services" />
       <PageBreadcrumb pageTitle="View Requests" />
 
       <div className="space-y-6">
@@ -446,20 +396,12 @@ export default function ShopperRequests() {
 
           {/* Drawers */}
           {openOrderDetailDrawer && selectedOrderId !== null && (
-            <ViewOrderDetailDrawer
+            <ShipperViewOrderDetailDrawer
               isOpen={openOrderDetailDrawer}
               onClose={closeOrderDetailDrawer}
               orderId={selectedOrderId}
             />
           )}
-
-          {/* {openOfferDrawer && selectedOrderData !== null && (
-            <ViewShopperOffersDrawer
-              isOpen={openOfferDrawer}
-              onClose={closeOfferDrawer}
-              orderData={selectedOrderData}
-            />
-          )} */}
         </ComponentCard>
       </div>
     </>

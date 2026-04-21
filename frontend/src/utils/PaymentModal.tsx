@@ -11,7 +11,7 @@ import { fetchOrders } from "../slices/orderSlice";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  orderId: number;
+  orderId: string;
   shipperId: number;
   amount: number;
 }

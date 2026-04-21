@@ -3,21 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use Exception;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $services = Service::get();
+            $query = Service::with('shippingType');
+
+            // optional filter
+            if ($request->shipping_type_id) {
+                $query->where('shipping_type_id', decrypt($request->shipping_type_id));
+            }
+
+            $services = $query->get();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Scrvice fetched successfully',
-                'data' => $services,
+                'message' => 'Service fetched successfully',
+                'data' => ServiceResource::collection($services),
             ], 200);
 
         } catch (Exception $e) {
@@ -33,12 +41,12 @@ class ServiceController extends Controller
         try {
             $validated = $request->validate([
                 'title'       => 'required|string|unique:services,title',
-                'price'       => 'required|numeric',
+                'shipping_type'       => 'required',
                 'description' => 'nullable|string',
                 'is_required' => 'required|boolean',
                 'status' => 'nullable|numeric',
             ]);
-
+            $validated['shipping_type'] = decrypt($validated['shipping_type']);
             $service = Service::create($validated);
 
             return response()->json([
@@ -68,18 +76,18 @@ class ServiceController extends Controller
 
             $validated = $request->validate([
                 'title'       => 'required|string|unique:services,title,' . $id,
-                'price'       => 'required|numeric',
+                'shipping_type'       => 'required',
                 'description' => 'nullable|string',
                 'is_required' => 'required|boolean',
                 'status'       => 'nullable|numeric',
             ]);
+            $validated['shipping_type'] = decrypt($validated['shipping_type']);
 
             $service->update($validated);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Service updated successfully',
-                'data'    => $service,
             ], 200);
 
         } catch (Exception $e) {
@@ -117,6 +125,5 @@ class ServiceController extends Controller
             ], 500);
         }
     }
-
 
 }

@@ -22,15 +22,16 @@ import {
 } from "@heroicons/react/24/outline";
 import Tooltip from "../../components/ui/tooltip/Tooltip";
 
-// ─── Stripe 
+// Stripe 
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
-// ─── Types 
+// Types 
 
 interface LocationRef {
-  id: number;
-  name: string;
+  country: string;
+  state: string;
+  city: string;
 }
 
 interface Product {
@@ -76,7 +77,7 @@ interface OrderStatus {
 }
 
 interface Order {
-  id: number;
+  id: string;
   user_id: number;
   service_type: string;
   total_aprox_weight: string;
@@ -88,37 +89,41 @@ interface Order {
   order_details: OrderDetail[];
   accepted_offer: AcceptedOffer | null;
   order_payment: OrderPayment | null;
-  order_status: OrderStatus;
-  ship_from_country: LocationRef;
-  ship_from_state: LocationRef;
-  ship_from_city: LocationRef;
-  ship_to_country: LocationRef;
-  ship_to_state: LocationRef;
-  ship_to_city: LocationRef;
+  status_title: string;
+  ship_from: LocationRef;
+  ship_to: LocationRef;
+  shipping_type?: {
+    id: number;
+    title: string;
+    slug: string;
+  };
   price_breakdown?: {
-    initial_total: number;
-    shipper_offer_price: number;
-    shipper_additional_charges: number;
-    shipper_total: number;
+    initial_price: number;
+    offer_price: number;
+    stripe_fee: number;
+    service_fee: number;
+    grand_total: number;
+    selected_services: number;
+    additional_services: number;
     total_payable: number;
   };
 }
 
-// ─── Status Config 
+// Status Config 
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  "offer placed": "bg-blue-100 text-blue-800",
-  "offer accepted": "bg-green-100 text-green-800",
-  "payment pending": "bg-orange-100 text-orange-800",
-  inprogress: "bg-purple-100 text-purple-800",
-  processed: "bg-indigo-100 text-indigo-800",
-  forwarded: "bg-cyan-100 text-cyan-800",
-  received: "bg-teal-100 text-teal-800",
-  completed: "bg-green-200 text-green-900",
+  Pending: "bg-yellow-100 text-yellow-800",
+  "Offer Placed": "bg-blue-100 text-blue-800",
+  "Offer Accepted": "bg-green-100 text-green-800",
+  "Payment Pending": "bg-orange-100 text-orange-800",
+  Inprogress: "bg-purple-100 text-purple-800",
+  Processed: "bg-indigo-100 text-indigo-800",
+  Forwarded: "bg-cyan-100 text-cyan-800",
+  Received: "bg-teal-100 text-teal-800",
+  Completed: "bg-green-200 text-green-900",
 };
 
-// ─── Helpers ─
+// Helpers ─
 
 const formatServiceType = (type: string): string => {
   const map: Record<string, string> = {
@@ -129,14 +134,7 @@ const formatServiceType = (type: string): string => {
   return map[type] ?? type;
 };
 
-const formatLocation = (
-  city?: LocationRef,
-  state?: LocationRef,
-  country?: LocationRef
-): string =>
-  [city?.name, state?.name, country?.name].filter(Boolean).join(", ") || "-";
-
-// ─── Component 
+// Component 
 
 export default function ViewOrder() {
   const navigate = useNavigate();
@@ -146,26 +144,24 @@ export default function ViewOrder() {
     (state: RootState) => state.order
   );
 
-  // ─── Drawer / Modal State 
+  // Drawer / Modal State 
 
   const [openOrderDetailDrawer, setOpenOrderDetailDrawer] = useState(false);
   const [openOfferDrawer, setOpenOfferDrawer] = useState(false);
-  const [openTrackOrderDrawer, setOpenTrackOrderDrawer] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [selectedTrackOrder, setSelectedTrackOrder] = useState<Order | null>(null);
 
-  // ─── Initial Fetch 
+  // Initial Fetch 
 
   useEffect(() => {
     dispatch(fetchOrders({ page: 1, per_page: 12 }));
   }, [dispatch]);
 
-  // ─── Handlers 
+  // Handlers 
 
-  const handleViewDetails = useCallback((id: number) => {
+  const handleViewDetails = useCallback((id: string) => {
     setSelectedOrderId(id);
     setOpenOrderDetailDrawer(true);
   }, []);
@@ -181,14 +177,14 @@ export default function ViewOrder() {
   }, []);
 
   const handleTrackOrder = useCallback(
-    (order_id: number) => {
+    (order_id: string) => {
       navigate("/shopper/track/order", { state: { orderId: order_id } });
     },
     [navigate]
   );
 
   const handleMessage = useCallback(
-    (orderId: number) => {
+    (orderId: string) => {
       navigate("/shopper/messages", { state: { orderId } });
     },
     [navigate]
@@ -206,12 +202,8 @@ export default function ViewOrder() {
     []
   );
   const closeOfferDrawer = useCallback(() => setOpenOfferDrawer(false), []);
-  const closeTrackOrderDrawer = useCallback(
-    () => setOpenTrackOrderDrawer(false),
-    []
-  );
 
-  // ─── Columns ─
+  // Columns ─
 
   const columns = useMemo(
     () => [
@@ -229,7 +221,7 @@ export default function ViewOrder() {
         header: "Ship Type",
         render: (record: Order) => (
           <span className="text-sm font-medium">
-            {formatServiceType(record.service_type)}
+            {record.shipping_type?.title ?? "-"}
           </span>
         ),
       },
@@ -240,65 +232,82 @@ export default function ViewOrder() {
           <div className="flex flex-col text-sm space-y-1">
             <span>
               <b className="text-blue-600">From: </b>
-              {formatLocation(
-                record.ship_from_city,
-                record.ship_from_state,
-                record.ship_from_country
-              )}
+              {`${record.ship_from.city}, ${record.ship_from.state}, ${record.ship_from.country}`}
             </span>
             <span>
               <b className="text-green-600">To: </b>
-              {formatLocation(
-                record.ship_to_city,
-                record.ship_to_state,
-                record.ship_to_country
-              )}
+              {`${record.ship_to.city}, ${record.ship_to.state}, ${record.ship_to.country}`}
             </span>
           </div>
         ),
       },
       {
-        key: "price_weight",
-        header: "Price / Weight",
+        key: "price",
+        header: "Price",
         render: (record: Order) => {
           const breakdown = record.price_breakdown;
+          const isShipForMe = record.shipping_type?.slug === "ship_for_me";
 
           return (
             <Tooltip
               text={
-                record.price_breakdown
-                  ? `
-Subtotal: $${record.price_breakdown.initial_total}
-Shipping: $${record.price_breakdown.shipper_total}
-Total: $${record.price_breakdown.total_payable}
-      `
+                breakdown
+                  ? `Initial: $${breakdown.initial_price}\nOffer: $${breakdown.offer_price}\nStripe Fee: $${breakdown.stripe_fee}\nService Fee: $${breakdown.service_fee}\nGrand Total: $${breakdown.grand_total}`
                   : "Price details"
               }
             >
               <div className="text-sm space-y-1 cursor-pointer">
-                {/* Subtotal (only Buy For Me) */}
-                {record.service_type === "buy_for_me" && breakdown && (
+
+                {/* Initial Price — only Buy For Me */}
+                {!isShipForMe && breakdown && (
                   <div className="text-gray-500 text-xs">
-                    Subtotal: ${breakdown.initial_total}
+                    Products: ${breakdown.initial_price}
                   </div>
                 )}
 
-                {/* Shipper Total */}
-                {breakdown && (
+                {/* Fees — sirf tab show karo jab grand_total > 0 */}
+                {breakdown && breakdown.grand_total > 0 && (
+                  <>
+                    <div className="text-orange-500 text-xs">
+                      Stripe Fee: ${breakdown.stripe_fee}
+                    </div>
+                    <div className="text-orange-500 text-xs">
+                      Service Fee: ${breakdown.service_fee}
+                    </div>
+                  </>
+                )}
+
+                {/* Grand Total */}
+                <div className="text-black-500 text-xs">
+                  Grand Total: ${breakdown?.grand_total}
+                </div>
+                
+
+                {/* Offer Price — agar accepted offer hai */}
+                {breakdown && breakdown.offer_price > 0 && (
                   <div className="text-blue-600 text-xs">
-                    Shipping: ${breakdown.shipper_total}
+                    Shipper Offer: ${breakdown.offer_price}
                   </div>
                 )}
+                {
+                  breakdown && breakdown.selected_services >0 &&
+                  <div className="text-orange-500 text-xs">
+                    Selected Services: ${breakdown?.selected_services}
+                  </div>
+                }
+                {
+                  breakdown && breakdown.additional_services >0 &&
+                  <div className="text-orange-500 text-xs">
+                    Aditional Services: ${breakdown?.additional_services}
+                  </div>
+                }
+                {
+                  breakdown && breakdown.total_payable > 0 &&
+                  <div className="font-bold text-green-700 text-base">
+                    Total Payable: ${breakdown?.total_payable}
+                  </div>
+                }
 
-                {/* Final Payable (MAIN) */}
-                <div className="font-bold text-green-700 text-base">
-                  ${breakdown?.total_payable ?? record.total_price}
-                </div>
-
-                {/* Weight */}
-                <div className="text-gray-400 text-xs">
-                  {record.total_aprox_weight} kg
-                </div>
               </div>
             </Tooltip>
           );
@@ -308,7 +317,7 @@ Total: $${record.price_breakdown.total_payable}
         key: "status",
         header: "Status",
         render: (record: Order) => {
-          const statusName = record.order_status?.name?.toLowerCase() ?? "pending";
+          const statusName = record.status_title ?? "pending";
 
           const colorClass =
             STATUS_COLORS[statusName] ?? "bg-gray-100 text-gray-800";
@@ -322,7 +331,7 @@ Total: $${record.price_breakdown.total_payable}
               <span
                 className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${colorClass}`}
               >
-                {record.order_status?.name ?? "Pending"}
+                {record.status_title ?? "Pending"}
               </span>
 
               {/* Payment Pending Hint */}
@@ -419,7 +428,7 @@ Total: $${record.price_breakdown.total_payable}
     ]
   );
 
-  // ─── Render 
+  // Render 
 
   return (
     <>
@@ -473,15 +482,6 @@ Total: $${record.price_breakdown.total_payable}
             />
           )}
 
-          {/* Track Order Drawer */}
-          {openTrackOrderDrawer && selectedTrackOrder !== null && (
-            <TrackOrderDrawer
-              isOpen={openTrackOrderDrawer}
-              onClose={closeTrackOrderDrawer}
-              orderData={selectedTrackOrder}
-            />
-          )}
-
           {/* Payment Modal */}
           {isPaymentOpen && selectedOrder && (
             <Elements stripe={stripePromise}>
@@ -493,7 +493,7 @@ Total: $${record.price_breakdown.total_payable}
                 amount={
                   selectedOrder.price_breakdown?.total_payable
                     ? parseFloat(String(selectedOrder.price_breakdown.total_payable))
-                    : parseFloat(selectedOrder.total_price)
+                    : parseFloat(String(selectedOrder.price_breakdown?.grand_total))
                 }
               />
             </Elements>

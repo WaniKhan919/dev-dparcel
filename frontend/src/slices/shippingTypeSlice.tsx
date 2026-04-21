@@ -3,6 +3,7 @@ import { ApiHelper } from "../utils/ApiHelper";
 
 export interface ShipingType {
   id: number;
+  slug: string;
   title: string;
 }
 

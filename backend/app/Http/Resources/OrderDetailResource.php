@@ -15,7 +15,7 @@ class OrderDetailResource extends JsonResource
             'price' => $this->price,
             'weight' => $this->weight,
             'status' => $this->status,
-
+            'product_request_number' => $this->request_details_number,
             'product' => new ProductResource($this->whenLoaded('product')),
         ];
     }

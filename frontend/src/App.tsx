@@ -46,6 +46,7 @@ import ShopperAllCustomDeclaration from "./pages/Requests/ShopperAllCustomDeclar
 import ShipperSignUp from "./pages/AuthPages/ShipperSignUp";
 import Shippers from "./pages/Admin/Users/Shippers";
 import Shoppers from "./pages/Admin/Users/Shoppers";
+import SendOffer from "./pages/Shipper/SendOffer";
 
 export default function App() {
   return (
@@ -110,6 +111,7 @@ export default function App() {
 
             {/* Shipper Routes */}
             <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />
+            <Route index path="/shipper/send-offer" element={<SendOffer />} />
             <Route path="/shipper/requests" element={<ShopperRequests />} />
             <Route path="shipper/manage-request" element={<ManageRequest />} />
             <Route path="/shipper/messages" element={<ShipperMessages />} />

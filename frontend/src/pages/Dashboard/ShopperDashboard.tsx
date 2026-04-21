@@ -197,7 +197,7 @@ export default function ShopperDashboard() {
     setConfirmShipmentModal((prev) => ({ ...prev, loading: true }));
 
     try {
-      const response = await ApiHelper("POST",`/shopper/order/${confirmShipmentModal.orderId}/mark-completed`);
+      const response = await ApiHelper("POST", `/shopper/order/${confirmShipmentModal.orderId}/mark-completed`);
 
       if (response.status === 200 || response.status === 201) {
         toast.success("Order marked as completed!");
@@ -419,14 +419,12 @@ export default function ShopperDashboard() {
                       {/* Service Type Tag */}
                       <span
                         className={`inline-block text-xs px-3 py-1 rounded-full font-semibold
-                        ${offer.service_type === "buy_for_me"
+                        ${offer.shipping_type.slug === "buy_for_me"
                             ? "bg-purple-100 text-purple-700"
                             : "bg-indigo-100 text-indigo-700"
                           }`}
                       >
-                        {offer.service_type === "buy_for_me"
-                          ? "Buy For Me"
-                          : "Ship For Me"}
+                        {offer.shipping_type.title}
                       </span>
                     </div>
 
@@ -449,12 +447,27 @@ export default function ShopperDashboard() {
                       👤 {offer.shipper_name}
                     </span>
 
+                    {/* Initial Grand Total */}
                     <span className="bg-gray-100 px-3 py-1 rounded-full">
-                      💵 Order: ${offer.order_total}
+                      💵 Initial: ${offer.price_breakdown.grand_total}
                     </span>
 
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
-                      Offered: ${offer.offer_price}
+                    {/* Offer Price */}
+                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">
+                      Offer: ${offer.offer_price}
+                    </span>
+
+                    {/* Additional Services */}
+                    <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-semibold">
+                      Selected Services: ${offer.price_breakdown.selected_services.total}
+                    </span>
+                    <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-semibold">
+                      Aditional Services: ${offer.price_breakdown.additional_services.total}
+                    </span>
+
+                    {/* Final Total */}
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+                      Total Amount To Pay: ${offer.price_breakdown.total_payable}
                     </span>
 
                   </div>
@@ -541,101 +554,103 @@ export default function ShopperDashboard() {
         <Modal
           isOpen={viewModal.open}
           onClose={() => setViewModal({ open: false, data: null })}
-          className="max-w-xl p-0 overflow-hidden"
+          className="max-w-2xl p-0"
         >
           {viewModal.data && (
-            <div className="bg-white rounded-3xl">
+            <div className="bg-white rounded-3xl flex flex-col max-h-[90vh]">
 
-              {/* Header */}
-              <div className="p-6 border-b bg-gradient-to-r from-indigo-50 to-purple-50">
-                <div className="flex justify-between items-start">
-
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-800">
-                      Request # {viewModal.data.request_number}
-                    </h2>
-
-                    {/* Status Badge */}
-                    <span
-                      className={`text-xs px-3 py-1 rounded-full font-semibold
-              ${viewModal.data.offer_status === "pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : viewModal.data.offer_status === "accepted"
-                            ? "bg-green-100 text-green-700"
-                            : viewModal.data.offer_status === "rejected"
-                              ? "bg-red-100 text-red-600"
-                              : "bg-blue-100 text-blue-700"
-                        }`}
-                    >
-                      {viewModal.data.offer_status}
-                    </span>
-
-                  </div>
-
-
-                </div>
+              {/* Header (fixed) */}
+              <div className="p-6 border-b bg-gradient-to-r from-indigo-50 to-purple-50 shrink-0">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Request # {viewModal.data.request_number}
+                </h2>
               </div>
 
-              {/* Body */}
-              <div className="p-6 space-y-6">
+              {/* Body (scrollable) */}
+              <div className="p-6 space-y-6 overflow-y-auto flex-1">
 
                 {/* Service + Shipper */}
                 <div className="flex flex-wrap gap-2 text-xs">
                   <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold">
-                    {viewModal.data.service_type === "buy_for_me"
-                      ? "Buy For Me"
-                      : "Ship For Me"}
+                    {viewModal.data.shipping_type.title}
                   </span>
 
                   <span className="bg-gray-100 px-3 py-1 rounded-full">
                     👤 {viewModal.data.shipper_name}
                   </span>
+
+                  <span className={`text-xs px-3 py-1 rounded-full font-semibold
+            ${viewModal.data.offer_status === "pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : viewModal.data.offer_status === "accepted"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-600"
+                    }`}
+                  >
+                    {viewModal.data.offer_status}
+                  </span>
                 </div>
 
-                {/* Price Breakdown */}
-                <div className="bg-gray-50 rounded-2xl p-4 space-y-3 text-sm">
+                {/* Price Breakdown (your same code) */}
+                <div className="bg-gray-50 rounded-2xl p-5 space-y-4 text-sm">
 
-                  <div className="flex justify-between">
+                  <h3 className="text-base font-bold text-gray-800">
+                    💰 Price Breakdown
+                  </h3>
+
+                  <div className="flex justify-between text-base">
                     <span className="text-gray-600">Order Total</span>
-                    <span className="font-medium">
-                      ${viewModal.data.order_total}
+                    <span className="font-semibold">
+                      ${viewModal.data.price_breakdown?.grand_total}
                     </span>
                   </div>
 
-                  {/* Additional Prices */}
-                  {viewModal.data.additionalPrices &&
-                    viewModal.data.additionalPrices.length > 0 &&
-                    viewModal.data.additionalPrices.map((item: any) => (
-                      <div
-                        key={item.id}
-                        className="flex justify-between text-gray-600"
-                      >
-                        <span>{item.title}</span>
-                        <span>${item.price}</span>
-                      </div>
-                    ))}
+                  {/* Selected */}
+                  <h4 className="text-lg font-bold text-gray-800 mb-2">
+                    Selected Services
+                  </h4>
+
+                  <div className="w-full border-b border-gray-300"></div>
+                  {viewModal.data.price_breakdown?.selected_services?.items?.map((item: any) => (
+                    <div key={item.id} className="flex justify-between text-gray-600">
+                      <span>{item.title || item.service.title}</span>
+                      <span>${item.price}</span>
+                    </div>
+                  ))}
+
+                  {/* Additional */}
+                  <h4 className="text-lg font-bold text-gray-800 mb-2">
+                    Aditional Services
+                  </h4>
+
+                  <div className="w-full border-b border-gray-300"></div>
+                  {viewModal.data.price_breakdown?.additional_services?.items?.map((item: any) => (
+                    <div key={item.id} className="flex justify-between text-gray-600">
+                      <span>{item.title}</span>
+                      <span>${item.price}</span>
+                    </div>
+                  ))}
 
                   <div className="border-t pt-3 flex justify-between font-semibold text-green-600">
-                    <span>Offered Price</span>
+                    <span>Offer Price</span>
                     <span>${viewModal.data.offer_price}</span>
                   </div>
+
+                  <div className="border-t pt-3 flex justify-between font-bold text-lg text-green-700">
+                    <span>Total Payable</span>
+                    <span>${viewModal.data.price_breakdown?.total_payable}</span>
+                  </div>
+
                 </div>
 
                 {/* Message */}
                 {viewModal.data.offer_message && (
-                  <div className="bg-blue-50 p-4 rounded-2xl text-sm text-gray-700">
-                    <p className="font-medium mb-1">Message</p>
-                    <p>{viewModal.data.offer_message}</p>
+                  <div className="bg-blue-50 p-4 rounded-2xl text-sm">
+                    {viewModal.data.offer_message}
                   </div>
                 )}
 
-                {/* Created At */}
-                <p className="text-xs text-gray-400">
-                  Created {viewModal.data.created_at}
-                </p>
-
               </div>
-
             </div>
           )}
         </Modal>

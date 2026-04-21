@@ -15,6 +15,7 @@ import CustomDeclarationView from "../Order/CustomDeclarationView";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Select from "../../components/ui/dropdown/Select";
+import useOrderDetail from "../../hooks/useOrderDetail";
 
 interface FormValues {
     to_name: string;
@@ -72,8 +73,7 @@ const validationSchema: Yup.ObjectSchema<FormValues> = Yup.object({
 export default function ShopperTrackOrder() {
     const location = useLocation();
     const orderId = location.state?.orderId;
-    const [loading, setLoading] = useState<boolean>(false);
-    const [orderData, setOrderData] = useState<any>(null);
+    const { order: orderData, loading, error } = useOrderDetail(orderId);
     const [orderTracking, setOrderTracking] = useState<any[]>([]);
 
     const steps = ["Order Detail", "Offer", "Products", "Order Tracking"];
@@ -143,8 +143,15 @@ export default function ShopperTrackOrder() {
 
                             <p className="text-sm">Request #: {orderData.request_number}</p>
                             <p className="text-sm capitalize">
-                                Service: {orderData.service_type == "shipe_for_me" ? "Ship For Me" : "Buy For Me"}
+                                Service: {orderData.shipping_type.title}
                             </p>
+                            
+                            <div className="flex justify-between text-sm mt-2">
+                                <span className="text-white-500">Total Weight</span>
+                                <span className="font-medium text-white-800">
+                                    {orderData.total_aprox_weight} g
+                                </span>
+                            </div>
                         </div>
 
                         {/* Price Info (🔥 UPDATED) */}
@@ -154,32 +161,36 @@ export default function ShopperTrackOrder() {
                             <div>
                                 <h3 className="font-semibold text-gray-800 mb-1">Pricing</h3>
 
-                                {/* Total Payable */}
-                                <div className="flex items-end justify-between">
-                                    <p className="text-sm text-gray-500">Total Payable</p>
-                                    <p className="text-xl font-bold text-green-600">
-                                        ${orderData.price_breakdown?.total_payable ?? orderData.total_price}
-                                    </p>
-                                </div>
 
                                 {/* Breakdown */}
                                 <div className="mt-1 space-y-1.5 text-xs text-gray-600 bg-gray-50 rounded-lg p-1">
 
-                                    {orderData.service_type === "buy_for_me" && (
+                                    {orderData.shipping_type.slug === "buy_for_me" && (
                                         <div className="flex justify-between">
                                             <span>Subtotal</span>
-                                            <span>${orderData.price_breakdown?.initial_total ?? 0}</span>
+                                            <span>${orderData.price_breakdown?.initial_price ?? 0}</span>
                                         </div>
                                     )}
 
                                     <div className="flex justify-between">
-                                        <span>Shipping</span>
-                                        <span>${orderData.price_breakdown?.shipper_total ?? 0}</span>
+                                        <span>Offer Price</span>
+                                        <span>${orderData.price_breakdown?.offer_price ?? 0}</span>
                                     </div>
-
                                     <div className="flex justify-between">
-                                        <span>Additional</span>
-                                        <span>${orderData.price_breakdown?.shipper_additional_charges ?? 0}</span>
+                                        <span>Services Fee</span>
+                                        <span>{orderData.price_breakdown?.selected_services} %</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Stripe Fee</span>
+                                        <span>{orderData.price_breakdown?.stripe_fee } %</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Selected Services Fee</span>
+                                        <span>${orderData.price_breakdown?.selected_services }</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Aditional Service Fee</span>
+                                        <span>${orderData.price_breakdown?.additional_services }</span>
                                     </div>
                                 </div>
                             </div>
@@ -187,9 +198,9 @@ export default function ShopperTrackOrder() {
                             {/* Footer */}
                             <div className="mt-4 pt-3 border-t">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Total Weight</span>
+                                    <span className="text-gray-500">Total Payable</span>
                                     <span className="font-medium text-gray-800">
-                                        {orderData.total_weight} g
+                                        $ {orderData.price_breakdown?.total_payable ?orderData.price_breakdown?.total_payable:orderData.price_breakdown?.grand_total}
                                     </span>
                                 </div>
                             </div>
@@ -216,24 +227,30 @@ export default function ShopperTrackOrder() {
                             <h3 className="font-semibold mb-3">Services</h3>
 
                             {orderData.services?.map((service: any) => (
-                                <div
-                                    key={service.service_id}
-                                    className="flex justify-between py-2 border-b text-sm"
-                                >
-                                    <span>{service.title}</span>
-                                    <span className="font-medium">${service.price}</span>
-                                </div>
+                                <>
+                                    {
+                                        service.service_id == null &&
+                                        <h3 className="font-semibold mt-2">Aditional Services</h3>
+                                    }
+                                    <div
+                                        key={service.service_id}
+                                        className="flex justify-between py-2 border-b text-sm"
+                                    >
+                                        <span>{service.title}</span>
+                                        <span>$ {service.price}</span>
+                                    </div>
+                                </>
                             ))}
                         </div>
 
                     </div>
                 );
             case 1:
-                if (!orderData?.acceptedOffer) {
+                if (!orderData?.accepted_offer) {
                     return <p className="text-gray-500">No offer accepted yet.</p>;
                 }
 
-                const offer = orderData.acceptedOffer;
+                const offer = orderData.accepted_offer;
                 const breakdown = orderData.price_breakdown;
 
                 return (
@@ -247,19 +264,19 @@ export default function ShopperTrackOrder() {
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-sm">Offer Price</span>
                                 <span className="text-2xl font-bold">
-                                    ${breakdown?.shipper_offer_price}
+                                    ${breakdown?.offer_price}
                                 </span>
                             </div>
 
                             {/* Additional Charges */}
-                            {offer.additional_prices?.length > 0 && (
+                            {orderData.services?.length > 0 && (
                                 <div className="bg-white/20 rounded-lg p-4 backdrop-blur mb-4">
 
                                     <h4 className="font-semibold text-sm mb-3">
                                         Additional Charges
                                     </h4>
 
-                                    {offer.additional_prices.map((item: any) => (
+                                    {orderData.services.map((item: any) => (
                                         <div
                                             key={item.id}
                                             className="flex justify-between text-sm py-1 border-b border-white/30 last:border-none"
@@ -272,7 +289,7 @@ export default function ShopperTrackOrder() {
                                     {/* Shown from backend */}
                                     <div className="flex justify-between text-sm pt-2 font-semibold">
                                         <span>Total Shipping</span>
-                                        <span>${breakdown?.shipper_total}</span>
+                                        <span>${Number(breakdown?.offer_price)+ Number(breakdown?.selected_services) + Number(breakdown?.additional_services)}</span>
                                     </div>
 
                                 </div>
@@ -453,21 +470,11 @@ export default function ShopperTrackOrder() {
         }
     };
 
-    const fetchOrderDetails = async () => {
+    const fetchOrderTracking = async () => {
         if (!orderId) return;
-
-        setLoading(true);
         try {
-            // Fetch full order details
-            const orderRes = await ApiHelper("GET", `/shopper/order/get-order-detail/${orderId}`);
-            if (orderRes.status === 200) {
-                setOrderData(orderRes.data.data);
-            } else {
-                toast.error(orderRes.data.message || "Failed to fetch order");
-            }
-
             // Fetch order tracking details
-            const trackingRes = await ApiHelper("GET", `/order/get-order-tracking/${orderId}`);
+            const trackingRes = await ApiHelper("GET", `/order/${orderId}/get-order-tracking`);
             if (trackingRes.status === 200) {
                 setOrderTracking(trackingRes.data.data);
             } else {
@@ -475,13 +482,11 @@ export default function ShopperTrackOrder() {
             }
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Something went wrong");
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchOrderDetails();
+        fetchOrderTracking();
     }, [orderId]);
 
     useEffect(() => {
@@ -492,25 +497,6 @@ export default function ShopperTrackOrder() {
         stepRef.current = step;
     }, [step]);
 
-    const fetchCustomDeclaration = async () => {
-        try {
-            const response = await ApiHelper("GET", `/order/get-order-detail/${orderId}`);
-            if (response.status === 200) {
-                setOrderData(response.data.data);
-                if (response.data.data?.customDeclaration) {
-                    setShowForm(false);
-                } else {
-                    setShowForm(true);
-                }
-            }
-        } catch (error: any) {
-            console.error("Failed to fetch order details:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchCustomDeclaration();
-    }, []);
 
     // ✅ This prevents auto submit when step 5 loads
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
@@ -533,7 +519,6 @@ export default function ShopperTrackOrder() {
             if (res.status === 200 && res.data.success) {
 
                 toast.success("Custom Declaration submitted successfully!");
-                fetchCustomDeclaration();
             } else {
                 toast.error(res.data.message);
             }
@@ -557,7 +542,7 @@ export default function ShopperTrackOrder() {
                     // setStep(3);
                     break;
                 }
-                return ;
+                return;
             case 3:
                 break;
         }
@@ -610,7 +595,7 @@ export default function ShopperTrackOrder() {
 
     return (
         <>
-            <PageMeta title="Delivering Parcel | Track Order" description="" />
+            <PageMeta title="Delivering Parcel | Track Order" description="Track Order" />
             <PageBreadcrumb pageTitle="Track Order" />
 
             <div className="bg-white p-6 rounded-xl shadow-md">
@@ -1058,8 +1043,6 @@ export default function ShopperTrackOrder() {
                             ) : (
                                 ''
                             )
-
-
                     )
             }
         </>

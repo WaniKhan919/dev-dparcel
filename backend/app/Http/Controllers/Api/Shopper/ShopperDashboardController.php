@@ -22,12 +22,16 @@ class ShopperDashboardController extends Controller
 
             // Total Ship For Me orders for this user
             $shipForMe = Order::where('user_id', $userId)
-                ->where('service_type', 'ship_for_me')
+                ->whereHas('shippingType', function ($q) {
+                    $q->where('slug', 'ship_for_me');
+                })
                 ->count();
 
             // Total Buy For Me orders for this user
             $buyForMe = Order::where('user_id', $userId)
-                ->where('service_type', 'buy_for_me')
+                ->whereHas('shippingType', function ($q) {
+                    $q->where('slug', 'buy_for_me');
+                })
                 ->count();
 
             return response()->json([
@@ -91,10 +95,12 @@ class ShopperDashboardController extends Controller
             $shopperId = Auth::id();
 
             $offers = OrderOffer::with([
-                    'order:id,user_id,request_number,service_type,total_price',
-                    'shipper:id,name',
-                    'additionalPrices'
-                ])
+                'order:id,user_id,request_number,shipping_type_id,total_price,stripe_fee,service_fee,grand_total',
+                'order.shippingType:id,title,slug',
+                'shipper:id,name',
+                'additionalPrices:id,order_offer_id,service_id,title,price',
+                'additionalPrices.service:id,title'
+            ])
                 ->whereHas('order', function ($query) use ($shopperId) {
                     $query->where('user_id', $shopperId);
                 })
@@ -102,22 +108,61 @@ class ShopperDashboardController extends Controller
                 ->latest()
                 ->get()
                 ->map(function ($offer) {
+                    $order = $offer->order;
+
+                    $initialPrice = (float) $order->total_price;
+                    $stripeFee    = (float) $order->stripe_fee;
+                    $serviceFee   = (float) $order->service_fee;
+                    $grandTotal   = (float) $order->grand_total;
+
+                    // 🔹 Split additional prices
+                    $selectedServices = collect($offer->additionalPrices)
+                        ->whereNotNull('service_id');
+
+                    $additionalServices = collect($offer->additionalPrices)
+                        ->whereNull('service_id');
+
+                    $selectedServicesTotal = $selectedServices->sum(fn($i) => (float) $i->price);
+                    $additionalServicesTotal = $additionalServices->sum(fn($i) => (float) $i->price);
+
+                    $offer_price = (float) $offer->offer_price;
+
+                    // 🔹 Final total
+                    $finalTotal = $grandTotal + $selectedServicesTotal + $additionalServicesTotal + $offer_price;
 
                     return [
                         'offer_id'        => $offer->id,
-                        'order_id'        => $offer->order->id,
-                        'request_number'  => $offer->order->request_number,
-                        'service_type'    => $offer->order->service_type,
-                        'order_total'     => $offer->order->total_price,
+                        'order_id'        => $order->id,
+                        'request_number'  => $order->request_number,
+                        'shipping_type'   => $order->shippingType,
 
                         'shipper_id'      => $offer->shipper->id,
                         'shipper_name'    => $offer->shipper->name,
 
-                        'offer_price'     => $offer->offer_price,
-                        'offer_message'   => $offer->message,
+                        'offer_price'     => (float) $offer->offer_price,
                         'offer_status'    => $offer->status,
                         'created_at'      => $offer->created_at->diffForHumans(),
-                        'additionalPrices'      => $offer->additionalPrices,
+
+                        // PRICE BREAKDOWN
+                        'price_breakdown' => [
+                            'initial_price' => $initialPrice,
+                            'stripe_fee'    => $stripeFee,
+                            'service_fee'   => $serviceFee,
+                            'grand_total'   => $grandTotal,
+
+                            'selected_services' => [
+                                'items' => $selectedServices->values(),
+                                'total' => $selectedServicesTotal,
+                            ],
+
+                            'additional_services' => [
+                                'items' => $additionalServices->values(),
+                                'total' => $additionalServicesTotal,
+                            ],
+
+                            // FIXED
+                            'total_payable' => $finalTotal,
+                        ],
                     ];
                 });
 
@@ -125,12 +170,11 @@ class ShopperDashboardController extends Controller
                 'success' => true,
                 'data'    => $offers
             ]);
-
         } catch (Exception $e) {
 
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong'
+                'message' => $e
             ], 500);
         }
     }
@@ -141,9 +185,9 @@ class ShopperDashboardController extends Controller
             $perPage = (int) $request->get('per_page', 10);
 
             $orders = Order::with([
-                    'orderStatus:id,name',
-                    'orderDetails.product.customDeclerationProduct'
-                ])
+                'orderStatus:id,name',
+                'orderDetails.product.customDeclerationProduct'
+            ])
                 ->where('user_id', $userId)
                 ->where('status', '>=', 7)
                 ->select(
@@ -170,7 +214,6 @@ class ShopperDashboardController extends Controller
                     'prev_page_url' => $orders->previousPageUrl(),
                 ],
             ], 200);
-
         } catch (Exception $e) {
 
             Log::error('Error fetching shopper completed orders', [
@@ -185,5 +228,4 @@ class ShopperDashboardController extends Controller
             ], 500);
         }
     }
-    
 }

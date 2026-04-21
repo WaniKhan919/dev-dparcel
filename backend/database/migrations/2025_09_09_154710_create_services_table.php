@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('shipping_type_id')->constrained()->onDelete('cascade');
             $table->string('title');
-            $table->decimal('price', 10, 2)->default(0.00);
             $table->text('description')->nullable();
             $table->tinyInteger('is_required')->default(0);
             $table->integer('status')->default(1);

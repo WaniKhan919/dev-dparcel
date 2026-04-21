@@ -121,6 +121,10 @@ class UserController extends Controller
             }
 
             $shipper->save();
+            //ACTIVATE UER
+            $user->status = 'active';
+            $user->is_verified =  1;
+            $user->save();
             Mail::to($user->email)->send(
                 new ShipperStatusMail($user, $request->approval_status)
             );

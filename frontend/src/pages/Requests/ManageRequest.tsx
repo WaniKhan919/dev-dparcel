@@ -9,96 +9,8 @@ import Label from "../../components/form/Label";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import TextArea from "../../components/form/input/TextArea";
+import useOrderDetail from "../../hooks/useOrderDetail";
 
-interface Service {
-    id: number;
-    title: string;
-    price: string;
-    description: string | null;
-    is_required: number;
-    status: number;
-}
-
-interface OrderService {
-    id: number;
-    order_id: number;
-    service_id: number;
-    created_at: string;
-    updated_at: string;
-    service: Service;
-}
-interface PriceBreakDown {
-    initial_total: number;
-    shipper_offer_price: number;
-    shipper_additional_charges: number;
-    shipper_total: number;
-    total_payable: number;
-}
-
-interface Product {
-    id: number;
-    user_id: number;
-    title: string;
-    description: string | null;
-    product_url: string;
-    quantity: number;
-    price: string;
-    weight: string;
-    created_at: string;
-    updated_at: string;
-    tracking: ProductTracking;
-}
-
-interface ProductTracking {
-    purchase_status: string;
-    tracking_id: string;
-    tracking_link: string;
-    product_receipt: string;
-}
-
-interface Ship {
-    country: string;
-    state: string;
-    city: string;
-}
-interface AdditionalPrice {
-    title: string;
-    price: string;
-}
-interface Shipper {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-}
-interface AcceptedOffer {
-    id: number;
-    order_id: number;
-    user_id: number;
-    message: string | null;
-    status: string;
-    offer_price: string;
-    shipper: Shipper;
-    additional_prices: AdditionalPrice[];
-    created_at: string;
-    updated_at: string;
-}
-interface OrderData {
-    id: number;
-    user_id: number;
-    service_type: string;
-    total_weight: string;
-    total_price: string;
-    tracking_number: string;
-    request_number: string;
-    status: number;
-    products: any[];
-    acceptedOffer: AcceptedOffer;
-    order_services: OrderService[];
-    price_breakdown: PriceBreakDown;
-    ship_from: Ship;
-    ship_to: Ship;
-}
 
 const excludedStatuses = [
     "Pending",
@@ -124,9 +36,7 @@ const schema = yup.object().shape({
 export default function ManageRequest() {
     const location = useLocation();
     const orderId = location.state?.orderId;
-    const [orderData, setOrderData] = useState<OrderData | null>(null);
     const [orderTracking, setOrderTracking] = useState<any[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const steps = ["Order Detail", "Offer", "Products", "Order Status", "Order Tracking"];
     const [currentStep, setCurrentStep] = useState(0);
@@ -134,6 +44,8 @@ export default function ManageRequest() {
     const [orderStatusOptions, setOrderStatusOptions] = useState<
         { id: number; name: string; disabled: boolean }[]
     >([]);
+    
+    const { order: orderData, loading, error } = useOrderDetail(orderId);
 
     useEffect(() => {
         if (orderData?.products) {
@@ -171,9 +83,19 @@ export default function ManageRequest() {
     const getOrderTrackingData = async () => {
         // setIsLoading(true);
         try {
-            const res = await ApiHelper("GET", `/order/get-order-tracking/${orderId}`);
+            // const trackingRes = await ApiHelper(
+            //     "GET",
+            //     `/order/get-order-tracking/${orderId}`
+            // );
+            // if (trackingRes.status === 200) {
+            //     setOrderTracking(trackingRes.data.data);
+            // } else {
+            //     setOrderTracking([]);
+            // }
+            const res = await ApiHelper("GET", `/order/${orderId}/get-order-tracking`);
             if (res.status === 200) {
                 const trackingArray = res.data.data;
+                setOrderTracking(res.data.data);
                 const options = trackingArray
                     .filter((st: any) => !excludedStatuses.includes(st.status_name))
                     .map((st: any) => {
@@ -195,42 +117,7 @@ export default function ManageRequest() {
         }
     };
 
-
-    const fetchOrderDetails = async () => {
-        if (!orderId) return;
-
-        setLoading(true);
-        try {
-            // Fetch full order details
-            const orderRes = await ApiHelper(
-                "GET",
-                `/order/get-order-detail/${orderId}`
-            );
-            if (orderRes.status === 200) {
-                setOrderData(orderRes.data.data);
-            } else {
-                toast.error(orderRes.data.message || "Failed to fetch order");
-            }
-
-            // Fetch order tracking details
-            const trackingRes = await ApiHelper(
-                "GET",
-                `/order/get-order-tracking/${orderId}`
-            );
-            if (trackingRes.status === 200) {
-                setOrderTracking(trackingRes.data.data);
-            } else {
-                setOrderTracking([]);
-            }
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Something went wrong");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchOrderDetails();
         getOrderTrackingData();
     }, [orderId]);
 
@@ -268,7 +155,6 @@ export default function ManageRequest() {
             const res = await ApiHelper("POST", "/order/product/insert-tracking", formData, {}, true);
 
             if (res.status === 200) {
-                fetchOrderDetails();
                 toast.success(res.data.message || "Products submitted successfully 🎉");
             } else {
                 toast.error(res.data.message || "Submission failed ❌");
@@ -375,14 +261,14 @@ export default function ManageRequest() {
                                             <div className="border-l-4 border-indigo-500 bg-indigo-50 rounded-md p-4 shadow-sm flex-1 flex flex-col justify-center">
                                                 <p className="text-sm text-gray-500 uppercase tracking-wide">Service Type</p>
                                                 <p className="font-semibold text-indigo-700 mt-1 text-lg">
-                                                    {orderData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
+                                                    {orderData.shipping_type.title}
                                                 </p>
                                             </div>
 
                                             <div className="border-l-4 border-green-500 bg-green-50 rounded-md p-4 shadow-sm flex-1 flex flex-col justify-center">
                                                 <p className="text-sm text-gray-500 uppercase tracking-wide">Total Weight</p>
                                                 <p className="font-semibold text-green-700 mt-1 text-lg">
-                                                    {orderData.total_weight} g
+                                                    {orderData.total_aprox_weight} g
                                                 </p>
                                             </div>
 
@@ -398,21 +284,27 @@ export default function ManageRequest() {
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-500">Order Price</span>
                                                     <span className="font-medium text-gray-700">
-                                                        ${orderData?.price_breakdown?.initial_total ?? 0}
+                                                        ${orderData?.price_breakdown?.initial_price ?? 0}
                                                     </span>
                                                 </div>
 
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-500">Shipper Offer</span>
                                                     <span className="font-medium text-blue-600">
-                                                        ${orderData?.price_breakdown?.shipper_offer_price ?? 0}
+                                                        ${orderData?.price_breakdown?.offer_price ?? 0}
                                                     </span>
                                                 </div>
 
                                                 <div className="flex justify-between">
-                                                    <span className="text-gray-500">Additional Charges</span>
+                                                    <span className="text-gray-500">Selected Service Charges</span>
                                                     <span className="font-medium text-indigo-600">
-                                                        ${orderData?.price_breakdown?.shipper_additional_charges ?? 0}
+                                                        ${orderData?.price_breakdown?.selected_services ?? 0}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Aditional Service Charges</span>
+                                                    <span className="font-medium text-indigo-600">
+                                                        ${orderData?.price_breakdown?.additional_services ?? 0}
                                                     </span>
                                                 </div>
 
@@ -421,7 +313,7 @@ export default function ManageRequest() {
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-600 font-medium">Shipper Total</span>
                                                     <span className="font-semibold text-purple-700">
-                                                        ${orderData?.price_breakdown?.shipper_total ?? 0}
+                                                        ${Number(orderData?.price_breakdown?.offer_price) + Number(orderData?.price_breakdown?.selected_services) + Number(orderData?.price_breakdown?.additional_services)}
                                                     </span>
                                                 </div>
 
@@ -455,7 +347,7 @@ export default function ManageRequest() {
                                 </div>
                             )}
 
-                            {currentStep === 1 && orderData?.acceptedOffer && (
+                            {currentStep === 1 && orderData?.accepted_offer && (
                                 <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
 
                                     {/* Header */}
@@ -465,7 +357,7 @@ export default function ManageRequest() {
                                         </h3>
 
                                         <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium capitalize">
-                                            {orderData.acceptedOffer.status}
+                                            {orderData.accepted_offer.status}
                                         </span>
                                     </div>
 
@@ -473,14 +365,14 @@ export default function ManageRequest() {
                                     <div className="flex justify-between items-center">
                                         <span className="text-gray-600 font-medium">Base Offer Price</span>
                                         <span className="text-lg font-semibold text-blue-600">
-                                            ${orderData.acceptedOffer.offer_price}
+                                            ${orderData.accepted_offer.offer_price}
                                         </span>
                                     </div>
 
                                     {/* Additional Charges */}
-                                    {orderData.acceptedOffer.additional_prices?.length > 0 && (
+                                    {orderData.services?.length > 0 && (
                                         <div className="space-y-2">
-                                            {orderData.acceptedOffer.additional_prices.map((item, index) => (
+                                            {orderData.services.map((item, index) => (
                                                 <div
                                                     key={index}
                                                     className="flex justify-between items-center text-sm bg-gray-50 px-3 py-2 rounded-md"
@@ -511,7 +403,7 @@ export default function ManageRequest() {
                                             Total Offer Price
                                         </span>
                                         <span className="text-xl font-bold text-green-700">
-                                            ${orderData?.price_breakdown?.shipper_total ?? 0}
+                                            ${Number(orderData?.price_breakdown?.offer_price)+Number(orderData?.price_breakdown?.selected_services)+Number(orderData?.price_breakdown?.additional_services)}
                                         </span>
                                     </div>
 
@@ -561,7 +453,7 @@ export default function ManageRequest() {
                                                         {/* Purchase Status */}
                                                         <td className="px-4 py-3">
                                                             {tracking ? (
-                                                                tracking.purchase_status
+                                                                tracking?.purchase_status
                                                             ) : (
                                                                 <select
                                                                     value={state.purchase_status}
@@ -579,7 +471,7 @@ export default function ManageRequest() {
                                                         {/* Tracking Link */}
                                                         <td className="px-4 py-3">
                                                             {tracking ? (
-                                                                tracking.tracking_link
+                                                                tracking?.tracking_link
                                                             ) : state.purchase_status === "purchase" ? (
                                                                 <input
                                                                     type="text"
@@ -598,7 +490,7 @@ export default function ManageRequest() {
                                                         {/* Tracking ID */}
                                                         <td className="px-4 py-3">
                                                             {tracking ? (
-                                                                tracking.tracking_id
+                                                                tracking?.tracking_id
                                                             ) : state.purchase_status === "purchase" ? (
                                                                 <input
                                                                     type="text"

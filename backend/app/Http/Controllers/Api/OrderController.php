@@ -18,13 +18,26 @@ use App\Models\Attachment;
 use App\Models\OrderOffer;
 use App\Models\OrderService;
 use App\Models\OrderStatus;
-use App\Models\PaymentSetting;
 use App\Models\ProductTracking;
-use App\Models\Service;
+use App\Models\ShippingType;
 use App\Models\User;
 
 class OrderController extends Controller
 {
+    private function calculateAndUpdateFees(Order $order, float $offerPrice = 0)
+    {
+        $base = (float) $order->total_price + $offerPrice;
+
+        $stripeFee  = ($base * 4.2) / 100;
+        $serviceFee = ($base * 10) / 100;
+        $grandTotal = $base + $stripeFee + $serviceFee;
+
+        $order->update([
+            'stripe_fee'  => $stripeFee,
+            'service_fee' => $serviceFee,
+            'grand_total' => $grandTotal,
+        ]);
+    }
     public function index(Request $request)
     {
         try {
@@ -32,6 +45,7 @@ class OrderController extends Controller
             $perPage = (int) $request->get('per_page', 12);
 
             $orders = Order::with([
+                'shippingType:id,title,slug',
                 'orderDetails.product',
                 'acceptedOffer.additionalPrices',
                 'orderPayment',
@@ -47,69 +61,28 @@ class OrderController extends Controller
                 ->orderBy('id', 'desc')
                 ->paginate($perPage);
 
-            // 🔥 Transform data
-            $orders->getCollection()->transform(function ($order) {
-
-                $initialTotal = (float) $order->total_price; // already handled (product + platform charges for buy_for_me)
-
-                $shipperOfferPrice = 0;
-                $shipperAdditional = 0;
-
-                if ($order->acceptedOffer) {
-                    $shipperOfferPrice = (float) $order->acceptedOffer->offer_price;
-
-                    // sum of additional prices
-                    $shipperAdditional = $order->acceptedOffer->additionalPrices->sum(function ($item) {
-                        return (float) $item->price;
-                    });
-                }
-
-                $shipperTotal = $shipperOfferPrice + $shipperAdditional;
-
-                // ✅ Final payable
-                if ($order->service_type === 'buy_for_me') {
-                    $totalPayable = $initialTotal + $shipperTotal;
-                } else {
-                    // ship_for_me
-                    // $totalPayable = $shipperTotal;
-                    $totalPayable = $initialTotal;
-                }
-
-                // 🧾 Attach calculation breakdown
-                $order->price_breakdown = [
-                    'initial_total' => $initialTotal,
-
-                    'shipper_offer_price' => $shipperOfferPrice,
-                    'shipper_additional_charges' => $shipperAdditional,
-
-                    'shipper_total' => $shipperTotal,
-                    'total_payable' => $totalPayable,
-                ];
-
-                return $order;
-            });
 
             return response()->json([
                 'success' => true,
-                'data' => $orders->items(),
-                'meta' => [
+                'data'    => OrderResource::collection($orders->items()),
+                'meta'    => [
                     'current_page' => $orders->currentPage(),
-                    'last_page' => $orders->lastPage(),
-                    'per_page' => $orders->perPage(),
-                    'total' => $orders->total(),
+                    'last_page'    => $orders->lastPage(),
+                    'per_page'     => $orders->perPage(),
+                    'total'        => $orders->total(),
                     'next_page_url' => $orders->nextPageUrl(),
                     'prev_page_url' => $orders->previousPageUrl(),
                 ],
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get orders',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function getOrderStatuses()
     {
@@ -207,7 +180,7 @@ class OrderController extends Controller
             $userId = Auth::id();
 
             $validated = $request->validate([
-                'service_type' => 'required|in:buy_for_me,ship_for_me',
+                'shipping_type_id' => 'required',
                 'ship_from_country_id' => 'required|exists:countries,id',
                 'ship_from_state_id' => 'required|exists:states,id',
                 'ship_from_city_id' => 'required|exists:cities,id',
@@ -221,18 +194,20 @@ class OrderController extends Controller
                 'products.*.quantity' => 'required|integer|min:1',
                 'products.*.weight' => 'nullable|numeric|min:0',
                 'services' => 'nullable|array',
-                'services.*.service_id' => 'required|exists:services,id',
+                'services.*.service_id' => 'required|string',
             ]);
+            $shippingTypeId = decrypt($request->shipping_type_id);
 
             // Generate unique tracking number
             do {
                 $trackingNumber = 'TRK-' . strtoupper(Str::random(10));
             } while (Order::where('tracking_number', $trackingNumber)->exists());
 
+
             // Create Order
             $order = Order::create([
                 'user_id' => $userId,
-                'service_type' => $validated['service_type'],
+                'shipping_type_id' => $shippingTypeId,
                 'ship_from_country_id' => $validated['ship_from_country_id'],
                 'ship_from_state_id' => $validated['ship_from_state_id'],
                 'ship_from_city_id' => $validated['ship_from_city_id'],
@@ -241,10 +216,13 @@ class OrderController extends Controller
                 'ship_to_city_id' => $validated['ship_to_city_id'],
                 'total_aprox_weight' => 0,
                 'total_price' => 0,
+                'stripe_fee' => 0,
+                'service_fee' => 0,
+                'grand_total' => 0,
                 'tracking_number' => $trackingNumber,
             ]);
-
-            $type = $validated['service_type'] === "ship_for_me" ? 2 : 1;
+            $shippingType = ShippingType::findOrFail($shippingTypeId);
+            $type = $shippingType->slug;
             $totalPrice = 0;
             $totalWeight = 0;
 
@@ -263,7 +241,7 @@ class OrderController extends Controller
                 $linePrice = $p['price'] * $p['quantity'];
                 $lineWeight = ($p['weight'] ?? 0) * $p['quantity'];
 
-                if ($type == 1) {
+                if ($type == "buy_for_me") {
                     $totalPrice += $linePrice;
                 }
                 $totalWeight += $lineWeight;
@@ -285,11 +263,8 @@ class OrderController extends Controller
                 foreach ($validated['services'] as $s) {
                     OrderService::create([
                         'order_id' => $order->id,
-                        'service_id' => $s['service_id'],
+                        'service_id' => decrypt($s['service_id']),
                     ]);
-
-                    $service = Service::find($s['service_id']);
-                    $totalPrice += $service->price ?? 0;
                 }
             }
 
@@ -304,25 +279,33 @@ class OrderController extends Controller
             $user = auth()->user();
             $role = $user->roles()->first();
 
-            $settings = PaymentSetting::where('role_id', $role->id)
-                ->where('active', true)
-                ->where('shipping_types_id', $type)
-                ->get();
+            // commented for future
+            // $settings = PaymentSetting::where('role_id', $role->id)
+            //     ->where('active', true)
+            //     ->where('shipping_types_id', $shippingTypeId)
+            //     ->get();
 
             $additionalAmount = 0;
-            foreach ($settings as $setting) {
-                if ($setting->type === 'percent') {
-                    $additionalAmount += ($totalPrice * $setting->amount) / 100;
-                } elseif ($setting->type === 'fixed') {
-                    $additionalAmount += $setting->amount;
-                }
-            }
+            // foreach ($settings as $setting) {
+            //     if ($setting->type === 'percent') {
+            //         $additionalAmount += ($totalPrice * $setting->amount) / 100;
+            //     } elseif ($setting->type === 'fixed') {
+            //         $additionalAmount += $setting->amount;
+            //     }
+            // }
 
-            $finalPrice = $totalPrice + $additionalAmount;
+
+            // Fees calculate karo
+            $stripeFee  = ($totalPrice * 4.2) / 100;  // 4.2% STRIPE FEE 
+            $serviceFee = ($totalPrice * 10) / 100;  // 10% DELEVERY PARCEL SERVICE FEE
+            $grandTotal = $totalPrice + $stripeFee + $serviceFee;
 
             // Update totals
             $order->update([
-                'total_price' => $finalPrice,
+                'total_price'        => $totalPrice,
+                'stripe_fee'         => $stripeFee,
+                'service_fee'        => $serviceFee,
+                'grand_total'        => $grandTotal,
                 'total_aprox_weight' => $totalWeight,
             ]);
 
@@ -336,7 +319,7 @@ class OrderController extends Controller
                 'message' => 'Your order request # ' . $order->request_number . ' has been placed successfully.',
             ]);
 
-            $shippers = User::whereHas('roles', fn($q) => $q->where('name', 'shipper'))->get();
+            $shippers = User::whereHas('roles', fn($q) => $q->where('name', 'shipper'))->whereHas('serviceAreas', fn($q) => $q->where('country_id', $order->ship_from_country_id))->get();
 
             foreach ($shippers as $shipper) {
                 NotificationService::createNotification([
@@ -383,10 +366,13 @@ class OrderController extends Controller
     public function getShipperOffers($orderId)
     {
         try {
+            $orderId = decrypt($orderId);
+
             $order = Order::with([
+                'shippingType:id,title,slug',
                 'offers.shipper',
-                'offers.additionalPrices',
-                'acceptedOffer.additionalPrices',
+                'offers.additionalPrices.service',
+                'acceptedOffer.additionalPrices.service',
                 'orderStatus',
                 'shipFromCountry:id,name',
                 'shipFromState:id,name',
@@ -398,75 +384,97 @@ class OrderController extends Controller
                 ->where('id', $orderId)
                 ->firstOrFail();
 
-            $initialTotal = (float) $order->total_price;
+            $initialPrice = (float) $order->total_price;
+            $stripeFee = (float) $order->stripe_fee;
+            $serviceFee = (float) $order->service_fee;
 
-            // 🔥 LOOP EACH OFFER
-            $order->offers->transform(function ($offer) use ($order, $initialTotal) {
+            // =========================
+            // 🔥 FIXED OFFERS BREAKDOWN
+            // =========================
+            $order->offers->transform(function ($offer) use ($initialPrice,$stripeFee,$serviceFee) {
 
                 $offerPrice = (float) $offer->offer_price;
 
-                $additional = $offer->additionalPrices->sum(function ($item) {
-                    return (float) $item->price;
-                });
+                // Selected services (service_id NOT null)
+                $selectedServicesTotal = $offer->additionalPrices
+                    ->whereNotNull('service_id')
+                    ->sum(fn($i) => (float) $i->price);
 
-                $shipperTotal = $offerPrice + $additional;
+                // Additional services (service_id NULL)
+                $additionalServicesTotal = $offer->additionalPrices
+                    ->whereNull('service_id')
+                    ->sum(fn($i) => (float) $i->price);
 
-                // ✅ Final payable logic
-                if ($order->service_type === 'buy_for_me') {
-                    $totalPayable = $initialTotal + $shipperTotal;
-                } else {
-                    // ship_for_me
-                    $totalPayable = $shipperTotal;
-                }
+                // Total payable per offer
+                $totalPayable =
+                    $initialPrice +
+                    $offerPrice +
+                    $selectedServicesTotal +
+                    $additionalServicesTotal;
 
-                // 🔥 Attach breakdown per offer
                 $offer->price_breakdown = [
-                    'initial_total' => $initialTotal,
-                    'offer_price' => $offerPrice,
-                    'additional_charges' => $additional,
-                    'shipper_total' => $shipperTotal,
+                    'initial_price' => $initialPrice,
+                    'offer_price'   => $offerPrice,
+                    'stripe_fee'   => $stripeFee,
+                    'service_fee'   => $serviceFee,
+
+                    // 🔥 ONLY TOTALS (no items)
+                    'selected_services' => $selectedServicesTotal,
+                    'additional_services' => $additionalServicesTotal,
+
                     'total_payable' => $totalPayable,
                 ];
 
                 return $offer;
             });
 
-            // 🔥 OPTIONAL: accepted offer summary (useful for top UI)
-            if ($order->acceptedOffer) {
+            // =========================
+            // ORDER LEVEL BREAKDOWN
+            // =========================
+            $acceptedOfferPrice = (float) ($order->acceptedOffer?->offer_price ?? 0);
 
-                $acceptedOfferPrice = (float) $order->acceptedOffer->offer_price;
+            $selectedTotal = $order->acceptedOffer
+                ? $order->acceptedOffer->additionalPrices
+                ->whereNotNull('service_id')
+                ->sum(fn($i) => (float) $i->price)
+                : 0;
 
-                $acceptedAdditional = $order->acceptedOffer->additionalPrices->sum(function ($item) {
-                    return (float) $item->price;
-                });
+            $additionalTotal = $order->acceptedOffer
+                ? $order->acceptedOffer->additionalPrices
+                ->whereNull('service_id')
+                ->sum(fn($i) => (float) $i->price)
+                : 0;
 
-                $acceptedTotal = $acceptedOfferPrice + $acceptedAdditional;
+            $order->price_breakdown = [
+                'initial_price' => $initialPrice,
+                'offer_price'   => $acceptedOfferPrice,
+                'stripe_fee'    => (float) $order->stripe_fee,
+                'service_fee'   => (float) $order->service_fee,
+                'grand_total'   => (float) $order->grand_total,
 
-                if ($order->service_type === 'buy_for_me') {
-                    $acceptedFinal = $initialTotal + $acceptedTotal;
-                } else {
-                    $acceptedFinal = $acceptedTotal;
-                }
+                // 🔥 ONLY TOTALS
+                'selected_services' => $selectedTotal,
+                'additional_services' => $additionalTotal,
 
-                $order->accepted_price_breakdown = [
-                    'initial_total' => $initialTotal,
-                    'offer_price' => $acceptedOfferPrice,
-                    'additional_charges' => $acceptedAdditional,
-                    'shipper_total' => $acceptedTotal,
-                    'total_payable' => $acceptedFinal,
-                ];
-            }
+                // 🔥 FINAL TOTAL
+                'total_payable' =>
+                $initialPrice +
+                    $acceptedOfferPrice +
+                    $selectedTotal +
+                    $additionalTotal +
+                    (float) $order->stripe_fee +
+                    (float) $order->service_fee,
+            ];
 
             return response()->json([
                 'success' => true,
-                'data' => $order
+                'data'    => $order
             ], 200);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get shipper offers',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
@@ -626,7 +634,7 @@ class OrderController extends Controller
 
             // 1️⃣ Get all statuses in correct sequence
             $statuses = OrderStatus::orderBy('id')->get();
-
+            $id = decrypt($id);
             // 2️⃣ Get tracking data for this order
             $trackings = OrderTracking::where('order_id', $id)
                 ->get()
@@ -671,8 +679,8 @@ class OrderController extends Controller
     public function getOrderDetail($id)
     {
         try {
-
-           $order = Order::with([
+            $id = decrypt($id);
+            $order = Order::with([
                 'orderDetails.product.productTracking',
                 'orderServices.service',
                 'acceptedOffer.additionalPrices',
@@ -697,7 +705,6 @@ class OrderController extends Controller
                 'success' => true,
                 'data' => new OrderResource($order)
             ]);
-
         } catch (Exception $e) {
 
             return response()->json([
@@ -710,7 +717,7 @@ class OrderController extends Controller
     public function insertProductTracking(Request $request)
     {
         try {
-            
+
             DB::beginTransaction();
 
             $products = $request->products;
@@ -764,7 +771,6 @@ class OrderController extends Controller
                 'success' => true,
                 'message' => 'Product tracking added successfully'
             ], 200);
-
         } catch (Exception $e) {
 
             DB::rollBack();

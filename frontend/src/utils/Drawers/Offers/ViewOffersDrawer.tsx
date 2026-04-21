@@ -31,26 +31,12 @@ export default function ViewOffersDrawer({
 
   const getOffers = async () => {
     try {
-      const res = await ApiHelper(
-        "GET",
-        `/order/shipper/offers/${orderData.id}`
-      );
-
+      const res = await ApiHelper("GET", `/order/${orderData.id}/shipper-offers`);
       if (res.status === 200) {
         const data = res.data.data;
-
-        const acceptedOffer = data.offers?.find(
-          (offer: any) => offer.status === "accepted"
-        );
-
-        const filteredOffers = acceptedOffer
-          ? [acceptedOffer]
-          : data.offers;
-
-        setOffersData({
-          ...data,
-          offers: filteredOffers,
-        });
+        const acceptedOffer = data.offers?.find((offer: any) => offer.status === "accepted");
+        const filteredOffers = acceptedOffer ? [acceptedOffer] : data.offers;
+        setOffersData({ ...data, offers: filteredOffers });
       }
     } catch (err) {
       setOffersData(null);
@@ -64,18 +50,10 @@ export default function ViewOffersDrawer({
     setConfirmModal({ open: false, id: null, status: null });
   };
 
-  const handleOfferAction = async (
-    offerId: number,
-    status: "accepted" | "rejected"
-  ) => {
+  const handleOfferAction = async (offerId: number, status: "accepted" | "rejected") => {
     setActionLoading(true);
     try {
-      const res = await ApiHelper(
-        "POST",
-        `/order/offer/${offerId}/status`,
-        { status }
-      );
-
+      const res = await ApiHelper("POST", `/order/offer/${offerId}/status`, { status });
       if (res.status === 200) {
         toast.success(res.data.message || `Offer ${status}`);
         dispatch(fetchOrders({ page: 1, per_page: 10 }));
@@ -90,37 +68,37 @@ export default function ViewOffersDrawer({
   };
 
   useEffect(() => {
-    if (orderData?.id) {
-      getOffers();
-    }
+    if (orderData?.id) getOffers();
   }, [orderData]);
 
-  if (!offersData) return null;
+  if (!isOpen) return null;
+
+  if (!offersData) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30">
+        <div className="w-10 h-10 border-4 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const breakdown = offersData.price_breakdown;
+  const isShipForMe = offersData.shipping_type?.slug === "ship_for_me";
 
   return (
     <div className="fixed inset-0 z-[100] mt-18">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Drawer */}
-      <div className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-2xl transition-transform duration-300 flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
+      <div className={`absolute top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-2xl transition-transform duration-300 flex flex-col overflow-y-auto ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
+
         {/* ===== HEADER + ORDER SUMMARY ===== */}
         <div className="bg-white border-b p-4 flex-shrink-0">
           <div className="flex justify-between items-start px-4 py-3 border-b bg-white z-10 flex-shrink-0">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">
-                Order #{offersData.request_number}
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-black text-xl ml-2 flex-shrink-0"
-            >
+            <h2 className="text-lg font-semibold text-gray-800">
+              Order #{offersData.request_number}
+            </h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-black text-xl ml-2 flex-shrink-0">
               ✕
             </button>
           </div>
@@ -130,31 +108,75 @@ export default function ViewOffersDrawer({
             <div className="bg-gray-50 rounded-xl p-2">
               <p className="text-gray-500">Service</p>
               <p className="font-semibold text-xs">
-                {offersData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
+                {offersData.shipping_type?.title ?? "-"}
               </p>
             </div>
-
-            <div className="bg-gray-50 rounded-xl p-2">
-              <p className="text-gray-500">Total Price</p>
-              <p className="font-semibold text-blue-600 text-xs">
-                ${offersData.total_price}
-              </p>
-            </div>
-
             <div className="bg-gray-50 rounded-xl p-2">
               <p className="text-gray-500">Approx Weight</p>
-              <p className="font-semibold text-xs">
-                {offersData.total_aprox_weight} g
-              </p>
+              <p className="font-semibold text-xs">{offersData.total_aprox_weight} kg</p>
             </div>
-
             <div className="bg-gray-50 rounded-xl p-2">
               <p className="text-gray-500">Status</p>
-              <p className="font-semibold text-xs">
-                {offersData.order_status?.name || "Pending"}
-              </p>
+              <p className="font-semibold text-xs">{offersData.order_status?.name ?? "Pending"}</p>
             </div>
           </div>
+
+          {/* Price Breakdown */}
+          {breakdown && (
+            <div className="mt-3 bg-gray-50 rounded-xl p-3 text-sm space-y-2">
+              <p className="font-semibold text-gray-700 mb-1">Price Breakdown</p>
+
+              {/* Products — Buy For Me only */}
+              {!isShipForMe && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Products Subtotal</span>
+                  <span className="font-medium">${breakdown.initial_price}</span>
+                </div>
+              )}
+
+              {/* Offer Price — agar accepted offer hai */}
+              {breakdown.offer_price > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Shipper Offer</span>
+                  <span className="font-medium">${breakdown.offer_price}</span>
+                </div>
+              )}
+              {breakdown.selected_services > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Selected Services Fee</span>
+                  <span className="font-medium">${breakdown.selected_services}</span>
+                </div>
+              )}
+              {breakdown.additional_services > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Aditional Services Fee</span>
+                  <span className="font-medium">${breakdown.additional_services}</span>
+                </div>
+              )}
+
+              <div className="border-t my-1"></div>
+
+              {/* Stripe Fee */}
+              <div className="flex justify-between">
+                <span className="text-gray-500">Stripe Fee (4.2%)</span>
+                <span className="font-medium text-orange-500">${breakdown.stripe_fee}</span>
+              </div>
+
+              {/* Service Fee */}
+              <div className="flex justify-between">
+                <span className="text-gray-500">Service Fee (10%)</span>
+                <span className="font-medium text-orange-500">${breakdown.service_fee}</span>
+              </div>
+
+              <div className="border-t my-1"></div>
+
+              {/* Grand Total */}
+              <div className="flex justify-between font-semibold text-base">
+                <span>Total Payable</span>
+                <span className="text-green-600">${breakdown.total_payable?breakdown.total_payable:breakdown.total_payable}</span>
+              </div>
+            </div>
+          )}
 
           {/* Route */}
           <div className="mt-3 bg-gray-50 rounded-xl p-3 text-sm">
@@ -165,9 +187,7 @@ export default function ViewOffersDrawer({
                   {offersData.ship_from_city?.name}, {offersData.ship_from_state?.name}
                 </p>
               </div>
-
               <div className="text-gray-400 text-lg font-bold mx-2">→</div>
-
               <div className="text-right">
                 <p className="text-gray-500 text-xs">To</p>
                 <p className="font-medium text-sm">
@@ -179,131 +199,94 @@ export default function ViewOffersDrawer({
         </div>
 
         {/* ===== OFFERS LIST ===== */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 p-4 space-y-4">
           {offersData.offers?.length > 0 ? (
             offersData.offers.map((offer: any) => {
-              const breakdown = offer.price_breakdown;
+              const offerBreakdown = offer.price_breakdown;
               const isAccepted = offer.status === "accepted";
 
               return (
                 <div
                   key={offer.id}
-                  className={`rounded-2xl p-5 shadow-md border transition ${isAccepted
-                    ? "border-green-500 bg-green-50"
-                    : "bg-white"
-                    }`}
+                  className={`rounded-2xl p-5 shadow-md border transition ${isAccepted ? "border-green-500 bg-green-50" : "bg-white"}`}
                 >
-                  {/* Shipper */}
+                  {/* Shipper Info */}
                   <div className="flex justify-between items-center">
                     <div className="flex gap-3 items-center">
                       <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
                         {offer.shipper?.name?.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-semibold">
-                          {offer.shipper?.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {offer.shipper?.email}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {offer.shipper?.phone}
-                        </p>
+                        <p className="font-semibold">{offer.shipper?.name}</p>
+                        <p className="text-xs text-gray-500">{offer.shipper?.email}</p>
+                        <p className="text-xs text-gray-500">{offer.shipper?.phone}</p>
                       </div>
                     </div>
-
-                    <span
-                      className={`px-3 py-1 text-xs rounded-full font-medium ${offer.status === "accepted"
-                        ? "bg-green-500 text-white"
-                        : offer.status === "rejected"
-                          ? "bg-red-500 text-white"
-                          : offer.status === "inprogress"
-                            ? "bg-blue-500 text-white"
-                            : "bg-yellow-500 text-white"
-                        }`}
-                    >
+                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${offer.status === "accepted" ? "bg-green-500 text-white" :
+                        offer.status === "rejected" ? "bg-red-500 text-white" :
+                          offer.status === "inprogress" ? "bg-blue-500 text-white" :
+                            "bg-yellow-500 text-white"
+                      }`}>
                       {offer.status}
                     </span>
                   </div>
 
-                  {/* Price Breakdown */}
+                  {/* Offer Price Breakdown */}
                   <div className="mt-4 text-sm space-y-2">
 
                     {/* Offer Price */}
                     <div className="flex justify-between">
-                      <span>Offer Price</span>
-                      <span>${offer.price_breakdown?.offer_price}</span>
+                      <span className="text-gray-500">Offer Price</span>
+                      <span className="font-medium">${offerBreakdown?.offer_price}</span>
                     </div>
 
-                    {/* Additional Charges */}
+                    {/* Services */}
                     {offer.additional_prices?.map((item: any) => (
-                      <div
-                        key={item.id}
-                        className="flex justify-between text-gray-600"
-                      >
-                        <span>{item.title}</span>
+                      <div key={item.id} className="flex justify-between text-gray-600">
+                        <span>{item.service?.title ?? item.title}</span>
                         <span>${item.price}</span>
                       </div>
                     ))}
 
-                    {/* Divider */}
                     <div className="border-t pt-2"></div>
 
-                    {/* Shipper Total */}
-                    <div className="flex justify-between text-blue-600">
-                      <span>Shipper Total</span>
-                      <span className="font-semibold">
-                        ${offer.price_breakdown?.shipper_total}
-                      </span>
-                    </div>
-
-                    {/* FINAL TOTAL (MOST IMPORTANT 🔥) */}
-                    <div className="flex justify-between font-bold text-green-600 text-base">
-                      <span>Total Payable</span>
-                      <span>
-                        ${offer.price_breakdown?.total_payable}
-                      </span>
-                    </div>
-
-                  </div>
-
-                  {/* Buttons */}
-                  {["pending", "inprogress"].includes(
-                    offer.status
-                  ) && (
-                      <div className="flex gap-3 mt-5">
-                        <button
-                          onClick={() =>
-                            setConfirmModal({
-                              open: true,
-                              id: offer.id,
-                              status: "rejected",
-                            })
-                          }
-                          className="w-1/2 py-2 rounded-xl bg-gray-200 hover:bg-gray-300"
-                        >
-                          Reject
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            setConfirmModal({
-                              open: true,
-                              id: offer.id,
-                              status: "accepted",
-                            })
-                          }
-                          className="w-1/2 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
-                        >
-                          Accept
-                        </button>
+                    {/* Services Total */}
+                    {offerBreakdown?.services_total > 0 && (
+                      <div className="flex justify-between text-blue-600">
+                        <span>Services Total</span>
+                        <span className="font-semibold">${offerBreakdown?.services_total}</span>
                       </div>
                     )}
+
+                    {/* Offer Grand Total */}
+                    <div className="flex justify-between font-bold text-green-600 text-base">
+                      <span>Offer Total</span>
+                      <span>${offerBreakdown?.total_payable?offerBreakdown?.total_payable:offerBreakdown?.grand_total}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {["pending", "inprogress"].includes(offer.status) && (
+                    <div className="flex gap-3 mt-5">
+                      <button
+                        onClick={() => setConfirmModal({ open: true, id: offer.id, status: "rejected" })}
+                        className="w-1/2 py-2 rounded-xl bg-gray-200 hover:bg-gray-300"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => setConfirmModal({ open: true, id: offer.id, status: "accepted" })}
+                        className="w-1/2 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        Accept
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })
           ) : (
-            <p className="text-gray-500">No offers available</p>
+            <p className="text-gray-500 text-center mt-10">No offers available yet</p>
           )}
         </div>
 
@@ -318,44 +301,24 @@ export default function ViewOffersDrawer({
       {/* Confirm Modal */}
       <Modal
         isOpen={confirmModal.open}
-        onClose={() =>
-          setConfirmModal({
-            open: false,
-            id: null,
-            status: null,
-          })
-        }
+        onClose={() => setConfirmModal({ open: false, id: null, status: null })}
         className="max-w-md"
       >
         <div className="p-6 text-center">
-          <h3 className="text-xl font-semibold mb-4">
-            Confirm Action
-          </h3>
+          <h3 className="text-xl font-semibold mb-4">Confirm Action</h3>
           <p className="mb-6 text-gray-600">
-            Are you sure you want to{" "}
-            <strong>{confirmModal.status}</strong> this offer?
+            Are you sure you want to <strong>{confirmModal.status}</strong> this offer?
           </p>
-
           <div className="flex justify-center gap-4">
             <button
-              onClick={() =>
-                setConfirmModal({
-                  open: false,
-                  id: null,
-                  status: null,
-                })
-              }
+              onClick={() => setConfirmModal({ open: false, id: null, status: null })}
               className="px-4 py-2 rounded-lg bg-gray-300"
             >
               Cancel
             </button>
-
             <button
               onClick={handleConfirm}
-              className={`px-4 py-2 rounded-lg text-white ${confirmModal.status === "accepted"
-                ? "bg-green-500"
-                : "bg-red-600"
-                }`}
+              className={`px-4 py-2 rounded-lg text-white ${confirmModal.status === "accepted" ? "bg-green-500" : "bg-red-600"}`}
             >
               Confirm
             </button>

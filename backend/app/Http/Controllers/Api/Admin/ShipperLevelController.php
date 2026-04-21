@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreShipperLevelRequest;
 use App\Http\Requests\UpdateShipperLevelRequest;
+use App\Http\Resources\ShipperLevelResource;
+use App\Http\Resources\ShippingTypeResource;
 use App\Models\ShipperLevel;
 use App\Models\ShippingType;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 use Exception;
 
 class ShipperLevelController extends Controller
@@ -24,7 +25,7 @@ class ShipperLevelController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Shipper levels fetched successfully.',
-                'data' => $levels,
+                'data' => ShipperLevelResource::collection($levels),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -42,31 +43,33 @@ class ShipperLevelController extends Controller
     {
         DB::beginTransaction();
         try {
+            $shippingTypeIds = collect($request->shipping_type_ids ?? [])->map(function ($slug) {
+                $type = ShippingType::where('slug', $slug)->first();
+                return $type?->getRawOriginal('id');
+            })->filter()->toArray();
+
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'fee' => 'required|numeric|min:0',
                 'max_orders' => 'required|integer|min:0',
                 'max_locations' => 'required|integer|min:1',
                 'status' => 'required|in:0,1',
-                'shipping_type_ids' => 'array',
-                'shipping_type_ids.*' => 'exists:shipping_types,id',
             ]);
 
             $level = ShipperLevel::create($validated);
 
-            if (!empty($validated['shipping_type_ids'])) {
-                $level->shippingTypes()->sync($validated['shipping_type_ids']);
+            if (!empty($shippingTypeIds)) {
+                $level->shippingTypes()->sync($shippingTypeIds);
             }
 
             DB::commit();
 
             return response()->json(['message' => 'Level created successfully', 'data' => $level], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }
-
     /**
      * Display a specific shipper level.
      */
@@ -101,26 +104,27 @@ class ShipperLevelController extends Controller
                 'max_orders' => 'required|integer|min:0',
                 'max_locations' => 'required|integer|min:1',
                 'status' => 'required|in:0,1',
-                'shipping_type_ids' => 'array',
-                'shipping_type_ids.*' => 'exists:shipping_types,id',
             ]);
 
-            $level = ShipperLevel::findOrFail($id);
+            // Slug se real IDs find karo
+            $shippingTypeIds = collect($request->shipping_type_ids ?? [])->map(function ($slug) {
+                $type = ShippingType::where('slug', $slug)->first();
+                return $type?->getRawOriginal('id');
+            })->filter()->toArray();
+
+            $level = ShipperLevel::findOrFail(decrypt($id));
             $level->update($validated);
 
-            if (isset($validated['shipping_type_ids'])) {
-                $level->shippingTypes()->sync($validated['shipping_type_ids']);
-            }
+            $level->shippingTypes()->sync($shippingTypeIds);
 
             DB::commit();
 
             return response()->json(['message' => 'Level updated successfully', 'data' => $level], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
         }
-    }
-    /**
+    }    /**
      * Remove a shipper level.
      */
     public function destroy($id)
@@ -150,12 +154,12 @@ class ShipperLevelController extends Controller
     public function getShippingTypes()
     {
         try {
-            $types = ShippingType::select('id', 'title')->where('status', 1)->get();
+            $types = ShippingType::select('id', 'title', 'slug','status')->where('status', 1)->get();
 
             return response()->json([
                 'status' => true,
                 'message' => 'Shipping types fetched successfully',
-                'data' => $types,
+                'data' => ShippingTypeResource::collection($types),
             ]);
         } catch (Exception $e) {
             return response()->json([

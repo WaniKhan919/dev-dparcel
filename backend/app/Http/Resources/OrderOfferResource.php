@@ -25,6 +25,7 @@ class OrderOfferResource extends JsonResource
             'additional_prices' => $this->additionalPrices ?? [],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'order' =>   new OrderResource($this->order)
         ];
     }
 }

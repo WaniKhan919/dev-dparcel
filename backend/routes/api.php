@@ -68,9 +68,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('/shipper-levels')->group(function () {
             Route::get('/', [ShipperLevelController::class, 'index']);
             Route::post('/store', [ShipperLevelController::class, 'store']);
-            Route::get('/show{id}', [ShipperLevelController::class, 'show']);
-            Route::put('/update{id}', [ShipperLevelController::class, 'update']);
-            Route::delete('/destroy{id}', [ShipperLevelController::class, 'destroy']);
+            Route::get('/show/{id}', [ShipperLevelController::class, 'show']);
+            Route::put('/update/{id}', [ShipperLevelController::class, 'update']);
+            Route::delete('/destroy/{id}', [ShipperLevelController::class, 'destroy']);
         });
         
         Route::prefix('/settings')->group(function () {
@@ -146,12 +146,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index');
         Route::get('/all/orders', 'allOrders');
         Route::post('/store', 'store');
-        Route::get('/shipper/offers/{orderId}', 'getShipperOffers');
+        Route::get('/{orderId}/shipper-offers', 'getShipperOffers');
         Route::post('/offer/{offerId}/status', 'offerStatus');
         Route::get('/statuses', 'getOrderStatuses');
         Route::post('/update-status',  'updateStatus');
-        Route::get('/get-order-tracking/{id}',  'getOrderTracking');
-        Route::get('/get-order-detail/{id}',  'getOrderDetail');
+        Route::get('/{id}/get-order-tracking',  'getOrderTracking');
+        Route::get('/{id}/get-order-detail',  'getOrderDetail');
         Route::post('/product/insert-tracking',  'insertProductTracking');
     });
     
@@ -167,7 +167,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::controller(ShipperController::class)->group(function () {
             Route::get('/get/requests', 'getRequests');
-            Route::post('/confirm/request', 'confirmRequest');
+            Route::post('/send/request', 'sendRequest');
             Route::get('/get/offers', 'getMyOffers');
             Route::get('/get/current-offers', 'getCurrentOffers');
 
@@ -183,6 +183,7 @@ Route::middleware('auth:sanctum')->group(function () {
         
         Route::prefix('/order')->controller(ShipperOrderController::class)->group(function () {
             Route::post('/{orderId}/tracking-link', 'attchTrackingLink');
+            Route::get('/{id}/shipper-detail', 'getOrderDetailForShipper');
         });
     });
 

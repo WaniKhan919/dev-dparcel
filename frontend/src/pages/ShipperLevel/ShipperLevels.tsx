@@ -24,7 +24,8 @@ export interface ShipperLevelFormData {
   max_orders: number;
   max_locations: number;
   status?: number;
-  shipping_type_ids: number[];
+  shipping_type_ids: string[];
+  shipping_types?: { id: number; title: string }[];
 }
 
 // ✅ Validation schema
@@ -48,20 +49,7 @@ const schema = yup.object({
     .required("Status is required")
     .oneOf([0, 1], "Invalid status")
     .default(1),
-  shipping_type_ids: yup
-  .array()
-  .of(
-    yup
-      .number()
-      .transform((originalVal) => {
-        if (originalVal === "" || originalVal === undefined || originalVal === null)
-          return undefined;
-        return Number(originalVal);
-      })
-      .typeError("Invalid type ID")
-  )
-  .min(1, "Select at least one shipping type")
-  .required("Select at least one shipping type"),
+  shipping_type_ids: yup.array().of(yup.string()).min(1, "At least one required").required()
 });
 
 export default function ShipperLevels() {
@@ -89,7 +77,7 @@ export default function ShipperLevels() {
       const res = await ApiHelper("GET", "/shipping-types");
       if (res.status === 200) {
         const formatted = res.data.data.map((item: any) => ({
-          value: String(item.id),
+          value: item.slug,
           text: item.title,
         }));
         setShippingTypes(formatted);
@@ -133,6 +121,7 @@ export default function ShipperLevels() {
       if (res.status === 200) {
         toast.success(res.data.message || "Saved successfully ✅");
         fetchLevels();
+        reset();
         onClose();
       } else {
         toast.error(res.data.message || "Failed to save ❌");
@@ -154,6 +143,7 @@ export default function ShipperLevels() {
         max_orders: level.max_orders,
         max_locations: level.max_locations,
         status: level.status,
+        shipping_type_ids: (level as any).shipping_types?.map((st: any) => st.slug) || [],
       });
       setSelectedLevelId(id);
       setEditMode(true);
@@ -184,7 +174,14 @@ export default function ShipperLevels() {
 
   // ✅ Close modal
   const onClose = () => {
-    reset();
+    reset({
+      title: "",
+      fee: 0,
+      max_orders: 0,
+      max_locations: 0,
+      status: 1,
+      shipping_type_ids: [],
+    });
     setEditMode(false);
     setSelectedLevelId(null);
     closeModal();
@@ -306,6 +303,7 @@ export default function ShipperLevels() {
                         <MultiSelect
                           label="Select Shipping Types *"
                           options={shippingTypes}
+                          value={field.value?.map(String) || []}
                           onChange={(values) => field.onChange(values)}
                         />
                         {errors.shipping_type_ids && (

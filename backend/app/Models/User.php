@@ -85,129 +85,88 @@ class User extends Authenticatable
         if ($subscriptions->isEmpty()) {
             return [
                 'subscriptions' => collect(),
-                'orders' => collect(),
+                'orders'        => collect(),
             ];
         }
 
-        // Orders that are already processed for this shipper
         $excludedOrders = OrderOffer::where('user_id', $this->id)
-            ->whereIn('status', ['inprogress', 'accepted', 'rejected', 'cancelled', 'ignored'])
+            ->whereIn('status', ['pending','inprogress', 'accepted', 'rejected', 'cancelled', 'ignored'])
             ->pluck('order_id');
 
-        $allOrders = collect();
-        $shipperRoleId = DB::table('user_roles')->where('user_id', $this->id)->value('role_id');
+        $allOrders     = collect();
+        $serviceCountryIds = $this->serviceAreas()->pluck('country_id')->toArray();
 
         foreach ($subscriptions as $subscription) {
             $level = $subscription->level;
             if (!$level) continue;
 
-            $allowedServices = $level->shippingTypes->pluck('slug')->toArray();
-            if (!empty($allowedServices)) {
+            $allowedShippingTypeIds = $level->shippingTypes->pluck('id')->toArray();
+            if (empty($allowedShippingTypeIds)) continue;
 
-                $serviceCountryIds = $this->serviceAreas()->pluck('country_id')->toArray();
+            $orders = Order::with([
+                'orderServices.service',
+                'orderDetails.product',
+                'user',
+                'shipFromCountry:id,name',
+                'shipFromState:id,name',
+                'shipFromCity:id,name',
+                'shipToCountry:id,name',
+                'shipToState:id,name',
+                'shipToCity:id,name'
+            ])
+                ->whereNotIn('id', $excludedOrders)
+                ->whereIn('shipping_type_id', $allowedShippingTypeIds)
+                ->where(function ($query) use ($serviceCountryIds) {
+                    $query->whereIn('ship_from_country_id', $serviceCountryIds)
+                        ->orWhereIn('ship_to_country_id', $serviceCountryIds);
+                })
+                ->orderBy('id', 'desc')
+                ->get();
 
-                $orders = Order::with([
-                    'orderServices.service',
-                    'orderDetails.product',
-                    'user',
-                    'shipFromCountry:id,name',
-                    'shipFromState:id,name',
-                    'shipFromCity:id,name',
-                    'shipToCountry:id,name',
-                    'shipToState:id,name',
-                    'shipToCity:id,name'
-                ])
-                    ->whereNotIn('id', $excludedOrders)
-                    ->whereIn('service_type', $allowedServices)
-                    ->where(function ($query) use ($serviceCountryIds) {
-                        $query->whereIn('ship_from_country_id', $serviceCountryIds)
-                            ->orWhereIn('ship_to_country_id', $serviceCountryIds);
-                    })
-                    ->orderBy('id', 'desc')
-                    ->get();
-
-                $allOrders = $allOrders->merge($orders);
-            }
+            $allOrders = $allOrders->merge($orders);
         }
 
-        // Agar koi orders nahi mile toh early return
         if ($allOrders->isEmpty()) {
             return [
                 'subscriptions' => $subscriptions,
-                'orders' => collect(),
+                'orders'        => collect(),
             ];
         }
 
-        // Sirf 2 queries — N+1 se bachao
-        $shippingTypes = ShippingType::whereIn('slug', $allOrders->pluck('service_type')->unique())
+        $shippingTypes = ShippingType::whereIn('id', $allOrders->pluck('shipping_type_id')->unique())
             ->get()
-            ->keyBy('slug');
-
-        $paymentSettings = PaymentSetting::where('role_id', $shipperRoleId)
-            ->where('active', 1)
-            ->whereIn('shipping_types_id', $shippingTypes->pluck('id'))
-            ->get()
-            ->groupBy('shipping_types_id');
+            ->keyBy('id');
 
         return [
             'subscriptions' => $subscriptions,
-            'orders' => $allOrders->unique('id')->values()->map(function ($order) use ($shippingTypes, $paymentSettings) {
+            'orders' => $allOrders->unique('id')->values()->map(function ($order) use ($shippingTypes) {
 
-                $shippingType   = $shippingTypes->get($order->service_type);
-                $paymentSetting = $shippingType ? $paymentSettings->get($shippingType->id) : null;
-
-                $totalPrice = (float) $order->total_price;
-                $totalDeductions = 0;
-                $formattedPaymentSettings = [];
-
-                if ($paymentSetting) {
-                    foreach ($paymentSetting as $p) {
-                        $deduction = 0;
-
-                        if ($p->type === 'percent') {
-                            $deduction = round(($p->amount / 100) * $totalPrice, 2); // % of original total
-                        } elseif ($p->type === 'fixed') {
-                            $deduction = round((float) $p->amount, 2);
-                        }
-
-                        $totalDeductions += $deduction;
-
-                        $formattedPaymentSettings[] = [
-                            'id'              => $p->id,
-                            'title'           => $p->title,
-                            'amount'          => $p->amount,
-                            'type'            => $p->type,
-                            'description'     => $p->description,
-                            'deducted_amount' => $deduction, // kitna kata
-                        ];
-                    }
-                }
-
-                $shipperEarning = round($totalPrice - $totalDeductions, 2); // shipper ko milega
+                $shippingType   = $shippingTypes->get($order->shipping_type_id); 
 
                 return [
-                    'id'                  => $order->id,
-                    'user_id'             => $order->user_id,
-                    'service_type'        => $order->service_type,
-                    'total_aprox_weight'  => $order->total_aprox_weight,
-                    'total_price'         => $totalPrice,
-                    'tracking_number'     => $order->tracking_number,
-                    'request_number'      => $order->request_number,
-                    'status'              => $order->status,
-                    'created_at'          => $order->created_at,
-                    'updated_at'          => $order->updated_at,
-                    'ship_from_country'   => $order->shipFromCountry?->name,
-                    'ship_from_state'     => $order->shipFromState?->name,
-                    'ship_from_city'      => $order->shipFromCity?->name,
-                    'ship_to_country'     => $order->shipToCountry?->name,
-                    'ship_to_state'       => $order->shipToState?->name,
-                    'ship_to_city'        => $order->shipToCity?->name,
-                    'order_details'       => $order->orderDetails,
-                    'order_services'       => $order->orderServices,
-                    'user'                => $order->user,
-                    'total_deductions'    => $totalDeductions,
-                    'remening_earning'     => $shipperEarning,
-                    'payment_setting'     => $formattedPaymentSettings,
+                    'id'                 => encrypt($order->id),
+                    'user_id'            => $order->user_id,
+                    'shipping_type_id'   => $order->shipping_type_id,
+                    'shipping_type'      => $shippingType?->title,
+                    'shipping_type_slug' => $shippingType?->slug,
+                    'total_aprox_weight' => $order->total_aprox_weight,
+                    'total_price'        => (float) $order->total_price,
+                    'stripe_fee'         => (float) $order->stripe_fee,
+                    'service_fee'        => (float) $order->service_fee,
+                    'grand_total'        => (float) $order->grand_total,
+                    'tracking_number'    => $order->tracking_number,
+                    'request_number'     => $order->request_number,
+                    'status'             => $order->status,
+                    'created_at'         => $order->created_at,
+                    'ship_from_country'  => $order->shipFromCountry?->name,
+                    'ship_from_state'    => $order->shipFromState?->name,
+                    'ship_from_city'     => $order->shipFromCity?->name,
+                    'ship_to_country'    => $order->shipToCountry?->name,
+                    'ship_to_state'      => $order->shipToState?->name,
+                    'ship_to_city'       => $order->shipToCity?->name,
+                    'order_details'      => $order->orderDetails,
+                    'order_services'     => $order->orderServices,
+                    'user'               => $order->user,
                 ];
             }),
         ];

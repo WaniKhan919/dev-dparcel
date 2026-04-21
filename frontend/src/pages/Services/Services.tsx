@@ -5,24 +5,26 @@ import ComponentCard from "../../components/common/ComponentCard";
 import Badge from "../../components/ui/badge/Badge";
 import DParcelTable from "../../components/tables/DParcelTable";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../store";
+import { AppDispatch, RootState } from "../../store";
 import { useEffect, useState } from "react";
 import { fetchServices } from "../../slices/servicesSlice";
+import { fetchShippingType } from "../../slices/shippingTypeSlice";
 import PageMeta from "../../components/common/PageMeta";
 import { useModal } from "../../hooks/useModal";
 import { ApiHelper } from "../../utils/ApiHelper";
 import toast from "react-hot-toast";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { Modal } from "../../components/ui/modal";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import { PencilIcon, TrashBinIcon } from "../../icons";
+import Select from "../../components/ui/dropdown/Select";
 
 interface ServiceFormData {
   id: number;
   title: string;
-  price: number;
+  shipping_type: number;
   description?: string | null;
   is_required: number;
   status?: number | null;
@@ -31,11 +33,7 @@ interface ServiceFormData {
 // Validation schema
 const schema = yup.object({
   title: yup.string().required("Title is required"),
-  price: yup
-    .number()
-    .typeError("Price must be a number")
-    .required("Price is required")
-    .positive("Price must be greater than 0"),
+  shipping_type: yup.number().required("Shipping type is required"),
   description: yup.string().nullable(),
   is_required: yup
     .mixed()
@@ -52,6 +50,7 @@ type FormData = yup.InferType<typeof schema>;
 export default function Services() {
   const dispatch = useDispatch<AppDispatch>();
   const { services } = useSelector((state: any) => state.services);
+  const { shippingType } = useSelector((state: RootState) => state.shippingType);
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -59,24 +58,31 @@ export default function Services() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-
-
   useEffect(() => {
     dispatch(fetchServices());
+    dispatch(fetchShippingType());
   }, [dispatch]);
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ServiceFormData>({
-    resolver: yupResolver(schema) as any, // <— avoids deep inference issue safely
+    resolver: yupResolver(schema) as any,
+    defaultValues: {
+      title: "",
+      shipping_type: undefined,
+      description: "",
+      is_required: "" as any,
+      status: "" as any,
+    }
   });
 
   const columns = [
     { key: "title", header: "Title" },
-    { key: "price", header: "Price" },
+    { key: "shipping_type", header: "Shipping Type" },
     {
       key: "is_required",
       header: "Is Required",
@@ -173,7 +179,7 @@ export default function Services() {
     if (service) {
       reset({
         title: service.title,
-        price: service.price,
+        shipping_type: service.shipping_type,
         description: service.description || "",
         is_required: String(service.is_required) as any,
         status: service.status !== null ? String(service.status) as any : "",
@@ -203,9 +209,10 @@ export default function Services() {
       setDeleteId(null);
     }
   };
-
-
-
+  const handleOpenModal = () => {
+    reset()
+    openModal()
+  }
 
   return (
     <>
@@ -214,7 +221,7 @@ export default function Services() {
       <div className="space-y-6">
         <ComponentCard title="Services">
           <div className="flex justify-end mb-4">
-            <Button size="sm" onClick={openModal}>
+            <Button size="sm" onClick={handleOpenModal}>
               Add Service
             </Button>
           </div>
@@ -243,25 +250,28 @@ export default function Services() {
                     <p className="text-red-500 text-sm">{errors.title.message}</p>
                   )}
                 </div>
-
-                {/* Price */}
-                <div className="flex-1">
-                  <Label>
-                    Price <span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Enter price"
-                    {...register("price")}
-                  />
-                  {errors.price && (
-                    <p className="text-red-500 text-sm">{errors.price.message}</p>
-                  )}
-                </div>
               </div>
-
               <div className="flex gap-x-4">
+                <div className="flex-1">
+                  <Controller
+                    name="shipping_type"
+                    control={control}
+                    render={({ field }) => (
+                      <Select<number>
+                        label="Shipping Type"
+                        options={shippingType?.map((c: any) => ({
+                          value: c.id,
+                          label: c.title,
+                        })) || []}
+                        value={field.value ? Number(field.value) : null}
+                        onChange={(val: any) => {field.onChange(val);}}
+                        placeholder="Shipping Type"
+                        error={errors.shipping_type?.message as string}
+                        clearable
+                      />
+                    )}
+                  />
+                </div>
                 {/* Is Required */}
                 <div className="flex-1">
                   <Label>
@@ -287,7 +297,7 @@ export default function Services() {
                     {...register("status")}
                     className="w-full border border-gray-300 rounded-md p-2 dark:bg-gray-800 dark:text-white"
                   >
-                    <option value="">Select status</option>
+                    <option value="">Select Status</option>
                     <option value="1">Active</option>
                     <option value="0">Inactive</option>
                   </select>
@@ -350,7 +360,7 @@ export default function Services() {
                 onClick={deleteService}
                 disabled={loading}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
-                
+
               >
                 {loading ? "Deleting..." : "Delete"}
               </Button>

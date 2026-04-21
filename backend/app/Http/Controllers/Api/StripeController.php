@@ -72,15 +72,15 @@ class StripeController extends Controller
             $userId = Auth::id();
  
             $validated = $request->validate([
-                'order_id' => 'required|exists:orders,id',
+                'order_id' => 'required',
                 'amount' => 'required|numeric',
                 'currency' => 'required|string',
                 'stripe_payment_intent' => 'required|string',
                 'stripe_payment_method' => 'nullable|string',
                 'status' => 'required|string',
             ]);
- 
-            $order = Order::with('orderOffer')->findOrFail($validated['order_id']);
+            $orderId = decrypt($validated['order_id']);
+            $order = Order::with('acceptedOffer')->findOrFail( $orderId);
             $order->status = 4;
             $order->save();
             
@@ -90,17 +90,18 @@ class StripeController extends Controller
             // $offer->save();
             OrderTracking::insert([
                 [
-                    'order_id' => $validated['order_id'],
+                    'order_id' => $orderId,
                     'status_id' => 5, //inprogress
                 ]
             ]);
-            $shipperId = $order->orderOffer->user_id; // assuming Order model has shipper relation
+            $shipperId = $order->acceptedOffer->user_id; // assuming Order model has shipper relation
             $shippingTypeId = $order->service_type=='buy_for_me'?1:2;
             $admin = User::whereHas('roles', function($q) {
                 $q->where('name', 'admin');
             })->first();
             $adminId = $admin->id;
  
+            $validated['order_id'] = $orderId;
             $validated['shopper_id'] = $userId;
             $validated['shipper_id'] = $shipperId;
             $validated['shipping_type_id'] = $shippingTypeId;

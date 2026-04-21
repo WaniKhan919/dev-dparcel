@@ -8,6 +8,7 @@ class OrderOfferPrice extends Model
 {
     protected $fillable = [
         'order_offer_id',
+        'service_id',
         'title',
         'price',
     ];
@@ -16,5 +17,9 @@ class OrderOfferPrice extends Model
     {
         return $this->belongsTo(OrderOffer::class,'order_offer_id', 'id');
     }
-    
+    public function service()
+    {
+        return $this->belongsTo(Service::class, 'service_id');
+    }
+        
 }

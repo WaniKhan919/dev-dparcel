@@ -4,12 +4,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\OrderOfferResource;
 use App\Models\Order;
 use App\Models\OrderOffer;
 use App\Models\OrderTracking;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ShipperController extends Controller
 {
@@ -42,59 +44,57 @@ class ShipperController extends Controller
         }
     }
 
-    public function confirmRequest(Request $request)
+    public function sendRequest(Request $request)
     {
+        DB::beginTransaction();
         try {
-            // Create main offer
-            $orderOffer = OrderOffer::create([
-                'order_id'    => $request->id,
-                'user_id'     => Auth::id(),
-                'message'     => $request->message ?? null,
-                'status'      => $request->status,
-                'offer_price' => $request->offerPrice,
+            $validated = $request->validate([
+                'order_id'          => 'required|string',
+                'offer_price'       => 'required|numeric|min:0',
+                'services'          => 'nullable|array',
+                'services.*.service_id' => 'nullable|integer|exists:services,id',
+                'services.*.title'  => 'nullable|string',
+                'services.*.price'  => 'required_with:services.*|numeric|min:0',
             ]);
 
-            // Store Additional Prices
-            $additionalPrices = [];
-            $totalOfferPrice = $request->offerPrice; // Start with main offer
+            $orderId = decrypt($request->order_id);
 
-            if ($request->has('additional_prices') && is_array($request->additional_prices)) {
-                foreach ($request->additional_prices as $price) {
-                    $newPrice = $orderOffer->additionalPrices()->create([
-                        'title' => $price['title'] ?? null,
-                        'price' => $price['price'] ?? 0,
+            // Create main offer
+            $orderOffer = OrderOffer::create([
+                'order_id'    => $orderId,
+                'user_id'     => Auth::id(),
+                'message'     => $request->message ?? null,
+                'status'      => 'pending',
+                'offer_price' => $request->offer_price,
+            ]);
+
+            // Store services in order_offer_prices
+            if (!empty($validated['services'])) {
+                foreach ($validated['services'] as $service) {
+                    $orderOffer->additionalPrices()->create([
+                        'service_id' => $service['service_id'] ?? null, // selected → id store, additional → null
+                        'title'      => $service['title'] ?? null,       // selected → null, additional → title store
+                        'price'      => $service['price'],
                     ]);
-
-                    $additionalPrices[] = [
-                        'title' => $newPrice->title,
-                        'price' => $newPrice->price,
-                    ];
-
-                    $totalOfferPrice += (float) $newPrice->price;
                 }
             }
 
-            // Prepare data for email template
-            $order = Order::with('user')->where('id', $request->id)->first();
-            OrderTracking::insert([
-                [
-                    'order_id' => $request->id,
-                    'status_id' => 2,//Offer Placed
-                ]
+            // Order tracking
+            $order = Order::with('user')->findOrFail($orderId);
+
+            OrderTracking::create([
+                'order_id'  => $orderId,
+                'status_id' => 2, // Offer Placed
             ]);
+
+            // Email
             $emailData = [
-                'user_name'         => $order->user->name,
-                'order_number'      => $order->request_number,
-                'request_number'    => $order->request_number,
-                'offer_price'       => $orderOffer->offer_price,
-                'additional_prices' => $additionalPrices,      // <-- Add additional prices
-                'total_offer_price' => $totalOfferPrice,       // <-- Add total price
-                'offer_message'     => $orderOffer->message,
-                'service_type'      => ucfirst(str_replace('_', ' ', $order->service_type)),
-                'dashboard_url'     => env('REACT_APP') . '/shopper/view/request',
+                'user_name'      => $order->user->name,
+                'request_number' => $order->request_number,
+                'offer_price'    => $orderOffer->offer_price,
+                'dashboard_url'  => env('REACT_APP') . '/shopper/view/request',
             ];
 
-            // Send Email
             sendEmail(
                 $order->user->email,
                 'An Offer is placed against your order!',
@@ -102,100 +102,102 @@ class ShipperController extends Controller
                 $emailData
             );
 
+            DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Offer has been sent from your side',
-                'data'    => $orderOffer
+                'message' => 'Offer has been sent successfully',
+                'data'    => $orderOffer->load('additionalPrices'),
             ], 200);
-
         } catch (Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to confirm request',
+                'message' => 'Failed to send offer',
                 'error'   => $e->getMessage()
             ], 500);
         }
     }
-public function getMyOffers(Request $request)
-{
-    try {
-        $userId = Auth::id();
-        $perPage = (int) $request->get('per_page', 10);
+    public function getMyOffers(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+            $perPage = (int) $request->get('per_page', 10);
 
-        $orderOffers = OrderOffer::with([
-            'additionalPrices',
-            'order.orderServices.Service',
-            'order.orderStatus:id,name',
-            'order.orderDetails.product',
-            'order.shipFromCountry:id,name',
-            'order.shipFromState:id,name',
-            'order.shipFromCity:id,name',
-            'order.shipToCountry:id,name',
-            'order.shipToState:id,name',
-            'order.shipToCity:id,name',
-        ])
-            ->where('user_id', $userId)
-            ->orderBy('id', 'desc')
-            ->paginate($perPage);
+            $orderOffers = OrderOffer::with([
+                'additionalPrices',
+                'order.orderServices.Service',
+                'order.orderStatus:id,name',
+                'order.shippingType:id,title,slug',
+                'order.orderDetails.product',
+                'order.shipFromCountry:id,name',
+                'order.shipFromState:id,name',
+                'order.shipFromCity:id,name',
+                'order.shipToCountry:id,name',
+                'order.shipToState:id,name',
+                'order.shipToCity:id,name',
+            ])
+                ->where('user_id', $userId)
+                ->orderBy('id', 'desc')
+                ->paginate($perPage);
 
-        // ✅ modify data here
-        $data = collect($orderOffers->items())->map(function ($offer) {
+            // ✅ modify data here
+            $data = collect($orderOffers->items())->map(function ($offer) {
 
-            $offerPrice = (float) $offer->offer_price;
+                $offerPrice = (float) $offer->offer_price;
 
-            $additionalSum = collect($offer->additionalPrices)
-                ->sum(function ($item) {
-                    return (float) $item->price;
-                });
+                $additionalSum = collect($offer->additionalPrices)
+                    ->sum(function ($item) {
+                        return (float) $item->price;
+                    });
 
-            $totalOfferPrice = $offerPrice + $additionalSum;
+                $totalOfferPrice = $offerPrice + $additionalSum;
 
-            $orderTotal = (float) optional($offer->order)->total_price;
+                $orderTotal = (float) optional($offer->order)->total_price;
 
-            $totalPayablePrice = $orderTotal + $totalOfferPrice;
+                $totalPayablePrice = $orderTotal + $totalOfferPrice;
 
-            // add new fields
-            $offer->price_breakdown = [
-                'offer_price' => $offerPrice,
-                'additional_total' => $additionalSum,
-                'total_offer_price' => $totalOfferPrice,
-                'order_price' => $orderTotal,
-                'total_payable_price' => $totalPayablePrice,
-            ];
+                // add new fields
+                $offer->price_breakdown = [
+                    'offer_price' => $offerPrice,
+                    'additional_total' => $additionalSum,
+                    'total_offer_price' => $totalOfferPrice,
+                    'order_price' => $orderTotal,
+                    'total_payable_price' => $totalPayablePrice,
+                ];
 
-            return $offer;
-        });
+                return $offer;
+            });
 
-        return response()->json([
-            'success' => true,
-            'data'    => $data,
-            'meta'    => [
-                'current_page'  => $orderOffers->currentPage(),
-                'last_page'     => $orderOffers->lastPage(),
-                'per_page'      => $orderOffers->perPage(),
-                'total'         => $orderOffers->total(),
-                'next_page_url' => $orderOffers->nextPageUrl(),
-                'prev_page_url' => $orderOffers->previousPageUrl(),
-            ],
-        ], 200);
-
-    } catch (Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to get requests',
-            'error'   => $e->getMessage()
-        ], 500);
+            return response()->json([
+                'success' => true,
+                'data'    => OrderOfferResource::collection($data),
+                'meta'    => [
+                    'current_page'  => $orderOffers->currentPage(),
+                    'last_page'     => $orderOffers->lastPage(),
+                    'per_page'      => $orderOffers->perPage(),
+                    'total'         => $orderOffers->total(),
+                    'next_page_url' => $orderOffers->nextPageUrl(),
+                    'prev_page_url' => $orderOffers->previousPageUrl(),
+                ],
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get requests',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
-}
     public function getCurrentOffers(Request $request)
     {
         try {
-            $user = Auth::user();
+            $user    = Auth::user();
             $perPage = (int) $request->get('per_page', 10);
-            $status  = $request->get('status'); // 👈 filter from frontend
+            $status  = $request->get('status');
 
-            // Base query
-            $ordersQuery = Order::with([
+            $orders = Order::with([
+                'shippingType:id,title,slug',
                 'orderServices.service',
                 'orderDetails.product',
                 'user',
@@ -205,49 +207,86 @@ public function getMyOffers(Request $request)
                 'shipToCountry:id,name',
                 'shipToState:id,name',
                 'shipToCity:id,name',
-                'orderStatus'
+                'orderStatus:id,name',
+                'offers' => function ($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                    ->with('additionalPrices.service');
+                },
             ])
-            ->whereHas('offers', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->orderByDesc('id');
+                ->whereHas('offers', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->when($status, fn($q) => $q->where('status', $status))
+                ->orderByDesc('id')
+                ->paginate($perPage);
 
-            // Apply filter directly on orders.status
-            if ($status) {
-                $ordersQuery->where('status', $status);
-            }
+            $orders->getCollection()->transform(function ($order) use ($user) {
 
-            // Paginate
-            $orders = $ordersQuery->paginate($perPage);
+                $myOffer = $order->offers->first();
 
-            // Transform collection
-            $orders->getCollection()->transform(function ($order) {
+                $offerPrice    = $myOffer ? (float) $myOffer->offer_price : 0;
+                $servicesTotal = $myOffer
+                    ? $myOffer->additionalPrices->sum(fn($p) => (float) $p->price)
+                    : 0;
+
+                $shippingType = $order->shippingType;
+
                 return [
-                    'id' => $order->id,
-                    'user_id' => $order->user_id,
-                    'service_type' => $order->service_type,
+                    'id'                 => encrypt($order->id),
+                    'request_number'     => $order->request_number,
+                    'order_status'       => $order->orderStatus->name,
                     'total_aprox_weight' => $order->total_aprox_weight,
-                    'total_price' => $order->total_price,
-                    'tracking_number' => $order->tracking_number,
-                    'request_number' => $order->request_number,
-                    'status' => $order->status,
-                    'ship_from_country' => $order->shipFromCountry?->name,
-                    'ship_from_state' => $order->shipFromState?->name,
-                    'ship_from_city' => $order->shipFromCity?->name,
-                    'ship_to_country' => $order->shipToCountry?->name,
-                    'ship_to_state' => $order->shipToState?->name,
-                    'ship_to_city' => $order->shipToCity?->name,
-                    'order_details' => $order->orderDetails,
-                    'order_services' => $order->orderServices,
-                    'orderStatus' => $order->orderStatus,
-                    'user' => $order->user,
+
+                    // Shipping type
+                    'shipping_type_id'   => $order->shipping_type_id,
+                    'shipping_type'      => $shippingType?->title,
+                    'shipping_type_slug' => $shippingType?->slug,
+
+                    // Location
+                    'ship_from_country'  => $order->shipFromCountry?->name,
+                    'ship_from_state'    => $order->shipFromState?->name,
+                    'ship_from_city'     => $order->shipFromCity?->name,
+                    'ship_to_country'    => $order->shipToCountry?->name,
+                    'ship_to_state'      => $order->shipToState?->name,
+                    'ship_to_city'       => $order->shipToCity?->name,
+
+                    // Price breakdown
+                    'price_breakdown'    => [
+                        'initial_price'  => (float) $order->total_price,
+                        'offer_price'    => $offerPrice,
+                        'services_total' => $servicesTotal,
+                        'stripe_fee'     => (float) $order->stripe_fee,
+                        'service_fee'    => (float) $order->service_fee,
+                        'grand_total'    => (float) $order->grand_total,
+                        'total_payable'  => (float) $order->grand_total + $offerPrice + $servicesTotal,
+                    ],
+
+                    // My offer detail
+                    'my_offer'           => $myOffer ? [
+                        'id'              => $myOffer->id,
+                        'status'          => $myOffer->status,
+                        'offer_price'     => (float) $myOffer->offer_price,
+                        'services'        => $myOffer->additionalPrices->map(fn($p) => [
+                            'id'         => $p->id,
+                            'service_id' => $p->service_id,
+                            'title'      => $p->service?->title ?? $p->title,
+                            'price'      => (float) $p->price,
+                        ]),
+                        'services_total'  => $servicesTotal,
+                        'total'           => $offerPrice + $servicesTotal,
+                    ] : null,
+
+                    // Relations
+                    'order_details'      => $order->orderDetails,
+                    'order_services'     => $order->orderServices,
+                    'user'               => $order->user,
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'data' => $orders->items(),
-                'meta' => [
+                'data'    => $orders->items(),
+                'meta'    => [
                     'current_page'  => $orders->currentPage(),
                     'last_page'     => $orders->lastPage(),
                     'per_page'      => $orders->perPage(),
@@ -261,7 +300,7 @@ public function getMyOffers(Request $request)
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get active requests',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }

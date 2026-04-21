@@ -9,7 +9,7 @@ class Order extends Model
 {
     protected $fillable = [
         'user_id',
-        'service_type',
+        'shipping_type_id',
         'ship_from_country_id',
         'ship_from_state_id',
         'ship_from_city_id',
@@ -18,6 +18,9 @@ class Order extends Model
         'ship_to_city_id',
         'total_aprox_weight',
         'total_price',
+        'stripe_fee',
+        'service_fee',
+        'grand_total',
         'tracking_number',
         'request_number',
         'tracking_link',
@@ -45,10 +48,6 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-    public function orderOffer()
-    {
-        return $this->hasOne(OrderOffer::class);
     }
     public function offers()
     {
@@ -111,5 +110,9 @@ class Order extends Model
     public function messages()
     {
         return $this->hasMany(OrderMessage::class, 'order_id');
+    }
+    public function shippingType()
+    {
+        return $this->belongsTo(ShippingType::class, 'shipping_type_id');
     }
 }

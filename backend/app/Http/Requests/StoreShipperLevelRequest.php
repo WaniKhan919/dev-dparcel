@@ -28,7 +28,7 @@ class StoreShipperLevelRequest extends FormRequest
             'max_locations' => 'required|integer|min:1',
             'status' => 'nullable|in:0,1',
             'shipping_type_ids' => 'nullable|array',
-            'shipping_type_ids.*' => 'exists:shipping_types,id',
+            'shipping_type_ids.*' => 'required',
         ];
     }
 }

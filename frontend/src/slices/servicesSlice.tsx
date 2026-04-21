@@ -22,11 +22,14 @@ const initialState: Servicestate = {
   error: null,
 };
 
-// Only GET API here
-export const fetchServices = createAsyncThunk<Permission[], void, { rejectValue: string }>(
+export const fetchServices = createAsyncThunk<Permission[], number | void,{ rejectValue: string }>(
   "services/fetchServices",
-  async (_, { rejectWithValue }) => {
-    const response = await ApiHelper<{ data: Permission[] }>("GET", "/service");
+  async (shippingTypeId, { rejectWithValue }) => {
+    const url = shippingTypeId
+      ? `/service?shipping_type_id=${shippingTypeId}`
+      : "/service";
+
+    const response = await ApiHelper<{ data: Permission[] }>("GET", url);
 
     if (response.status >= 200 && response.status < 300) {
       return response.data.data;

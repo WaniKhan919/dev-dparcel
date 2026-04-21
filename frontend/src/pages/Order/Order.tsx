@@ -5,7 +5,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import { Controller, useForm } from "react-hook-form";
 import Checkbox from "../../components/form/input/Checkbox";
-import { AppDispatch } from "../../store";
+import { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -19,6 +19,7 @@ import { fetchPaymentPlan } from "../../slices/getPaymentSettingForRolesSlice";
 import { fetchCountries } from "../../slices/countriesSlice";
 import { fetchStates } from "../../slices/statesSlice";
 import { fetchCities } from "../../slices/citiesSlice";
+import { fetchShippingType } from "../../slices/shippingTypeSlice";
 import Select from "../../components/ui/dropdown/Select";
 import Spin from "../../components/ui/spin/Spin";
 import { useNavigate } from "react-router";
@@ -139,14 +140,15 @@ export default function Order() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { services } = useSelector((state: any) => state.services);
+  const { shippingType } = useSelector((state: RootState) => state.shippingType);
   const { data: paymentPlanData } = useSelector((state: any) => state.paymentPlan);
   const [currentStep, setCurrentStep] = useState(0);
   const [productRequired, setProductRequired] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [shipTypeId, setShipTypeId] = useState(0);
+  const [shipTypeId, setShipTypeId] = useState('');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
-  const { data: countries} = useSelector((state: any) => state.countries);
+  const { data: countries } = useSelector((state: any) => state.countries);
   const { data: states } = useSelector((state: any) => state.states);
   const { data: cities } = useSelector((state: any) => state.cities);
   const activeSection = useRef<"from" | "to" | null>(null);
@@ -259,7 +261,7 @@ export default function Order() {
   };
 
   const onSubmitForm = async (data: any) => {
-    
+
     try {
       setIsLoading(true);
       // 1️⃣ Get active and selected services
@@ -271,7 +273,7 @@ export default function Order() {
       // Find all checked or required services
       const selectedServices = activeServices.filter((item: any) => {
         const fieldName = item.title.replace(/\s+/g, "_").toLowerCase();
-        const isRequired = item.is_required === 1;
+        const isRequired = item.is_required === true;
         return isRequired || watchedValues[fieldName];
       });
 
@@ -282,7 +284,7 @@ export default function Order() {
 
       // 2️⃣ Create final payload
       const payload = {
-        service_type: data.serviceType === "Buy For Me" ? "buy_for_me" : "ship_for_me",
+        shipping_type_id: data.serviceType,
         ship_from_country_id: data.ship_from_country_id,
         ship_from_state_id: data.ship_from_state_id,
         ship_from_city_id: data.ship_from_city_id,
@@ -314,15 +316,15 @@ export default function Order() {
     }
   };
 
-  const handleServiceChange = (option: string, onChange: any) => {
-    onChange(option);
-    const shippingTypeId = option === "Buy For Me" ? 1 : 2;
-    setShipTypeId(shippingTypeId)
-    dispatch(fetchPaymentPlan({ shipping_types_id: shippingTypeId }));
+  const handleServiceChange = (id: number, slug: string, onChange: any) => {
+    onChange(id);
+    setShipTypeId(slug)
+    dispatch(fetchServices(id));
+    dispatch(fetchPaymentPlan({ shipping_types_id: id }));
   };
 
   useEffect(() => {
-    dispatch(fetchServices());
+    dispatch(fetchShippingType());
     dispatch(fetchCountries());
   }, [dispatch]);
 
@@ -343,7 +345,7 @@ export default function Order() {
 
   useEffect(() => {
     if (!cities) return;
-      
+
     const cityOptions = cities?.map((s: any) => ({
       value: s.id,
       label: s.name,
@@ -396,30 +398,30 @@ export default function Order() {
           {currentStep === 0 && (
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800">Service Type</h2>
-              
+
               <Controller
                 control={control}
                 name="serviceType"
                 render={({ field }) => (
                   <div className="flex flex-col sm:flex-row gap-4">
-                    {["Buy For Me", "Ship For Me"].map((option) => (
+                    {shippingType.map((option, index) => (
                       <label
-                        key={option}
+                        key={index}
                         className={`flex-1 flex items-center justify-between cursor-pointer rounded-xl border p-5 transition 
-                          ${field.value === option
+                          ${field.value == option.id
                             ? "border-blue-500 bg-blue-50"
                             : "border-gray-300 bg-white hover:bg-gray-50"
                           }`}
                       >
                         <input
                           type="radio"
-                          value={option}
-                          checked={field.value === option}
-                          onChange={() => handleServiceChange(option, field.onChange)}
+                          value={option.id}
+                          checked={field.value == option.id}
+                          onChange={() => handleServiceChange(option.id, option.slug, field.onChange)}
                           className="hidden"
                         />
-                        <span className="font-medium text-gray-700">{option}</span>
-                        {field.value === option && (
+                        <span className="font-medium text-gray-700">{option.title}</span>
+                        {field.value === option.id && (
                           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white">
                             ✓
                           </span>
@@ -705,66 +707,62 @@ export default function Order() {
           {currentStep === 3 && (
             <div className="relative">
               {/* Loader */}
-              {isLoading && (
-                <Spin isOpen={isLoading} text="Processing..." />
-              )}
-              <div className={`
-                space-y-6
-                ${isLoading ? "opacity-60 pointer-events-none" : ""}
-              `}>
-                
-                <h2 className="text-xl font-semibold text-gray-800">Additional Services</h2>
-                {/* Watch form data */}
+              {isLoading && <Spin isOpen={isLoading} text="Processing..." />}
+
+              <div
+                className={`space-y-6 ${isLoading ? "opacity-60 pointer-events-none" : ""
+                  }`}
+              >
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Additional Services
+                </h2>
+
                 {(() => {
                   const watchedValues = watch();
 
                   // 🧮 1. Product total
                   const productTotal = products.reduce(
-                    (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
+                    (sum, p) =>
+                      sum +
+                      (Number(p.price) || 0) * (Number(p.quantity) || 0),
                     0
                   );
 
                   // 🧮 2. Service total
-                  const activeServices = services?.filter((item: any) => item.status === 1) || [];
+                  const activeServices =
+                    services?.filter((item: any) => item.status === 1) || [];
+
                   const selectedServices = activeServices.filter((item: any) => {
-                    const fieldName = item.title.replace(/\s+/g, "_").toLowerCase();
-                    const isRequired = item.is_required === 1;
+                    const fieldName = item.title
+                      .replace(/\s+/g, "_")
+                      .toLowerCase();
+                    const isRequired = item.is_required === true;
                     return isRequired || watchedValues[fieldName];
                   });
 
-                  const serviceTotal = selectedServices.reduce(
-                    (sum: number, s: { price?: string }) => sum + Number(s.price || 0),
-                    0
-                  );
 
-                  // 🧮 3. Base total depends on shipTypeId
+                  // 🧮 3. Base total
                   const baseTotal =
-                    shipTypeId === 1
-                      ? productTotal + serviceTotal
-                      : serviceTotal;
+                    shipTypeId === "buy_for_me"
+                      ? productTotal
+                      : 0;
 
-                  // 🧮 4. Payment plan total calculated on baseTotal
-                  const paymentPlanTotal =
-                    paymentPlanData?.reduce((sum: number, plan: any) => {
-                      const amount = Number(plan.amount);
-                      if (plan.type === "percent") {
-                        return sum + (baseTotal * amount) / 100;
-                      } else {
-                        return sum + amount;
-                      }
-                    }, 0) || 0;
+                  // 🧮 4. Fees (ONLY on baseTotal)
+                  const stripeFee = (baseTotal * 4.2) / 100;
+                  const serviceFee = (baseTotal * 10) / 100;
 
-                  // 🧮 5. Final grand total
-                  const grandTotal = baseTotal + paymentPlanTotal;
-
+                  // 🧮 5. Grand total
+                  const grandTotal = baseTotal + stripeFee + serviceFee;
 
                   return (
                     <>
                       {/* Services Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {services?.filter((item: any) => item.status === 1).map((item: any) => {
-                          const inputName = item.title.replace(/\s+/g, "_").toLowerCase();
-                          const isRequired = item.is_required === 1;
+                        {activeServices.map((item: any) => {
+                          const inputName = item.title
+                            .replace(/\s+/g, "_")
+                            .toLowerCase();
+                          const isRequired = item.is_required === true;
 
                           return (
                             <div key={item.id} className="relative group">
@@ -783,67 +781,75 @@ export default function Order() {
                                   className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
                                   defaultChecked={isRequired}
                                   disabled={isRequired}
-                                  required={isRequired}
                                 />
+
                                 <div className="flex flex-col">
                                   <span className="font-medium text-gray-700">
-                                    {item.title}{" "}
+                                    {item.title}
                                     {isRequired && (
-                                      <span className="text-red-500 text-sm ml-1">*</span>
+                                      <span className="text-red-500 text-sm ml-1">
+                                        *
+                                      </span>
                                     )}
                                   </span>
+
                                   {item.price && (
-                                    <span className="text-sm text-gray-500">${item.price}</span>
+                                    <span className="text-sm text-gray-500">
+                                      ${item.price}
+                                    </span>
                                   )}
                                 </div>
-                              </label>
+                              </label                  >
                             </div>
                           );
                         })}
                       </div>
 
-                      {/* ✅ Payment Plan Display */}
-                      {paymentPlanData?.length > 0 && (
-                        <div className="mt-6">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-3">Payment Plans</h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {paymentPlanData.map((plan: any) => (
-                              <div
-                                key={plan.id}
-                                className="p-4 border rounded-lg bg-white shadow-sm flex justify-between"
-                              >
-                                <span className="font-medium text-gray-700">{plan.title}</span>
-                                <span className="text-gray-600">
-                                  {plan.type === "percent"
-                                    ? `${plan.amount}%`
-                                    : `$${plan.amount}`}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      {/* 🟢 TOTALS SECTION */}
+                      <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col gap-3">
+                        <p className="text-gray-800 font-semibold text-lg">
+                          {shipTypeId === "buy_for_me"
+                            ? "Estimated Total"
+                            : "Summary"}
+                        </p>
 
-                      {/* Totals Section */}
-                      <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                        <div>
-                          <p className="text-gray-800 font-semibold text-lg">Totals</p>
+                        {/* Product */}
+                        {shipTypeId === "buy_for_me" && (
+                          <div className="text-gray-700">
+                            <span className="font-medium">Products Total:</span>{" "}
+                            ${productTotal.toFixed(2)}
+                          </div>
+                        )}
+
+                        {/* Fees */}
+                        <div className="text-gray-700">
+                          <span className="font-medium">Stripe Fee (4.2%):</span>{" "}
+                          ${stripeFee.toFixed(2)}
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                          <div className="text-gray-700">
-                            <span className="font-medium">Products Total:</span> ${productTotal.toFixed(2)}
-                          </div>
-                          <div className="text-gray-700">
-                            <span className="font-medium">Services Total:</span> ${serviceTotal.toFixed(2)}
-                          </div>
-                          <div className="text-gray-700">
-                            <span className="font-medium">Payment Plans:</span> ${paymentPlanTotal.toFixed(2)}
-                          </div>
-                          <div className="text-gray-800 font-semibold">
-                            <span className="font-medium">Grand Total:</span> ${grandTotal.toFixed(2)}
-                          </div>
+
+                        <div className="text-gray-700">
+                          <span className="font-medium">
+                            Service Charges (10%):
+                          </span>{" "}
+                          ${serviceFee.toFixed(2)}
                         </div>
+                        {/* Conditional UI for Ship For Me */}
+                        {shipTypeId === "ship_for_me" && baseTotal === 0 ? (
+                          <p className="text-sm text-gray-500">
+                            Final price will be calculated after shipper submits an offer.
+                          </p>
+                        ) : (
+                          <>
+
+                            {/* Grand Total */}
+                            <div className="text-gray-900 font-semibold text-lg">
+                              Grand Total: ${grandTotal.toFixed(2)}
+                            </div>
+                          </>
+                        )}
                       </div>
+
+                      {/* Terms */}
                       <div className="flex items-start gap-3">
                         <Controller
                           control={control}
@@ -856,14 +862,16 @@ export default function Order() {
                             />
                           )}
                         />
+
                         <p className="text-sm text-gray-600">
-                          By clicking the tick button, I hereby agree and consent to the{" "}
+                          By clicking, I agree to the{" "}
                           <a href="#" className="text-blue-500 underline">
                             terms of business
                           </a>
-                          , its policies, and the privacy policy.
+                          .
                         </p>
                       </div>
+
                       {errors.terms && (
                         <p className="text-red-500 text-sm">
                           {errors.terms?.message as string}
@@ -872,7 +880,6 @@ export default function Order() {
                     </>
                   );
                 })()}
-
               </div>
             </div>
           )}

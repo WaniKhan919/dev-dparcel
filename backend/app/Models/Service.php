@@ -8,8 +8,13 @@ class Service extends Model
 {
     protected $fillable = [
         'title',
-        'price',
+        'shipping_type_id',
         'description',
         'is_required',
+        'status',
     ];
+    public function shippingType()
+    {
+        return $this->belongsTo(ShippingType::class, 'shipping_type_id');
+    }
 }
