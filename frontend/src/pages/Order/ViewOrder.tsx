@@ -264,48 +264,52 @@ export default function ViewOrder() {
                     Products: ${breakdown.initial_price}
                   </div>
                 )}
-
-                {/* Fees — sirf tab show karo jab grand_total > 0 */}
-                {breakdown && breakdown.grand_total > 0 && (
+                {
+                  record.status >= 3 &&
                   <>
-                    <div className="text-orange-500 text-xs">
-                      Stripe Fee: ${breakdown.stripe_fee}
+                  {/* Fees — sirf tab show karo jab grand_total > 0 */}
+                    {breakdown && breakdown.grand_total > 0 && (
+                      <>
+                        <div className="text-orange-500 text-xs">
+                          Stripe Fee: ${breakdown.stripe_fee}
+                        </div>
+                        <div className="text-orange-500 text-xs">
+                          Service Fee: ${breakdown.service_fee}
+                        </div>
+                      </>
+                    )}
+    
+                    {/* Grand Total */}
+                    <div className="text-black-500 text-xs">
+                      Grand Total: ${breakdown?.grand_total}
                     </div>
-                    <div className="text-orange-500 text-xs">
-                      Service Fee: ${breakdown.service_fee}
-                    </div>
+                    
+    
+                    {/* Offer Price — agar accepted offer hai */}
+                    {breakdown && breakdown.offer_price > 0 && (
+                      <div className="text-blue-600 text-xs">
+                        Shipper Offer: ${breakdown.offer_price}
+                      </div>
+                    )}
+                    {
+                      breakdown && breakdown.selected_services >0 &&
+                      <div className="text-orange-500 text-xs">
+                        Selected Services: ${breakdown?.selected_services}
+                      </div>
+                    }
+                    {
+                      breakdown && breakdown.additional_services >0 &&
+                      <div className="text-orange-500 text-xs">
+                        Aditional Services: ${breakdown?.additional_services}
+                      </div>
+                    }
+                    {
+                      breakdown && breakdown.total_payable > 0 &&
+                      <div className="font-bold text-green-700 text-base">
+                        Total Payable: ${breakdown?.total_payable}
+                      </div>
+                    }
                   </>
-                )}
-
-                {/* Grand Total */}
-                <div className="text-black-500 text-xs">
-                  Grand Total: ${breakdown?.grand_total}
-                </div>
-                
-
-                {/* Offer Price — agar accepted offer hai */}
-                {breakdown && breakdown.offer_price > 0 && (
-                  <div className="text-blue-600 text-xs">
-                    Shipper Offer: ${breakdown.offer_price}
-                  </div>
-                )}
-                {
-                  breakdown && breakdown.selected_services >0 &&
-                  <div className="text-orange-500 text-xs">
-                    Selected Services: ${breakdown?.selected_services}
-                  </div>
-                }
-                {
-                  breakdown && breakdown.additional_services >0 &&
-                  <div className="text-orange-500 text-xs">
-                    Aditional Services: ${breakdown?.additional_services}
-                  </div>
-                }
-                {
-                  breakdown && breakdown.total_payable > 0 &&
-                  <div className="font-bold text-green-700 text-base">
-                    Total Payable: ${breakdown?.total_payable}
-                  </div>
                 }
 
               </div>

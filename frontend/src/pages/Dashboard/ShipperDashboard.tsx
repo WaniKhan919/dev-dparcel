@@ -15,6 +15,7 @@ import Input from "../../components/form/input/InputField";
 
 interface Notification {
   id: number;
+  order_status?:string;
   user: {
     id: number;
     name: string;
@@ -723,7 +724,7 @@ export default function ShipperDashboard() {
                   </div>
                   <div className="text-right">
                     <p className="text-gray-400 text-xs">Order Total</p>
-                    <p className="font-bold text-green-600">${Number(order.grand_total).toFixed(2)}</p>
+                    <p className="font-bold text-green-600">${Number(order.total_price).toFixed(2)}</p>
                   </div>
                 </div>
 
@@ -1322,15 +1323,23 @@ export default function ShipperDashboard() {
                       </div>
                     )}
 
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Stripe Fee (4.2%)</span>
-                      <span className="font-medium text-orange-400">${stripeFee.toFixed(2)}</span>
-                    </div>
+                    {
+                      selectedOrder.status >= 3 ?
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Stripe Fee (4.2%)</span>
+                          <span className="font-medium text-orange-400">${stripeFee.toFixed(2)}</span>
+                        </div>
 
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Service Fee (10%)</span>
-                      <span className="font-medium text-orange-400">${serviceFee.toFixed(2)}</span>
-                    </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Service Fee (10%)</span>
+                          <span className="font-medium text-orange-400">${serviceFee.toFixed(2)}</span>
+                        </div>
+                      
+                      </>
+                      :
+                      ''
+                    }
 
                     <div className="flex justify-between">
                       <span className="text-gray-400">Weight</span>
@@ -1339,10 +1348,24 @@ export default function ShipperDashboard() {
 
                     <div className="border-t border-gray-600 my-2" />
 
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Grand Total</span>
-                      <span className="font-bold text-green-400 text-lg">${grandTotal.toFixed(2)}</span>
-                    </div>
+                    {
+                      selectedOrder.status >= 3 ?
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Grand Total</span>
+                        <span className="font-bold text-green-400 text-lg">${grandTotal.toFixed(2)}</span>
+                      </div>
+                    :
+                      selectedOrder.order_status && selectedOrder.order_status >= 'Pending' ?
+                       <div className="flex justify-between">
+                        <span className="text-gray-400">Total</span>
+                        <span className="font-bold text-green-400 text-lg">${selectedOrder.price_breakdown.total_payable}</span>
+                      </div>
+                      :
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Total</span>
+                        <span className="font-bold text-green-400 text-lg">${selectedOrder.total_price}</span>
+                      </div>
+                    }
 
                   </div>
                 </div>

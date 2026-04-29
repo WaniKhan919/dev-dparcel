@@ -237,13 +237,13 @@ export default function ShipperViewOrderDetailDrawer({
                   </div>
 
                   <div className="flex justify-between">
-                    <span>Stripe Fee</span>
-                    <span>{orderData.price_breakdown.stripe_fee}%</span>
+                    <span>Stripe Fee 4.2 %</span>
+                    <span>{orderData.price_breakdown.stripe_fee}</span>
                   </div>
 
                   <div className="flex justify-between">
-                    <span>Service Fee</span>
-                    <span>{orderData.price_breakdown.service_fee}%</span>
+                    <span>Dparcel Fee 10%</span>
+                    <span>{orderData.price_breakdown.service_fee}</span>
                   </div>
 
                   <div className="border-t pt-2 flex justify-between font-semibold text-lg">

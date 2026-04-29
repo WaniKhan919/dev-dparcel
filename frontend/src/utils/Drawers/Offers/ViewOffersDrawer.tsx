@@ -154,27 +154,39 @@ export default function ViewOffersDrawer({
                 </div>
               )}
 
-              <div className="border-t my-1"></div>
+              {orderData.status >= 3 ? 
+              <>
+                <div className="border-t my-1"></div>
 
-              {/* Stripe Fee */}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Stripe Fee (4.2%)</span>
-                <span className="font-medium text-orange-500">${breakdown.stripe_fee}</span>
-              </div>
+                {/* Stripe Fee */}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Stripe Fee (4.2%)</span>
+                  <span className="font-medium text-orange-500">${breakdown.stripe_fee}</span>
+                </div>
 
-              {/* Service Fee */}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Service Fee (10%)</span>
-                <span className="font-medium text-orange-500">${breakdown.service_fee}</span>
-              </div>
+                {/* Service Fee */}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Service Fee (10%)</span>
+                  <span className="font-medium text-orange-500">${breakdown.service_fee}</span>
+                </div>
 
-              <div className="border-t my-1"></div>
+                <div className="border-t my-1"></div>
 
-              {/* Grand Total */}
+                {/* Grand Total */}
+                <div className="flex justify-between font-semibold text-base">
+                  <span>Total Payable</span>
+                  <span className="text-green-600">$ {breakdown.total_payable?breakdown.total_payable:breakdown.total_payable}</span>
+                </div>
+              
+              </>
+              :
+              <>
               <div className="flex justify-between font-semibold text-base">
-                <span>Total Payable</span>
-                <span className="text-green-600">${breakdown.total_payable?breakdown.total_payable:breakdown.total_payable}</span>
-              </div>
+                  <span>Total</span>
+                  <span className="text-green-600">$ {breakdown.initial_price}</span>
+                </div>
+              </>
+              }
             </div>
           )}
 
@@ -261,7 +273,7 @@ export default function ViewOffersDrawer({
                     {/* Offer Grand Total */}
                     <div className="flex justify-between font-bold text-green-600 text-base">
                       <span>Offer Total</span>
-                      <span>${offerBreakdown?.total_payable?offerBreakdown?.total_payable:offerBreakdown?.grand_total}</span>
+                      <span>${offerBreakdown?.offer_total}</span>
                     </div>
                   </div>
 

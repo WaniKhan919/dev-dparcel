@@ -142,6 +142,9 @@ export default function SendOffer() {
 
             if (res.status === 200 || res.status === 201) {
                 toast.success("Offer sent successfully!");
+                setTimeout(() => {
+                    navigate('/shipper/dashboard');
+                }, 2000);
             }
         } catch (err: any) {
             toast.error(err?.response?.data?.message || "Failed to send offer");

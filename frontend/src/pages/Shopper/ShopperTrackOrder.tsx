@@ -16,6 +16,9 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Select from "../../components/ui/dropdown/Select";
 import useOrderDetail from "../../hooks/useOrderDetail";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import PaymentModal from "../../utils/PaymentModal";
 
 interface FormValues {
     to_name: string;
@@ -69,6 +72,7 @@ const validationSchema: Yup.ObjectSchema<FormValues> = Yup.object({
     ).optional(),
 });
 
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY!);
 
 export default function ShopperTrackOrder() {
     const location = useLocation();
@@ -87,7 +91,8 @@ export default function ShopperTrackOrder() {
     const { data: countries } = useSelector((state: any) => state.countries);
     const { data: states } = useSelector((state: any) => state.states);
     const { data: cities } = useSelector((state: any) => state.cities);
-
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+    const [totalPayableAmount, setTotalPayableAmount] = useState(0);
 
     const {
         register,
@@ -122,6 +127,11 @@ export default function ShopperTrackOrder() {
         }
     };
 
+    const handleOpenPayment = (amount: any) => {
+        setTotalPayableAmount(amount);
+        setIsPaymentOpen(true);
+    };
+
     const renderStepContent = () => {
         switch (currentStep) {
             case 0:
@@ -145,7 +155,7 @@ export default function ShopperTrackOrder() {
                             <p className="text-sm capitalize">
                                 Service: {orderData.shipping_type.title}
                             </p>
-                            
+
                             <div className="flex justify-between text-sm mt-2">
                                 <span className="text-white-500">Total Weight</span>
                                 <span className="font-medium text-white-800">
@@ -172,36 +182,56 @@ export default function ShopperTrackOrder() {
                                         </div>
                                     )}
 
-                                    <div className="flex justify-between">
-                                        <span>Offer Price</span>
-                                        <span>${orderData.price_breakdown?.offer_price ?? 0}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Services Fee</span>
-                                        <span>{orderData.price_breakdown?.selected_services} %</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Stripe Fee</span>
-                                        <span>{orderData.price_breakdown?.stripe_fee } %</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Selected Services Fee</span>
-                                        <span>${orderData.price_breakdown?.selected_services }</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Aditional Service Fee</span>
-                                        <span>${orderData.price_breakdown?.additional_services }</span>
-                                    </div>
+                                    {
+                                        orderData.status >= 3 ?
+                                            <>
+                                                <div className="flex justify-between">
+                                                    <span>Offer Price</span>
+                                                    <span>${orderData.price_breakdown?.offer_price ?? 0}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Services Fee</span>
+                                                    <span>{orderData.price_breakdown?.selected_services} %</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Stripe Fee</span>
+                                                    <span>{orderData.price_breakdown?.stripe_fee} %</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Selected Services Fee</span>
+                                                    <span>${orderData.price_breakdown?.selected_services}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Aditional Service Fee</span>
+                                                    <span>${orderData.price_breakdown?.additional_services}</span>
+                                                </div>
+
+                                            </>
+                                            :
+                                            ''
+                                    }
                                 </div>
                             </div>
 
                             {/* Footer */}
                             <div className="mt-4 pt-3 border-t">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Total Payable</span>
-                                    <span className="font-medium text-gray-800">
-                                        $ {orderData.price_breakdown?.total_payable ?orderData.price_breakdown?.total_payable:orderData.price_breakdown?.grand_total}
-                                    </span>
+                                    {
+                                        orderData.status >= 3 ?
+                                            <>
+                                                <span className="text-gray-500">Total Payable</span>
+                                                <span className="font-medium text-gray-800">
+                                                    $ {orderData.price_breakdown?.total_payable ? orderData.price_breakdown?.total_payable : orderData.price_breakdown?.grand_total}
+                                                </span>
+                                            </>
+                                            :
+                                            <>
+                                                <span className="text-gray-500">Total</span>
+                                                <span className="font-medium text-gray-800">
+                                                    $ {orderData.price_breakdown?.initial_price}
+                                                </span>
+                                            </>
+                                    }
                                 </div>
                             </div>
 
@@ -237,7 +267,7 @@ export default function ShopperTrackOrder() {
                                         className="flex justify-between py-2 border-b text-sm"
                                     >
                                         <span>{service.title}</span>
-                                        <span>$ {service.price}</span>
+                                        {service.price ? <span>$ {service.price}</span> : ''}
                                     </div>
                                 </>
                             ))}
@@ -289,7 +319,7 @@ export default function ShopperTrackOrder() {
                                     {/* Shown from backend */}
                                     <div className="flex justify-between text-sm pt-2 font-semibold">
                                         <span>Total Shipping</span>
-                                        <span>${Number(breakdown?.offer_price)+ Number(breakdown?.selected_services) + Number(breakdown?.additional_services)}</span>
+                                        <span>${Number(breakdown?.offer_price) + Number(breakdown?.selected_services) + Number(breakdown?.additional_services)}</span>
                                     </div>
 
                                 </div>
@@ -420,18 +450,16 @@ export default function ShopperTrackOrder() {
                                     const nextStatus = orderTracking[idx + 1];
                                     const isCurrent = isCompleted && !nextStatus?.is_completed;
 
+                                    // Payment button condition
+                                    const showPaymentButton =
+                                        (status.status_id == 4) &&
+                                        status.is_completed === true && isCurrent;
+
                                     return (
                                         <li key={status.status_id} className="mb-8 ml-6">
-
                                             {/* Circle */}
                                             <span
-                                                className={`absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ring-4 ring-white
-                                    ${isCompleted
-                                                        ? isCurrent
-                                                            ? "bg-blue-500 text-white"
-                                                            : "bg-green-600 text-white"
-                                                        : "bg-gray-300"
-                                                    }`}
+                                                className={`absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ring-4 ring-white ${isCompleted ? isCurrent ? "bg-blue-500 text-white" : "bg-green-600 text-white" : "bg-gray-300"}`}
                                             >
                                                 {!isCurrent && isCompleted ? "✓" : ""}
                                             </span>
@@ -447,14 +475,21 @@ export default function ShopperTrackOrder() {
                                             {/* Tracking Info */}
                                             {status.tracking && (
                                                 <div className="mt-2 bg-gray-50 p-3 rounded-lg border text-xs text-gray-600">
-
                                                     {status.tracking.created_at && (
                                                         <p>
                                                             <span className="font-medium">Updated:</span>{" "}
-                                                            {new Date(
-                                                                status.tracking.created_at
-                                                            ).toLocaleString()}
+                                                            {new Date(status.tracking.created_at).toLocaleString()}
                                                         </p>
+                                                    )}
+
+                                                    {/* Make Payment Button */}
+                                                    {showPaymentButton && (
+                                                        <button
+                                                            onClick={()=>handleOpenPayment(orderData?.price_breakdown.total_payable)}
+                                                            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition"
+                                                        >
+                                                            Make Payment
+                                                        </button>
                                                     )}
                                                 </div>
                                             )}
@@ -704,8 +739,7 @@ export default function ShopperTrackOrder() {
                                                 </div>
 
                                                 <span
-                                                    className={`mt-2 text-xs font-medium text-center 
-                    ${step >= index + 1 ? "text-blue-600" : "text-gray-400"}`}
+                                                    className={`mt-2 text-xs font-medium text-center  ${step >= index + 1 ? "text-blue-600" : "text-gray-400"}`}
                                                 >
                                                     {label}
                                                 </span>
@@ -1045,6 +1079,19 @@ export default function ShopperTrackOrder() {
                             )
                     )
             }
+            {/* Payment Modal */}
+            {isPaymentOpen && totalPayableAmount > 0 && orderData && (
+            <Elements stripe={stripePromise}>
+                <PaymentModal
+                    isOpen={isPaymentOpen}
+                    onClose={() => setIsPaymentOpen(false)}
+                    orderId={orderData?.id}
+                    shipperId={orderData.accepted_offer?.user_id ?? 0}
+                    amount={parseFloat(String(totalPayableAmount))}
+                    fetchOrderTracking={fetchOrderTracking}
+                />
+            </Elements>
+            )}
         </>
     );
 }

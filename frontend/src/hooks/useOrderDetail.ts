@@ -57,7 +57,7 @@ export interface Tracking {
 }
 
 export interface Order {
-  id: number;
+  id: string;
   request_number: string;
   service_type: string | null;
   status: number;

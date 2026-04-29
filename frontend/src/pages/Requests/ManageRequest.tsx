@@ -38,7 +38,7 @@ export default function ManageRequest() {
     const orderId = location.state?.orderId;
     const [orderTracking, setOrderTracking] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const steps = ["Order Detail", "Offer", "Products", "Order Status", "Order Tracking"];
+    const steps = ["Order Detail", "Offer", "Products","Order Tracking"];
     const [currentStep, setCurrentStep] = useState(0);
     const [productStates, setProductStates] = useState<any[]>([]);
     const [orderStatusOptions, setOrderStatusOptions] = useState<
@@ -136,6 +136,7 @@ export default function ManageRequest() {
         try {
             setIsLoading(true)
             const formData = new FormData();
+            formData.append("order_id", orderId);
 
             productStates.forEach((product: any, index: number) => {
                 formData.append(`products[${index}][product_id]`, product.product_id);
@@ -163,32 +164,6 @@ export default function ManageRequest() {
             toast.error(err.response?.data?.message || "Something went wrong ❌");
         } finally {
             setIsLoading(false)
-        }
-    };
-    const onStatusSubmit = async (data: OrderStatusFormData) => {
-        // setIsLoading(true);
-
-        try {
-            const payload: any = {
-                order_id: orderId,
-                status_id: data.status,
-                remarks: data.remarks || "",
-            };
-
-            const res = await ApiHelper("POST", "/order/update-status", payload);
-
-            if (res.status === 200) {
-                getOrderTrackingData()
-                
-                toast.success(res.data.message || "Status updated successfully 🎉");
-                reset();
-            } else {
-                toast.error(res.data.message || "Failed to update ❌");
-            }
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Something went wrong ❌");
-        } finally {
-            // setIsLoading(false);
         }
     };
 
@@ -580,66 +555,6 @@ export default function ManageRequest() {
                             )}
 
                             {currentStep === 3 && (
-                                <div className="flex justify-center">
-                                    <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
-                                        <h3 className="text-lg font-semibold mb-4 text-center">
-                                            Update Order Status
-                                        </h3>
-
-                                        <form onSubmit={handleSubmit(onStatusSubmit)} className="space-y-4">
-
-                                            {/* Status */}
-                                            <div>
-                                                <Label>
-                                                    Status <span className="text-error-500">*</span>
-                                                </Label>
-
-                                                <select
-                                                    {...register("status")}
-                                                    className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring focus:ring-blue-200"
-                                                >
-                                                    <option value="">Select status</option>
-
-                                                    {orderStatusOptions.map((st) => (
-                                                        <option key={st.id} value={st.id} disabled={st.disabled}>
-                                                            {st.name.charAt(0).toUpperCase() + st.name.slice(1)}
-                                                        </option>
-                                                    ))}
-                                                </select>
-
-                                                {errors.status && (
-                                                    <p className="text-red-500 text-sm">{errors.status.message}</p>
-                                                )}
-                                            </div>
-
-                                            {/* Remarks */}
-                                            <div>
-                                                <Label>Remarks</Label>
-
-                                                <TextArea
-                                                    placeholder="Enter remarks"
-                                                    className="w-full"
-                                                    {...register("remarks")}
-                                                />
-                                            </div>
-
-                                            {/* Submit Button */}
-                                            <div className="pt-2 flex justify-end">
-                                                <button
-                                                    type="submit"
-                                                    disabled={loading || isSubmitting}
-                                                    className=" px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-                                                >
-                                                    {loading || isSubmitting ? "Updating..." : "Update Status"}
-                                                </button>
-                                            </div>
-
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
-
-                            {currentStep === 4 && (
                                 <div className="max-w-md mx-auto p-4">
                                     <h3 className="text-lg font-semibold mb-6">Order Tracking</h3>
                                     <ul className="relative">

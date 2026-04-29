@@ -67,90 +67,131 @@ class ShipperOrderController extends Controller
     }
     
     public function getOrderDetailForShipper($id)
-    {
-        try {
-            $userId  = Auth::id();
-            $orderId = decrypt($id);
+{
+    try {
+        $userId  = Auth::id();
+        $orderId = decrypt($id);
 
-            $order = Order::with([
-                'shippingType:id,title,slug',
-                'orderStatus',
-                'orderDetails.product',
-                'orderServices.service',
-                'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
-                'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name',
-                'offers' => function ($q) use ($userId) {
-                    $q->where('user_id', $userId)
+        $order = Order::with([
+            'shippingType:id,title,slug',
+            'orderStatus',
+            'orderDetails.product',
+            'orderServices.service',
+            'shipFromCountry:id,name',
+            'shipFromState:id,name',
+            'shipFromCity:id,name',
+            'shipToCountry:id,name',
+            'shipToState:id,name',
+            'shipToCity:id,name',
+            'offers' => function ($q) use ($userId) {
+                $q->where('user_id', $userId)
                     ->with('additionalPrices.service');
-                }
-            ])->findOrFail($orderId);
+            }
+        ])->findOrFail($orderId);
 
-            // Is shipper ki offer
-            $myOffer       = $order->offers->first();
-            $offerPrice    = $myOffer ? (float) $myOffer->offer_price : 0;
-            $servicesTotal = $myOffer
-                ? $myOffer->additionalPrices->sum(fn($p) => (float) $p->price)
-                : 0;
+        // Current shipper offer
+        $myOffer = $order->offers->first();
 
-            return response()->json([
-                'success' => true,
-                'data'    => [
-                    'id'                 => encrypt($order->id),
-                    'request_number'     => $order->request_number,
-                    'order_status'       => $order->orderStatus?->name,
-                    'total_aprox_weight' => $order->total_aprox_weight,
+        $initialPrice = (float) $order->total_price;
+        $offerPrice   = $myOffer ? (float) $myOffer->offer_price : 0;
 
-                    'shipping_type_id'   => $order->shipping_type_id,
-                    'shipping_type'      => $order->shippingType?->title,
-                    'shipping_type_slug' => $order->shippingType?->slug,
+        // Split services
+        $selectedServicesTotal = $myOffer
+            ? $myOffer->additionalPrices
+                ->whereNotNull('service_id')
+                ->sum(fn($p) => (float) $p->price)
+            : 0;
 
-                    'ship_from_country'  => $order->shipFromCountry?->name,
-                    'ship_from_state'    => $order->shipFromState?->name,
-                    'ship_from_city'     => $order->shipFromCity?->name,
-                    'ship_to_country'    => $order->shipToCountry?->name,
-                    'ship_to_state'      => $order->shipToState?->name,
-                    'ship_to_city'       => $order->shipToCity?->name,
+        $additionalServicesTotal = $myOffer
+            ? $myOffer->additionalPrices
+                ->whereNull('service_id')
+                ->sum(fn($p) => (float) $p->price)
+            : 0;
 
-                    'price_breakdown'    => [
-                        'initial_price'  => (float) $order->total_price,
-                        'offer_price'    => $offerPrice,
-                        'services_total' => $servicesTotal,
-                        'stripe_fee'     => (float) $order->stripe_fee,
-                        'service_fee'    => (float) $order->service_fee,
-                        'grand_total'    => (float) $order->grand_total,
-                        'total_payable'  => (float) $order->grand_total + $offerPrice + $servicesTotal,
-                    ],
+        $servicesTotal = $selectedServicesTotal + $additionalServicesTotal;
 
-                    'my_offer'           => $myOffer ? [
-                        'id'             => $myOffer->id,
-                        'status'         => $myOffer->status,
-                        'offer_price'    => $offerPrice,
-                        'services'       => $myOffer->additionalPrices->map(fn($p) => [
-                            'id'         => $p->id,
-                            'service_id' => $p->service_id,
-                            'title'      => $p->service?->title ?? $p->title,
-                            'price'      => (float) $p->price,
-                        ]),
-                        'services_total' => $servicesTotal,
-                        'total'          => $offerPrice + $servicesTotal,
-                    ] : null,
+        // ✅ First subtotal
+        $subTotal = $initialPrice
+            + $offerPrice
+            + $selectedServicesTotal
+            + $additionalServicesTotal;
 
-                    'order_details'      => $order->orderDetails,
-                    'order_services'     => $order->orderServices,
-                    'user'               => $order->user,
-                ]
-            ]);
+        // ✅ Then apply fees
+        $stripeFee = ($subTotal * 4.2) / 100;
+        $serviceFee = ($subTotal * 10) / 100;
 
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get order detail',
-                'error'   => $e->getMessage()
-            ], 500);
-        }
+        // ✅ Final payable
+        $totalPayable = $subTotal + $stripeFee + $serviceFee;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id'                 => encrypt($order->id),
+                'request_number'     => $order->request_number,
+                'order_status'       => $order->orderStatus?->name,
+                'total_aprox_weight' => $order->total_aprox_weight,
+
+                'shipping_type_id'   => $order->shipping_type_id,
+                'shipping_type'      => $order->shippingType?->title,
+                'shipping_type_slug' => $order->shippingType?->slug,
+
+                'ship_from_country'  => $order->shipFromCountry?->name,
+                'ship_from_state'    => $order->shipFromState?->name,
+                'ship_from_city'     => $order->shipFromCity?->name,
+                'ship_to_country'    => $order->shipToCountry?->name,
+                'ship_to_state'      => $order->shipToState?->name,
+                'ship_to_city'       => $order->shipToCity?->name,
+
+                'price_breakdown' => [
+                    'initial_price' => $initialPrice,
+                    'offer_price' => $offerPrice,
+
+                    'selected_services' => $selectedServicesTotal,
+                    'additional_services' => $additionalServicesTotal,
+                    'services_total' => $servicesTotal,
+
+                    'stripe_fee' => round($stripeFee, 2),
+                    'service_fee' => round($serviceFee, 2),
+
+                    // before fees
+                    'grand_total' => round($subTotal, 2),
+
+                    // after fees
+                    'total_payable' => round($totalPayable, 2),
+                ],
+
+                'my_offer' => $myOffer ? [
+                    'id' => $myOffer->id,
+                    'status' => $myOffer->status,
+                    'offer_price' => $offerPrice,
+
+                    'services' => $myOffer->additionalPrices->map(fn($p) => [
+                        'id' => $p->id,
+                        'service_id' => $p->service_id,
+                        'title' => $p->service?->title ?? $p->title,
+                        'price' => (float) $p->price,
+                    ]),
+
+                    'selected_services' => $selectedServicesTotal,
+                    'additional_services' => $additionalServicesTotal,
+                    'services_total' => $servicesTotal,
+
+                    // before fees only for offer block
+                    'total' => $offerPrice + $servicesTotal,
+                ] : null,
+
+                'order_details' => $order->orderDetails,
+                'order_services' => $order->orderServices,
+                'user' => $order->user,
+            ]
+        ]);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to get order detail',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 }

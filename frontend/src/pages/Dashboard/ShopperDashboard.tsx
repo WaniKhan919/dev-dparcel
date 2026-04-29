@@ -449,7 +449,7 @@ export default function ShopperDashboard() {
 
                     {/* Initial Grand Total */}
                     <span className="bg-gray-100 px-3 py-1 rounded-full">
-                      💵 Initial: ${offer.price_breakdown.grand_total}
+                      💵 Initial: ${offer.price_breakdown.initial_price}
                     </span>
 
                     {/* Offer Price */}
@@ -468,6 +468,15 @@ export default function ShopperDashboard() {
                     {/* Final Total */}
                     <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
                       Total Amount To Pay: ${offer.price_breakdown.total_payable}
+                    </span>
+
+                    {/* Stripe Fee */}
+                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">
+                      4.2 % Stripe Fee : ${offer.price_breakdown.stripe_fee}
+                    </span>
+
+                    <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-bold">
+                      10 % Dparcel Fee : ${offer.price_breakdown.service_fee}
                     </span>
 
                   </div>
@@ -601,7 +610,7 @@ export default function ShopperDashboard() {
                   <div className="flex justify-between text-base">
                     <span className="text-gray-600">Order Total</span>
                     <span className="font-semibold">
-                      ${viewModal.data.price_breakdown?.grand_total}
+                      ${viewModal.data.price_breakdown?.initial_price}
                     </span>
                   </div>
 
@@ -634,6 +643,15 @@ export default function ShopperDashboard() {
                   <div className="border-t pt-3 flex justify-between font-semibold text-green-600">
                     <span>Offer Price</span>
                     <span>${viewModal.data.offer_price}</span>
+                  </div>
+                  
+                  <div className="border-t pt-1 flex justify-between font-semibold text-blue-600">
+                    <span>Stripe Fee 4.2%</span>
+                    <span>${viewModal.data.price_breakdown.stripe_fee}</span>
+                  </div>
+                  <div className="border-t pt-1 flex justify-between font-semibold text-gray-600">
+                    <span>Dparcel Fee 10%</span>
+                    <span>${viewModal.data.price_breakdown.service_fee}</span>
                   </div>
 
                   <div className="border-t pt-3 flex justify-between font-bold text-lg text-green-700">

@@ -46,7 +46,7 @@ class ServiceController extends Controller
                 'is_required' => 'required|boolean',
                 'status' => 'nullable|numeric',
             ]);
-            $validated['shipping_type'] = decrypt($validated['shipping_type']);
+            $validated['shipping_type_id'] = decrypt($validated['shipping_type']);
             $service = Service::create($validated);
 
             return response()->json([
@@ -65,7 +65,8 @@ class ServiceController extends Controller
    public function update(Request $request, $id)
     {
         try {
-            $service = Service::find($id);
+            $id = decrypt($id);
+            $service = Service::find(decrypt($id));
 
             if (!$service) {
                 return response()->json([
@@ -75,7 +76,7 @@ class ServiceController extends Controller
             }
 
             $validated = $request->validate([
-                'title'       => 'required|string|unique:services,title,' . $id,
+                'title' => 'required|string|unique:services,title,' . $id . ',id',
                 'shipping_type'       => 'required',
                 'description' => 'nullable|string',
                 'is_required' => 'required|boolean',

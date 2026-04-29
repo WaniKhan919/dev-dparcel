@@ -22,7 +22,7 @@ export default function ViewOrderDetailDrawer({
       ></div>
 
       {/* Drawer */}
-      <div className="relative bg-white shadow-xl h-full w-full sm:w-5/6 md:w-2/3 lg:w-1/2 rounded-l-2xl transition-transform duration-300">
+      <div className="relative bg-white shadow-xl h-full w-full sm:w-5/6 md:w-2/3 lg:w-1/2 rounded-l-2xl transition-transform duration-300 flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white z-10">
@@ -60,7 +60,7 @@ export default function ViewOrderDetailDrawer({
         </div>
 
         {/* Body */}
-        <div className="p-4 overflow-y-auto h-[calc(100%-64px)] space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {loading && (
             <div className="flex justify-center py-6">
               <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
@@ -120,9 +120,16 @@ export default function ViewOrderDetailDrawer({
 
                   <div>
                     <p className="opacity-80 text-xs">Total Price</p>
-                    <p className="font-semibold text-lg">
-                      ${orderData.price_breakdown?.grand_total}
-                    </p>
+                    {orderData.status >= 3 ? (
+                      <p className="font-semibold text-lg">
+                        ${orderData.price_breakdown?.total_payable}
+                      </p>
+
+                    ):(
+                      <p className="font-semibold text-lg">
+                        ${orderData.price_breakdown?.initial_price}
+                      </p>
+                    )}
                   </div>
 
                 </div>
@@ -233,33 +240,38 @@ export default function ViewOrderDetailDrawer({
                       </div>
                     )}
 
-                    {/* Shipper Offer Price — agar offer accepted hai */}
-                    {orderData.price_breakdown.offer_price > 0 && (
+                    { orderData.status >= 3 &&
+                    <>
+                      {/* Shipper Offer Price — agar offer accepted hai */}
+                      {orderData.price_breakdown.offer_price > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Shipper Offer</span>
+                          <span className="font-medium">
+                            ${orderData.price_breakdown.offer_price}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="border-t my-2"></div>
+
+                      {/* Stripe Fee */}
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Shipper Offer</span>
-                        <span className="font-medium">
-                          ${orderData.price_breakdown.offer_price}
+                        <span className="text-gray-600">Stripe Fee (4.2%)</span>
+                        <span className="font-medium text-orange-500">
+                          ${orderData.price_breakdown.stripe_fee}
                         </span>
                       </div>
-                    )}
 
-                    <div className="border-t my-2"></div>
+                      {/* Service Fee */}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Service Fee (10%)</span>
+                        <span className="font-medium text-orange-500">
+                          ${orderData.price_breakdown.service_fee}
+                        </span>
+                      </div>
+                    </>
+                    }
 
-                    {/* Stripe Fee */}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Stripe Fee (4.2%)</span>
-                      <span className="font-medium text-orange-500">
-                        ${orderData.price_breakdown.stripe_fee}
-                      </span>
-                    </div>
-
-                    {/* Service Fee */}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Service Fee (10%)</span>
-                      <span className="font-medium text-orange-500">
-                        ${orderData.price_breakdown.service_fee}
-                      </span>
-                    </div>
 
                     {orderData.price_breakdown.selected_services > 0 &&
                     <>
@@ -287,19 +299,30 @@ export default function ViewOrderDetailDrawer({
                     <div className="border-t my-3"></div>
 
                     {/* Grand Total */}
-                    <div className="flex justify-between items-center text-base font-semibold">
-                      <span>Total Payable</span>
-                      <span className="text-green-600 text-lg">
-                        ${orderData.price_breakdown.total_payable > 0 ? orderData.price_breakdown.total_payable: orderData.price_breakdown.grand_total}
-                      </span>
-                    </div>
+                    {orderData.status >= 3 ? (
+                      <div className="flex justify-between items-center text-base font-semibold">
+                        <span>Total Payable</span>
+                        <span className="text-green-600 text-lg">
+                          ${orderData.price_breakdown.total_payable > 0 ? orderData.price_breakdown.total_payable: orderData.price_breakdown.grand_total}
+                        </span>
+                      </div>                      
+                    ):(
+                      <div className="flex justify-between items-center text-base font-semibold">
+                        <span>Total</span>
+                        <span className="text-green-600 text-lg">
+                          ${orderData.price_breakdown.initial_price}
+                        </span>
+                      </div>  
+                    )}
+                    
+
 
                   </div>
                 </div>
               )}
-              {orderData.acceptedOffer?.additional_prices?.length > 0 && (
+              {/* {orderData.accepted_offer?.additional_prices?.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  {orderData.acceptedOffer.additional_prices.map((item: any) => (
+                  {orderData.accepted_offer.additional_prices.map((item: any) => (
                     <div
                       key={item.id}
                       className="flex justify-between text-xs text-gray-500"
@@ -309,7 +332,7 @@ export default function ViewOrderDetailDrawer({
                     </div>
                   ))}
                 </div>
-              )}
+              )} */}
 
             </div>
           )}

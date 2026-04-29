@@ -128,7 +128,12 @@ class ShopperDashboardController extends Controller
                     $offer_price = (float) $offer->offer_price;
 
                     // 🔹 Final total
-                    $finalTotal = $grandTotal + $selectedServicesTotal + $additionalServicesTotal + $offer_price;
+                    $subtotal = $initialPrice + $offer_price + $selectedServicesTotal + $additionalServicesTotal;
+
+                    $stripeFee = ($subtotal * 4.2) / 100;
+                    $serviceFee = ($subtotal * 10) / 100;
+
+                    $finalTotal = $subtotal + $stripeFee + $serviceFee;
 
                     return [
                         'offer_id'        => $offer->id,

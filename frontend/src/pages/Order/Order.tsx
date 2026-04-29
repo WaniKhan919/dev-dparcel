@@ -822,17 +822,17 @@ export default function Order() {
                         )}
 
                         {/* Fees */}
-                        <div className="text-gray-700">
+                        {/* <div className="text-gray-700">
                           <span className="font-medium">Stripe Fee (4.2%):</span>{" "}
                           ${stripeFee.toFixed(2)}
-                        </div>
+                        </div> */}
 
-                        <div className="text-gray-700">
+                        {/* <div className="text-gray-700">
                           <span className="font-medium">
                             Service Charges (10%):
                           </span>{" "}
                           ${serviceFee.toFixed(2)}
-                        </div>
+                        </div> */}
                         {/* Conditional UI for Ship For Me */}
                         {shipTypeId === "ship_for_me" && baseTotal === 0 ? (
                           <p className="text-sm text-gray-500">
@@ -843,7 +843,7 @@ export default function Order() {
 
                             {/* Grand Total */}
                             <div className="text-gray-900 font-semibold text-lg">
-                              Grand Total: ${grandTotal.toFixed(2)}
+                               Total:  ${productTotal.toFixed(2)}
                             </div>
                           </>
                         )}

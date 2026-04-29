@@ -1,4 +1,4 @@
-import React, { useState, KeyboardEvent } from "react";
+import React, { useState, KeyboardEvent, useEffect, useRef } from "react";
 
 export interface SelectOption<T = string | number> {
   value: T;
@@ -65,9 +65,20 @@ export default function Select<T extends string | number>({
       setSearch("");
     }
   };
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={containerRef}>
       {label && (
         <label className="block text-sm font-medium text-slate-700 mb-1.5">
           {label}

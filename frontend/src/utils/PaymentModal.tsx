@@ -14,9 +14,10 @@ interface PaymentModalProps {
   orderId: string;
   shipperId: number;
   amount: number;
+  fetchOrderTracking?: any;
 }
 
-export default function PaymentModal({ isOpen, onClose, orderId,shipperId, amount }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, orderId,shipperId, amount,fetchOrderTracking }: PaymentModalProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -70,6 +71,7 @@ export default function PaymentModal({ isOpen, onClose, orderId,shipperId, amoun
         });
 
         dispatch(fetchOrders({ page: 1, per_page: 10 }));
+        fetchOrderTracking()
         onClose();
       }
     } catch (err: any) {

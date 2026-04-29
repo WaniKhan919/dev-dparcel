@@ -31,42 +31,54 @@ class OrderResource extends JsonResource
             ],
 
             // ✅ New price breakdown
-            // 'price_breakdown' => [
-            //     'initial_price' => (float) $this->total_price,
-            //     'offer_price'   => $shipperOfferPrice,
-            //     'stripe_fee'    => (float) $this->stripe_fee,
-            //     'service_fee'   => (float) $this->service_fee,
-            //     'grand_total'   => (float) $this->grand_total,
-            // ],
-            'price_breakdown' => [
-                'initial_price' => (float) $this->total_price,
-                'offer_price'   => (float) ($this->acceptedOffer?->offer_price ?? 0),
-                'stripe_fee'    => (float) $this->stripe_fee,
-                'service_fee'   => (float) $this->service_fee,
-                'grand_total'   => (float) $this->grand_total,
 
-                // 🔥 ONLY TOTALS (NO ITEMS)
+            'price_breakdown' => (function () {
+                $initialPrice = (float) $this->total_price;
 
-                'selected_services' => $this->acceptedOffer
+                $offerPrice = (float) ($this->acceptedOffer?->offer_price ?? 0);
+
+                $selectedServicesTotal = $this->acceptedOffer
                     ? (float) $this->acceptedOffer->additionalPrices
                         ->whereNotNull('service_id')
                         ->sum(fn($i) => (float) $i->price)
-                    : 0,
+                    : 0;
 
-                'additional_services' => $this->acceptedOffer
+                $additionalServicesTotal = $this->acceptedOffer
                     ? (float) $this->acceptedOffer->additionalPrices
                         ->whereNull('service_id')
                         ->sum(fn($i) => (float) $i->price)
-                    : 0,
+                    : 0;
 
-                // 🔥 FINAL TOTAL
-                'total_payable' =>
-                (float) $this->grand_total +
-                    (float) ($this->acceptedOffer?->offer_price ?? 0) +
-                    ($this->acceptedOffer
-                        ? (float) $this->acceptedOffer->additionalPrices->sum(fn($i) => (float) $i->price)
-                        : 0),
-            ],
+                // ✅ First subtotal
+                $subTotal = $initialPrice
+                    + $offerPrice
+                    + $selectedServicesTotal
+                    + $additionalServicesTotal;
+
+                // ✅ Then apply fees on subtotal
+                $stripeFee = ($subTotal * 4.2) / 100;
+                $serviceFee = ($subTotal * 10) / 100;
+
+                // ✅ Final payable amount
+                $totalPayable = $subTotal + $stripeFee + $serviceFee;
+
+                return [
+                    'initial_price' => $initialPrice,
+                    'offer_price' => $offerPrice,
+
+                    'selected_services' => $selectedServicesTotal,
+                    'additional_services' => $additionalServicesTotal,
+
+                    'stripe_fee' => round($stripeFee, 2),
+                    'service_fee' => round($serviceFee, 2),
+
+                    // subtotal before fees
+                    'grand_total' => round($subTotal, 2),
+
+                    // final after fees
+                    'total_payable' => round($totalPayable, 2),
+                ];
+            })(),
 
             // Location
             'ship_from' => [

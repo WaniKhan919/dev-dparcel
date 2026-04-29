@@ -24,16 +24,16 @@ import Select from "../../components/ui/dropdown/Select";
 interface ServiceFormData {
   id: number;
   title: string;
-  shipping_type: number;
+  shipping_type: string;
   description?: string | null;
-  is_required: number;
+  is_required: boolean;
   status?: number | null;
 }
 
 // Validation schema
 const schema = yup.object({
   title: yup.string().required("Title is required"),
-  shipping_type: yup.number().required("Shipping type is required"),
+  shipping_type: yup.string().required("Shipping type is required"),
   description: yup.string().nullable(),
   is_required: yup
     .mixed()
@@ -73,7 +73,7 @@ export default function Services() {
     resolver: yupResolver(schema) as any,
     defaultValues: {
       title: "",
-      shipping_type: undefined,
+      shipping_type: "",
       description: "",
       is_required: "" as any,
       status: "" as any,
@@ -89,9 +89,9 @@ export default function Services() {
       render: (row: ServiceFormData) => (
         <Badge
           size="sm"
-          color={row.is_required === 1 ? "success" : "warning"}
+          color={row.is_required === true ? "success" : "warning"}
         >
-          {row.is_required === 1 ? "Required" : "Not Required"}
+          {row.is_required === true ? "Required" : "Not Required"}
         </Badge>
       ),
     },
@@ -179,9 +179,11 @@ export default function Services() {
     if (service) {
       reset({
         title: service.title,
-        shipping_type: service.shipping_type,
+        shipping_type: String(shippingType?.find(
+          (s: any) => s.title == service.shipping_type
+        )?.id || ""),
         description: service.description || "",
-        is_required: String(service.is_required) as any,
+        is_required: service.is_required ? "1" : "0" as any,
         status: service.status !== null ? String(service.status) as any : "",
       });
       setSelectedServiceId(id);
@@ -257,14 +259,16 @@ export default function Services() {
                     name="shipping_type"
                     control={control}
                     render={({ field }) => (
-                      <Select<number>
+                      <Select<string>
                         label="Shipping Type"
-                        options={shippingType?.map((c: any) => ({
-                          value: c.id,
-                          label: c.title,
-                        })) || []}
-                        value={field.value ? Number(field.value) : null}
-                        onChange={(val: any) => {field.onChange(val);}}
+                        options={
+                          shippingType?.map((c: any) => ({
+                            value: String(c.id),
+                            label: c.title,
+                          })) || []
+                        }
+                        value={field.value ? String(field.value) : null}
+                        onChange={(val) => field.onChange(val)}
                         placeholder="Shipping Type"
                         error={errors.shipping_type?.message as string}
                         clearable

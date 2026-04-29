@@ -232,7 +232,7 @@ export default function ShopperRequests() {
         key: "total_price",
         header: "Price",
         render: (record: MappedRequest) => {
-          const pb = record.order.price_breakdown;
+          const pb = record?.order?.price_breakdown;
 
           return (
             <div className="text-xs space-y-1">

@@ -362,7 +362,6 @@ class OrderController extends Controller
         }
     }
 
-
     public function getShipperOffers($orderId)
     {
         try {
@@ -385,44 +384,56 @@ class OrderController extends Controller
                 ->firstOrFail();
 
             $initialPrice = (float) $order->total_price;
-            $stripeFee = (float) $order->stripe_fee;
-            $serviceFee = (float) $order->service_fee;
 
             // =========================
-            // 🔥 FIXED OFFERS BREAKDOWN
+            // OFFERS BREAKDOWN
             // =========================
-            $order->offers->transform(function ($offer) use ($initialPrice,$stripeFee,$serviceFee) {
+            $order->offers->transform(function ($offer) use ($initialPrice) {
 
                 $offerPrice = (float) $offer->offer_price;
 
-                // Selected services (service_id NOT null)
                 $selectedServicesTotal = $offer->additionalPrices
                     ->whereNotNull('service_id')
                     ->sum(fn($i) => (float) $i->price);
 
-                // Additional services (service_id NULL)
                 $additionalServicesTotal = $offer->additionalPrices
                     ->whereNull('service_id')
                     ->sum(fn($i) => (float) $i->price);
 
-                // Total payable per offer
-                $totalPayable =
-                    $initialPrice +
-                    $offerPrice +
-                    $selectedServicesTotal +
-                    $additionalServicesTotal;
+                // ✅ subtotal first
+                $subTotal = $initialPrice
+                    + $offerPrice
+                    + $selectedServicesTotal
+                    + $additionalServicesTotal;
+                
+                $offerTotal = $offerPrice
+                    + $selectedServicesTotal
+                    + $additionalServicesTotal;
+
+                // ✅ fees on subtotal
+                $stripeFee = ($subTotal * 4.2) / 100;
+                $serviceFee = ($subTotal * 10) / 100;
+
+                // ✅ final payable
+                $totalPayable = $subTotal + $stripeFee + $serviceFee;
 
                 $offer->price_breakdown = [
                     'initial_price' => $initialPrice,
-                    'offer_price'   => $offerPrice,
-                    'stripe_fee'   => $stripeFee,
-                    'service_fee'   => $serviceFee,
+                    'offer_price' => $offerPrice,
 
-                    // 🔥 ONLY TOTALS (no items)
                     'selected_services' => $selectedServicesTotal,
                     'additional_services' => $additionalServicesTotal,
 
-                    'total_payable' => $totalPayable,
+                    'stripe_fee' => round($stripeFee, 2),
+                    'service_fee' => round($serviceFee, 2),
+
+                    // before fees
+                    'grand_total' => round($subTotal, 2),
+
+                    'offer_total' => round($offerTotal, 2),
+
+                    // after fees
+                    'total_payable' => round($totalPayable, 2),
                 ];
 
                 return $offer;
@@ -435,46 +446,56 @@ class OrderController extends Controller
 
             $selectedTotal = $order->acceptedOffer
                 ? $order->acceptedOffer->additionalPrices
-                ->whereNotNull('service_id')
-                ->sum(fn($i) => (float) $i->price)
+                    ->whereNotNull('service_id')
+                    ->sum(fn($i) => (float) $i->price)
                 : 0;
 
             $additionalTotal = $order->acceptedOffer
                 ? $order->acceptedOffer->additionalPrices
-                ->whereNull('service_id')
-                ->sum(fn($i) => (float) $i->price)
+                    ->whereNull('service_id')
+                    ->sum(fn($i) => (float) $i->price)
                 : 0;
+
+            // ✅ subtotal first
+            $subTotal = $initialPrice
+                + $acceptedOfferPrice
+                + $selectedTotal
+                + $additionalTotal;
+
+            // ✅ fees on subtotal
+            $stripeFee = ($subTotal * 4.2) / 100;
+            $serviceFee = ($subTotal * 10) / 100;
+
+            // ✅ final payable
+            $totalPayable = $subTotal + $stripeFee + $serviceFee;
 
             $order->price_breakdown = [
                 'initial_price' => $initialPrice,
-                'offer_price'   => $acceptedOfferPrice,
-                'stripe_fee'    => (float) $order->stripe_fee,
-                'service_fee'   => (float) $order->service_fee,
-                'grand_total'   => (float) $order->grand_total,
+                'offer_price' => $acceptedOfferPrice,
 
-                // 🔥 ONLY TOTALS
                 'selected_services' => $selectedTotal,
                 'additional_services' => $additionalTotal,
 
-                // 🔥 FINAL TOTAL
-                'total_payable' =>
-                $initialPrice +
-                    $acceptedOfferPrice +
-                    $selectedTotal +
-                    $additionalTotal +
-                    (float) $order->stripe_fee +
-                    (float) $order->service_fee,
+                'stripe_fee' => round($stripeFee, 2),
+                'service_fee' => round($serviceFee, 2),
+
+                // before fees
+                'grand_total' => round($subTotal, 2),
+
+                // after fees
+                'total_payable' => round($totalPayable, 2),
             ];
 
             return response()->json([
                 'success' => true,
-                'data'    => $order
+                'data' => $order
             ], 200);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get shipper offers',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -485,13 +506,34 @@ class OrderController extends Controller
             $request->validate([
                 'status' => 'required|in:accepted,rejected',
             ]);
-            $offer = OrderOffer::with(['order', 'shipper'])->findOrFail($offerId);
+            $offer = OrderOffer::with(['order', 'shipper','additionalPrices'])->findOrFail($offerId);
             $offer->status = $request->status;
             $offer->save();
             if ($request->status == "accepted") {
+                // Base values
+                $orderTotalPrice = (float) $offer->order->total_price; // 100
+                $offerPrice = (float) $offer->offer_price; // 20
+
+                // Sum of additional prices
+                $additionalPricesTotal = $offer->additionalPrices->sum(function ($item) {
+                    return (float) $item->price;
+                });
+
+                // Grand total before fees
+                $subTotal = $orderTotalPrice + $offerPrice + $additionalPricesTotal;
+
+                // Fees
+                $stripeFee = ($subTotal * 4.2) / 100;
+                $serviceFee = ($subTotal * 10) / 100;
+
+                // Final payable amount
+                $totalPayableAmount = $subTotal + $stripeFee + $serviceFee;
+
                 $order = Order::findOrFail($offer->order_id);
+                $order->grand_total = $totalPayableAmount;
                 $order->status = 3;
                 $order->save();
+
                 OrderTracking::insert([
                     [
                         'order_id' => $offer->order_id,
@@ -719,6 +761,15 @@ class OrderController extends Controller
         try {
 
             DB::beginTransaction();
+            $id = decrypt($request->order_id);
+
+            $order = Order::findOrFail($id);
+            $order->status = 6;
+            $order->save();
+            OrderTracking::create([
+                'order_id' => $id,
+                'status_id' => 6,
+            ]);
 
             $products = $request->products;
 
