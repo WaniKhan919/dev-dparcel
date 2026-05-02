@@ -19,10 +19,16 @@ class AdminDashboardController extends Controller
             $totalOrders = Order::count();
 
             // Total Ship For Me orders
-            $shipForMe = Order::where('service_type', 'ship_for_me')->count();
+            $shipForMe = Order::whereHas('shippingType', function ($q) {
+                    $q->where('slug', 'ship_for_me');
+                })
+                ->count();;
 
             // Total Buy For Me orders
-            $buyForMe = Order::where('service_type', 'buy_for_me')->count();
+            $buyForMe = Order::whereHas('shippingType', function ($q) {
+                    $q->where('slug', 'buy_for_me');
+                })
+                ->count();
 
             return response()->json([
                 'success' => true,

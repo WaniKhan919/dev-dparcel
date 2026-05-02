@@ -55,7 +55,7 @@ class MessageController extends Controller
     {
         try {
             $request->validate([
-                'order_id' => 'required|exists:orders,id',
+                'order_id' => 'required',
             ]);
 
             $messages = OrderMessage::with([
@@ -65,7 +65,7 @@ class MessageController extends Controller
                                 'receiver.roles:name',
                                 'attachments:id,related_id,file_path,file_type' 
                             ])
-                            ->where('order_id', $request->order_id)
+                            ->where('order_id', decrypt($request->order_id))
                             ->orderBy('created_at', 'asc')
                             ->get();
 

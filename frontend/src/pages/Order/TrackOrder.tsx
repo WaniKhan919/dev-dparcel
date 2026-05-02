@@ -6,97 +6,15 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
 import CustomDeclarationView from "./CustomDeclarationView";
-
-interface Service {
-    id: number;
-    title: string;
-    price: string;
-    description: string | null;
-    is_required: number;
-    status: number;
-}
-
-interface OrderService {
-    id: number;
-    order_id: number;
-    service_id: number;
-    created_at: string;
-    updated_at: string;
-    service: Service;
-}
-
-interface Product {
-    id: number;
-    user_id: number;
-    title: string;
-    description: string | null;
-    product_url: string;
-    quantity: number;
-    price: string;
-    weight: string;
-    created_at: string;
-    updated_at: string;
-    tracking: ProductTracking;
-}
-
-interface ProductTracking {
-    purchase_status: string;
-    tracking_id: string;
-    tracking_link: string;
-    product_receipt: string;
-}
-
-interface Ship {
-    country: string;
-    state: string;
-    city: string;
-}
-interface AdditionalPrice {
-    title: string;
-    price: string;
-}
-interface Shipper {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-}
-interface AcceptedOffer {
-    id: number;
-    order_id: number;
-    user_id: number;
-    message: string | null;
-    status: string;
-    offer_price: string;
-    shipper: Shipper;
-    additional_prices: AdditionalPrice[];
-    created_at: string;
-    updated_at: string;
-}
-interface OrderData {
-    id: number;
-    user_id: number;
-    service_type: string;
-    total_aprox_weight: string;
-    total_price: string;
-    tracking_number: string;
-    request_number: string;
-    status: number;
-    products: any[];
-    acceptedOffer: AcceptedOffer;
-    order_services: OrderService[];
-    ship_from: Ship;
-    ship_to: Ship;
-    customDeclaration: any;
-}
+import useOrderDetail from "../../hooks/useOrderDetail";
 
 export default function TrackOrder() {
     const location = useLocation();
     const orderId = location.state?.orderId;
+
+    const { order: orderData, loading, error } = useOrderDetail(orderId);
     const steps = ["Order Detail", "Offer", "Products", "Order Tracking"];
-    const [orderData, setOrderData] = useState<OrderData | null>(null);
     const [orderTracking, setOrderTracking] = useState<any[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -123,7 +41,6 @@ export default function TrackOrder() {
                     position: "top-right",
                     icon: "🎉",
                 });
-                fetchOrderDetails();
                 setIsActionModalOpen(false)
             } else {
                 toast.error(response.data.message);
@@ -134,26 +51,16 @@ export default function TrackOrder() {
         }
     };
 
-    const fetchOrderDetails = async () => {
-        if (!orderId) return;
+    
 
-        setLoading(true);
+    const fetchOrderTracking = async () => {
+
         try {
-            // Fetch full order details
-            const orderRes = await ApiHelper(
-                "GET",
-                `/order/get-order-detail/${orderId}`
-            );
-            if (orderRes.status === 200) {
-                setOrderData(orderRes.data.data);
-            } else {
-                toast.error(orderRes.data.message || "Failed to fetch order");
-            }
 
             // Fetch order tracking details
             const trackingRes = await ApiHelper(
                 "GET",
-                `/order/get-order-tracking/${orderId}`
+                `/order/${orderId}/get-order-tracking`
             );
             if (trackingRes.status === 200) {
                 setOrderTracking(trackingRes.data.data);
@@ -162,14 +69,14 @@ export default function TrackOrder() {
             }
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Something went wrong");
-        } finally {
-            setLoading(false);
         }
     };
 
+    
+    
     useEffect(() => {
-        fetchOrderDetails();
-    }, [orderId]);
+        fetchOrderTracking();
+    }, []);
 
     if (!orderId) return <div className="p-10 text-center">No order selected</div>;
 
@@ -239,50 +146,105 @@ export default function TrackOrder() {
 
                             {currentStep === 0 && (
                                 <div className="space-y-6">
+
                                     {/* Summary Cards */}
                                     <div className="grid md:grid-cols-3 gap-4">
-                                        <div className="border-l-4 border-indigo-500 bg-indigo-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Service Type</p>
+                                        <div className="border-l-4 border-indigo-500 bg-indigo-50 rounded-md p-4 shadow-sm">
+                                            <p className="text-sm text-gray-500 uppercase">Service Type</p>
                                             <p className="font-semibold text-indigo-700 mt-1 text-lg">
                                                 {orderData.service_type === "ship_for_me" ? "Ship For Me" : "Buy For Me"}
                                             </p>
                                         </div>
 
-                                        <div className="border-l-4 border-green-500 bg-green-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Total Weight</p>
+                                        <div className="border-l-4 border-green-500 bg-green-50 rounded-md p-4 shadow-sm">
+                                            <p className="text-sm text-gray-500 uppercase">Total Weight</p>
                                             <p className="font-semibold text-green-700 mt-1 text-lg">
                                                 {orderData.total_aprox_weight} g
                                             </p>
                                         </div>
 
-                                        <div className="border-l-4 border-yellow-500 bg-yellow-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Total Price</p>
+                                        <div className="border-l-4 border-yellow-500 bg-yellow-50 rounded-md p-4 shadow-sm">
+                                            <p className="text-sm text-gray-500 uppercase">Base Price</p>
                                             <p className="font-semibold text-yellow-700 mt-1 text-lg">
-                                                ${orderData.total_price}
+                                                ${orderData.price_breakdown.initial_price}
                                             </p>
                                         </div>
                                     </div>
 
                                     {/* Shipping Info */}
                                     <div className="grid md:grid-cols-2 gap-4">
-                                        <div className="border-l-4 border-blue-500 bg-blue-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Ship From</p>
+                                        <div className="border-l-4 border-blue-500 bg-blue-50 rounded-md p-4 shadow-sm">
+                                            <p className="text-sm text-gray-500 uppercase">Ship From</p>
                                             <p className="font-medium text-blue-700 mt-1">
                                                 {orderData.ship_from.city}, {orderData.ship_from.state}, {orderData.ship_from.country}
                                             </p>
                                         </div>
 
-                                        <div className="border-l-4 border-pink-500 bg-pink-50 rounded-md p-4 shadow-sm hover:shadow-md transition">
-                                            <p className="text-sm text-gray-500 uppercase tracking-wide">Ship To</p>
+                                        <div className="border-l-4 border-pink-500 bg-pink-50 rounded-md p-4 shadow-sm">
+                                            <p className="text-sm text-gray-500 uppercase">Ship To</p>
                                             <p className="font-medium text-pink-700 mt-1">
                                                 {orderData.ship_to.city}, {orderData.ship_to.state}, {orderData.ship_to.country}
                                             </p>
                                         </div>
                                     </div>
+
+                                    {/* 💰 Price Breakdown */}
+                                    <div className="bg-white border rounded-xl shadow-sm p-5">
+                                        <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                                            Price Breakdown
+                                        </h3>
+
+                                        <div className="space-y-2 text-sm">
+
+                                            <div className="flex justify-between">
+                                                <span>Initial Price</span>
+                                                <span>${orderData.price_breakdown.initial_price}</span>
+                                            </div>
+
+                                            <div className="flex justify-between">
+                                                <span>Offer Price</span>
+                                                <span>${orderData.price_breakdown.offer_price}</span>
+                                            </div>
+
+                                            <div className="flex justify-between">
+                                                <span>Selected Services</span>
+                                                <span>${orderData.price_breakdown.selected_services}</span>
+                                            </div>
+
+                                            <div className="flex justify-between">
+                                                <span>Additional Services</span>
+                                                <span>${orderData.price_breakdown.additional_services}</span>
+                                            </div>
+
+                                            <div className="border-t my-2"></div>
+
+                                            <div className="flex justify-between text-gray-600">
+                                                <span>Subtotal</span>
+                                                <span>${orderData.price_breakdown.grand_total}</span>
+                                            </div>
+
+                                            <div className="flex justify-between text-red-500">
+                                                <span>Stripe Fee (4.2%)</span>
+                                                <span>+ ${orderData.price_breakdown.stripe_fee}</span>
+                                            </div>
+
+                                            <div className="flex justify-between text-red-500">
+                                                <span>Service Fee (10%)</span>
+                                                <span>+ ${orderData.price_breakdown.service_fee}</span>
+                                            </div>
+
+                                            <div className="border-t my-2"></div>
+
+                                            <div className="flex justify-between font-bold text-lg text-green-600">
+                                                <span>Total Payable</span>
+                                                <span>${orderData.price_breakdown.total_payable}</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
-                            {currentStep === 1 && orderData?.acceptedOffer && (
+                            {currentStep === 1 && orderData?.accepted_offer && (
                                 <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
 
                                     {/* Offer Header */}
@@ -292,7 +254,7 @@ export default function TrackOrder() {
                                         </h3>
 
                                         <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                                            {orderData.acceptedOffer.status}
+                                            {orderData.accepted_offer.status}
                                         </span>
                                     </div>
 
@@ -301,7 +263,7 @@ export default function TrackOrder() {
                                         <span className="text-gray-600 font-medium">Offer Price</span>
 
                                         <span className="text-2xl font-bold text-blue-600">
-                                            ${orderData.acceptedOffer.offer_price}
+                                            ${orderData.accepted_offer.offer_price}
                                         </span>
                                     </div>
 
@@ -314,43 +276,45 @@ export default function TrackOrder() {
                                         <div className="grid grid-cols-2 gap-4 text-sm">
                                             <div>
                                                 <p className="text-gray-500">Name</p>
-                                                <p className="font-medium">{orderData.acceptedOffer.shipper?.name}</p>
+                                                <p className="font-medium">{orderData.accepted_offer.shipper?.name}</p>
                                             </div>
 
                                             <div>
                                                 <p className="text-gray-500">Email</p>
-                                                <p className="font-medium">{orderData.acceptedOffer.shipper?.email}</p>
+                                                <p className="font-medium">{orderData.accepted_offer.shipper?.email}</p>
                                             </div>
 
                                             <div>
                                                 <p className="text-gray-500">Phone</p>
-                                                <p className="font-medium">{orderData.acceptedOffer.shipper?.phone}</p>
+                                                <p className="font-medium">{orderData.accepted_offer.shipper?.phone}</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Additional Prices */}
-                                    {orderData.acceptedOffer.additional_prices?.length > 0 && (
+                                    {/* Services / Additional Charges */}
+                                    {orderData.services?.length > 0 && (
                                         <div>
                                             <h4 className="font-semibold text-gray-700 mb-3">
-                                                Additional Charges
+                                                Services & Additional Charges
                                             </h4>
 
                                             <div className="space-y-3">
-                                                {orderData.acceptedOffer.additional_prices.map((item, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="flex justify-between items-center bg-yellow-50 p-3 rounded-lg"
-                                                    >
-                                                        <span className="text-gray-700 font-medium">
-                                                            {item.title}
-                                                        </span>
+                                                {orderData.services
+                                                    .filter((item: any) => item.price !== null && Number(item.price) > 0)
+                                                    .map((item: any, index: any) => (
+                                                        <div
+                                                            key={index}
+                                                            className="flex justify-between items-center bg-yellow-50 p-3 rounded-lg"
+                                                        >
+                                                            <span className="text-gray-700 font-medium">
+                                                                {item.title}
+                                                            </span>
 
-                                                        <span className="text-yellow-700 font-semibold">
-                                                            ${item.price}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                                            <span className="text-yellow-700 font-semibold">
+                                                                ${Number(item.price).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                             </div>
                                         </div>
                                     )}
@@ -543,14 +507,13 @@ export default function TrackOrder() {
                     </div>
                 </div>
             </div>
-             {
+            {
                 orderData?.customDeclaration ? (
                     <CustomDeclarationView
                         data={orderData.customDeclaration}
                         orderData={orderData}
-                        fetchOrderDetails={fetchOrderDetails}
                     />
-                ):('')
+                ) : ('')
             }
             <Modal
                 isOpen={isActionModalOpen}

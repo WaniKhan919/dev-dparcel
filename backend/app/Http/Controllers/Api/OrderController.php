@@ -154,7 +154,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $orders->items(),
+                'data' => OrderResource::collection($orders),
                 'meta' => [
                     'current_page' => $orders->currentPage(),
                     'last_page' => $orders->lastPage(),

@@ -260,7 +260,7 @@ export default function ShopperDashboard() {
               </div>
               <div className="flex justify-end mt-4">
                 <Link
-                  to="/shopper/view/requests"
+                  to="/shopper/view/request"
                   className="text-blue-600 font-medium text-sm"
                 >
                   See all
@@ -283,7 +283,7 @@ export default function ShopperDashboard() {
               </div>
               <div className="flex justify-end mt-4">
                 <Link
-                  to="/shopper/view/requests"
+                  to="/shopper/view/request"
                   className="text-blue-600 font-medium text-sm"
                 >
                   See all
@@ -306,7 +306,7 @@ export default function ShopperDashboard() {
               </div>
               <div className="flex justify-end mt-4">
                 <Link
-                  to="/shopper/view/requests"
+                  to="/shopper/view/request"
                   className="text-blue-600 font-medium text-sm"
                 >
                   See all

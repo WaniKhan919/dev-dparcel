@@ -2,18 +2,29 @@ import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import { InfoIcon } from "../../icons";
 import { ApiHelper } from "../../utils/ApiHelper";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { fetchAllOrders } from "../../slices/allOrderSlice";
 import DParcelTable from "../../components/tables/DParcelTable";
+import { EyeIcon } from "lucide-react";
 
 interface Request {
-  id: number;
+  id: any;
   service_type: string;
   request_number: string;
   total_aprox_weight: string;
   total_price: string;
+  price_breakdown: {
+    initial_price: number;
+    offer_price: number;
+    selected_services: number;
+    additional_services: number;
+    stripe_fee: number;
+    service_fee: number;
+    grand_total: number;
+    total_payable: number;
+  };
   order_details: {
     id: number;
     quantity: number;
@@ -24,12 +35,16 @@ interface Request {
   order_offer: any;
   order_status: { name: string } | null;
   user: { id: number; name: string };
-  ship_from_country?: { name: string };
-  ship_from_state?: { name: string };
-  ship_from_city?: { name: string };
-  ship_to_country?: { name: string };
-  ship_to_state?: { name: string };
-  ship_to_city?: { name: string };
+  ship_from:{
+    country: string;
+    state: string;
+    city: string;
+  };
+  ship_to:{
+    country: string;
+    state: string;
+    city: string;
+  };
 }
 
 export default function Home() {
@@ -55,6 +70,7 @@ export default function Home() {
   const dispatch = useDispatch<AppDispatch>();
   const { data, meta } = useSelector((state: any) => state.allOrder);
   const [page, setPage] = useState(1);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchOrdersStats();
@@ -119,12 +135,20 @@ export default function Home() {
       header: "Ship From / To",
       render: (record: Request) => (
         <div className="text-sm">
-          <div><strong>From:</strong> {record.ship_from_country?.name ?? "-"}, {record.ship_from_state?.name ?? "-"}, {record.ship_from_city?.name ?? "-"}</div>
-          <div><strong>To:</strong> {record.ship_to_country?.name ?? "-"}, {record.ship_to_state?.name ?? "-"}, {record.ship_to_city?.name ?? "-"}</div>
+          <div><strong>From:</strong> {record.ship_from?.country ?? "-"}, {record.ship_from?.state ?? "-"}, {record.ship_from?.city ?? "-"}</div>
+          <div><strong>To:</strong> {record.ship_to?.country ?? "-"}, {record.ship_to?.state ?? "-"}, {record.ship_to?.city ?? "-"}</div>
         </div>
       ),
     },
-    { key: "total_price", header: "Total Price" },
+    { 
+      key: "total_price", 
+      header: "Total Price",
+      render: (record: Request) => (
+        <>
+            {record?.price_breakdown?.total_payable}
+        </>
+      )
+    },
     {
       key: "status",
       header: "Status",
@@ -154,7 +178,24 @@ export default function Home() {
           {rawStatus}
         </span>;
       },
-    }
+    },
+    {
+      key: "action",
+      header: "Action",
+      render: (record: Request) => (
+        <button
+          title="View Details"
+          onClick={() =>
+            navigate("/admin/track-order", {
+              state: { orderId: record.id }
+            })
+          }
+          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
+        >
+          <EyeIcon className="h-5 w-5 text-gray-800 stroke-2" />
+        </button>
+      )
+    },
   ];
 
   useEffect(() => {

@@ -9,16 +9,10 @@ class OrderResource extends JsonResource
 {
     public function toArray($request)
     {
-        $shipperOfferPrice = 0;
-
-        if ($this->acceptedOffer) {
-            $shipperOfferPrice = (float) $this->acceptedOffer->offer_price;
-        }
 
         return [
             'id'             => encrypt($this->id),
             'request_number' => $this->request_number,
-            'tracking_number' => $this->tracking_number,
             'status'         => $this->status,
             'status_title'   => $this->orderStatus?->name,
             'total_aprox_weight' => $this->total_aprox_weight,

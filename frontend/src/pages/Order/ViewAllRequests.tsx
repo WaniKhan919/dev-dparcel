@@ -15,9 +15,15 @@ import { useNavigate } from "react-router";
 interface Request {
   id: number;
   service_type: string;
+  status_title: string;
   request_number: string;
   total_aprox_weight: string;
   total_price: string;
+  shipping_type: {
+    quantity: number;
+    slug: string;
+    title?: string;
+  };
   order_details: {
     id: number;
     quantity: number;
@@ -28,12 +34,55 @@ interface Request {
   offers: any;
   order_status: { name: string } | null;
   user: { id: number; name: string };
-  ship_from_country?: { name: string };
-  ship_from_state?: { name: string };
-  ship_from_city?: { name: string };
-  ship_to_country?: { name: string };
-  ship_to_state?: { name: string };
-  ship_to_city?: { name: string };
+  ship_from: {
+    country: string;
+    state: string;
+    city: string;
+  };
+  ship_to: {
+    country: string;
+    state: string;
+    city: string;
+  };
+  price_breakdown: {
+    initial_price: number;
+    offer_price: number;
+    selected_services: number;
+    additional_services: number;
+    stripe_fee: number;
+    service_fee: number;
+    grand_total: number;
+    total_payable: number;
+  };
+  products: {
+    id: number;
+    quantity: number;
+    price: string;
+    weight: string;
+    product: { id: number; title: string };
+  }[];
+  accepted_offer?: {
+    id: number;
+    order_id: number;
+    user_id: number;
+    status: string;
+    offer_price: string;
+    message?: string | null;
+
+    shipper?: {
+      id: number;
+      name: string;
+    };
+
+    additional_prices?: {
+      id: number;
+      order_offer_id: number;
+      service_id?: number | null;
+      title?: string | null;
+      price: string;
+    }[];
+  } | null;
+
 }
 
 export default function ViewAllRequests() {
@@ -68,7 +117,7 @@ export default function ViewAllRequests() {
     setOpenDetailModal(true);
   };
 
-  const trackOrder = (order_id:any) => {
+  const trackOrder = (order_id: any) => {
     navigate("/admin/track-order", {
       state: { orderId: order_id },
     });
@@ -112,17 +161,24 @@ export default function ViewAllRequests() {
       header: "Ship From / To",
       render: (record: Request) => (
         <div className="text-sm">
-          <div><strong>From:</strong> {record.ship_from_country?.name ?? "-"}, {record.ship_from_state?.name ?? "-"}, {record.ship_from_city?.name ?? "-"}</div>
-          <div><strong>To:</strong> {record.ship_to_country?.name ?? "-"}, {record.ship_to_state?.name ?? "-"}, {record.ship_to_city?.name ?? "-"}</div>
+          <div><strong>From:</strong> {record.ship_from?.country ?? "-"}, {record.ship_from?.state ?? "-"}, {record.ship_from?.city ?? "-"}</div>
+          <div><strong>To:</strong> {record.ship_to?.country ?? "-"}, {record.ship_to?.state ?? "-"}, {record.ship_to?.city ?? "-"}</div>
         </div>
       ),
     },
-    { key: "total_price", header: "Total Price" },
+    {
+      key: "total_price",
+      header: "Total Price",
+      render: (record: Request) => (
+        <>{record.price_breakdown.total_payable}</>
+      )
+
+    },
     {
       key: "status",
       header: "Status",
       render: (record: Request) => {
-        const status = (record.order_status?.name ?? "Pending").toLowerCase();
+        const status = (record.status_title ?? "Pending").toLowerCase();
         const statusColors: Record<string, string> = {
           pending: "bg-yellow-100 text-yellow-800",
           "awaiting payment": "bg-orange-100 text-orange-800",
@@ -177,7 +233,7 @@ export default function ViewAllRequests() {
         <Modal
           isOpen={openDetailModal}
           onClose={() => setOpenDetailModal(false)}
-          className="max-w-4xl p-8"
+          className="max-w-4xl p-8 max-h-[90vh] overflow-y-auto"
         >
           <h2 className="text-2xl font-semibold mb-6">
             Request Details - {orderData.request_number}
@@ -189,12 +245,12 @@ export default function ViewAllRequests() {
               <div>
                 <strong>Ship Type:</strong>{" "}
                 <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${orderData.service_type === "ship_for_me"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-green-100 text-green-800"
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${orderData.shipping_type?.title === "ship_for_me"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-green-100 text-green-800"
                     }`}
                 >
-                  {orderData.service_type === "ship_for_me"
+                  {orderData.shipping_type?.title === "ship_for_me"
                     ? "Ship For Me"
                     : "Buy For Me"}
                 </span>
@@ -202,21 +258,21 @@ export default function ViewAllRequests() {
 
               <div>
                 <strong>Status:</strong>{" "}
-                {orderData.order_status?.name ?? "Pending"}
+                {orderData.status_title ?? "Pending"}
               </div>
 
               <div>
                 <strong>From:</strong>{" "}
-                {orderData.ship_from_country?.name},{" "}
-                {orderData.ship_from_state?.name},{" "}
-                {orderData.ship_from_city?.name}
+                {orderData.ship_from?.country},{" "}
+                {orderData.ship_from?.state},{" "}
+                {orderData.ship_from?.city}
               </div>
 
               <div>
                 <strong>To:</strong>{" "}
-                {orderData.ship_to_country?.name},{" "}
-                {orderData.ship_to_state?.name},{" "}
-                {orderData.ship_to_city?.name}
+                {orderData.ship_to?.country},{" "}
+                {orderData.ship_to?.state},{" "}
+                {orderData.ship_to?.city}
               </div>
 
               <div>
@@ -224,11 +280,7 @@ export default function ViewAllRequests() {
               </div>
 
               <div>
-                <strong>Total Price:</strong> ${orderData.total_price}
-              </div>
-
-              <div>
-                <strong>Shopper:</strong> {orderData.user?.name}
+                <strong>Total Price:</strong> $ {orderData.price_breakdown.total_payable}
               </div>
             </div>
           </div>
@@ -236,7 +288,7 @@ export default function ViewAllRequests() {
           {/* Products */}
           <div className="mb-6">
             <h3 className="font-semibold text-lg mb-3">
-              Products ({orderData.order_details?.length})
+              Products ({orderData.products?.length})
             </h3>
 
             <div className="border rounded-xl overflow-hidden">
@@ -251,7 +303,7 @@ export default function ViewAllRequests() {
                 </thead>
 
                 <tbody>
-                  {orderData.order_details?.map((item) => (
+                  {orderData.products?.map((item) => (
                     <tr key={item.id} className="border-t">
                       <td className="p-2">{item.product?.title}</td>
                       <td className="p-2">{item.quantity}</td>
@@ -264,61 +316,54 @@ export default function ViewAllRequests() {
             </div>
           </div>
 
-          {/* Offers Summary */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-lg mb-3">Offers</h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-50 p-4 rounded-xl">
-                <p className="text-sm text-gray-500">Total Offers</p>
-                <p className="text-xl font-semibold">
-                  {orderData.offers?.length ?? 0}
-                </p>
-              </div>
-
-              <div className="bg-green-50 p-4 rounded-xl">
-                <p className="text-sm text-gray-500">Accepted Offer</p>
-                <p className="text-xl font-semibold">
-                  {orderData.offers?.find((o:any) => o.status === "accepted")
-                    ? "Yes"
-                    : "No"}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Accepted Offer Detail */}
-          {orderData.offers?.find((o:any) => o.status === "accepted") && (
-            <div className="border rounded-xl p-4">
-              <h3 className="font-semibold text-lg mb-3">Accepted Offer</h3>
+          {orderData.accepted_offer && (
+            <div className="border rounded-2xl p-5 bg-white shadow-sm">
 
-              {orderData.offers
-                .filter((o:any) => o.status === "accepted")
-                .map((offer:any) => (
-                  <div key={offer.id}>
-                    <div className="mb-3">
-                      <strong>Shipper:</strong> {offer.shipper?.name}
-                    </div>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-gray-800">
+                  Accepted Offer
+                </h3>
 
-                    <div className="mb-3">
-                      <strong>Offer Price:</strong> ${offer.offer_price}
-                    </div>
+                <span className="px-3 py-1 text-xs rounded-full bg-green-100 text-green-700 font-medium">
+                  Accepted
+                </span>
+              </div>
 
-                    {/* Additional Prices */}
-                    {offer.additional_prices?.length > 0 && (
-                      <div className="mb-3">
-                        <strong>Additional Charges</strong>
-                        <ul className="list-disc list-inside text-sm text-gray-600">
-                          {offer.additional_prices.map((p:any) => (
-                            <li key={p.id}>
-                              {p.title} - ${p.price}
-                            </li>
-                          ))}
-                        </ul>
+              {/* Offer Price */}
+              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl mb-4">
+                <span className="text-sm text-gray-600">Offer Price</span>
+                <span className="text-lg font-bold text-gray-900">
+                  ${orderData.accepted_offer.offer_price}
+                </span>
+              </div>
+
+              {/* Additional Charges */}
+              {(orderData.accepted_offer?.additional_prices?.length ?? 0) > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Additional Charges
+                  </h4>
+
+                  <div className="space-y-2">
+                    {orderData.accepted_offer?.additional_prices?.map((p: any) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg"
+                      >
+                        <span className="text-sm text-gray-700">
+                          {p.title ?? "Service"}
+                        </span>
+
+                        <span className="text-sm font-medium text-gray-900">
+                          ${p.price}
+                        </span>
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                </div>
+              )}
             </div>
           )}
         </Modal>
