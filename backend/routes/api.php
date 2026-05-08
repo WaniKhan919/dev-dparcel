@@ -107,7 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::controller(ServiceController::class)->group(function (){
             Route::get('/', 'index');
             Route::post('/store', 'store');
-            Route::put('/update/{id}', 'update');
+            Route::put('/{id}/update', 'update');
             Route::delete('/{id}', 'destroy');
         });
 

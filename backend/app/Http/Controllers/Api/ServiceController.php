@@ -7,6 +7,7 @@ use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ServiceController extends Controller
 {
@@ -51,7 +52,7 @@ class ServiceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'service added successfully',
+                'message' => 'Service added successfully',
             ], 200);
 
         } catch (Exception $e) {
@@ -66,7 +67,7 @@ class ServiceController extends Controller
     {
         try {
             $id = decrypt($id);
-            $service = Service::find(decrypt($id));
+            $service = Service::find($id);
 
             if (!$service) {
                 return response()->json([
@@ -75,15 +76,24 @@ class ServiceController extends Controller
                 ], 404);
             }
 
+            $shippingTypeId = decrypt($request->shipping_type);
+
             $validated = $request->validate([
-                'title' => 'required|string|unique:services,title,' . $id . ',id',
+                'title' => [
+                    'required',
+                    'string',
+                    Rule::unique('services')
+                        ->where(function ($query) use ($shippingTypeId) {
+                            return $query->where('shipping_type_id', $shippingTypeId);
+                        })
+                        ->ignore($id),
+                ],
                 'shipping_type'       => 'required',
                 'description' => 'nullable|string',
                 'is_required' => 'required|boolean',
                 'status'       => 'nullable|numeric',
             ]);
-            $validated['shipping_type'] = decrypt($validated['shipping_type']);
-
+            $validated['shipping_type'] = $shippingTypeId;
             $service->update($validated);
 
             return response()->json([

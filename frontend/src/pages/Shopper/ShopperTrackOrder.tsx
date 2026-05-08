@@ -102,6 +102,7 @@ export default function ShopperTrackOrder() {
         control,
         reset,
         getValues,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm<FormValues>({
         resolver: yupResolver(validationSchema),
@@ -109,7 +110,7 @@ export default function ShopperTrackOrder() {
             to_country: 0,
             to_state: 0,
             to_city: 0,
-            products: orderData?.products?.map(() => ({ hs_code: "", origin_country: "" })) || [],
+            products: [],
 
         },
         mode: "onBlur",
@@ -382,7 +383,7 @@ export default function ShopperTrackOrder() {
                             <tbody className="text-sm">
 
                                 {orderData.products.map((item: any) => {
-                                    const tracking = item.product?.approved_product_tracking;
+                                    const tracking = item.product?.tracking;
 
                                     return (
                                         <tr key={item.id} className="border-t">
@@ -485,7 +486,7 @@ export default function ShopperTrackOrder() {
                                                     {/* Make Payment Button */}
                                                     {showPaymentButton && (
                                                         <button
-                                                            onClick={()=>handleOpenPayment(orderData?.price_breakdown.total_payable)}
+                                                            onClick={() => handleOpenPayment(orderData?.price_breakdown.total_payable)}
                                                             className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition"
                                                         >
                                                             Make Payment
@@ -878,127 +879,163 @@ export default function ShopperTrackOrder() {
                                         )}
 
                                         {/* STEP 2 */}
-                                        {step === 2 && (
-                                            <div>
-                                                <h3 className="text-lg font-semibold mb-4">Product Details</h3>
+                                        {step === 2 && (() => {
 
-                                                {orderData && orderData.products.length > 0 ? (
-                                                    <div className="overflow-x-auto">
-                                                        <table className="min-w-full border border-gray-300 rounded-lg">
-                                                            <thead className="bg-gray-100">
+                                            // ✅ WATCH OUTSIDE MAP (IMPORTANT)
+                                            const watchedProducts = watch("products") || [];
 
-                                                                {/* 🔥 TOP HEADER ROW */}
-                                                                <tr>
-                                                                    <th className="px-4 py-2 border" rowSpan={2}>Product Name</th>
-                                                                    <th className="px-4 py-2 border" rowSpan={2}>Quantity</th>
-                                                                    <th className="px-4 py-2 border" rowSpan={2}>Price</th>
-                                                                    <th className="px-4 py-2 border" rowSpan={2}>Weight</th>
-                                                                    <th className="px-4 py-2 border" rowSpan={2}>Total Price</th>
+                                            // ✅ TOTAL WEIGHT
+                                            const totalWeight = watchedProducts.reduce(
+                                                (sum: number, item: any) =>
+                                                    sum + (Number(item.weight) || 0) * (Number(item.quantity) || 0),
+                                                0
+                                            );
 
-                                                                    {/* 🔥 GROUP HEADER */}
-                                                                    <th className="px-4 py-2 border text-center" colSpan={2}>
-                                                                        For commercial items only
-                                                                    </th>
-                                                                </tr>
+                                            // ✅ GRAND TOTAL PRICE
+                                            const grandTotal = watchedProducts.reduce(
+                                                (sum: number, item: any) =>
+                                                    sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+                                                0
+                                            );
 
-                                                                {/* 🔥 SUB HEADER */}
-                                                                <tr>
-                                                                    <th className="px-4 py-2 border">HS Tariff Number</th>
-                                                                    <th className="px-4 py-2 border">Country of Origin</th>
-                                                                </tr>
-                                                            </thead>
+                                            return (
+                                                <div>
+                                                    <h3 className="text-lg font-semibold mb-4">
+                                                        Product Details
+                                                    </h3>
 
-                                                            <tbody>
-                                                                {orderData.products.map((item: any, index: number) => {
-                                                                    const totalPrice = Number(item.price) * Number(item.quantity);
+                                                    {orderData && orderData.products.length > 0 ? (
+                                                        <div className="overflow-x-auto">
+                                                            <table className="min-w-full border border-gray-300 rounded-lg">
 
-                                                                    return (
-                                                                        <tr key={item.id} className="text-center">
+                                                                {/* HEADER */}
+                                                                <thead className="bg-gray-100">
+                                                                    <tr>
+                                                                        <th className="px-4 py-2 border">Product Name</th>
+                                                                        <th className="px-4 py-2 border">Quantity</th>
+                                                                        <th className="px-4 py-2 border">Price</th>
+                                                                        <th className="px-4 py-2 border">Weight</th>
+                                                                        <th className="px-4 py-2 border">Total Price</th>
+                                                                        <th className="px-4 py-2 border">HS Code</th>
+                                                                        <th className="px-4 py-2 border">Country</th>
+                                                                    </tr>
+                                                                </thead>
 
-                                                                            <td className="px-4 py-2 border">
-                                                                                {item.product?.title}
-                                                                            </td>
+                                                                {/* BODY */}
+                                                                <tbody>
+                                                                    {orderData.products.map((item: any, index: number) => {
 
-                                                                            <td className="px-4 py-2 border">{item.quantity}</td>
+                                                                        // ✅ ROW TOTAL
+                                                                        const rowTotal =
+                                                                            (Number(watchedProducts[index]?.price) || 0) *
+                                                                            (Number(watchedProducts[index]?.quantity) || 0);
 
-                                                                            <td className="px-4 py-2 border">{item.price}</td>
+                                                                        return (
+                                                                            <tr key={item.id} className="text-center">
 
-                                                                            <td className="px-4 py-2 border">
-                                                                                {item.weight} g
-                                                                            </td>
+                                                                                {/* PRODUCT NAME */}
+                                                                                <td className="px-4 py-2 border">
+                                                                                    {item.product?.title}
+                                                                                </td>
 
-                                                                            <td className="px-4 py-2 border">
-                                                                                ${totalPrice}
-                                                                            </td>
+                                                                                {/* QUANTITY */}
+                                                                                <td className="px-4 py-2 border">
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        {...register(`products.${index}.quantity`, {
+                                                                                            valueAsNumber: true,
+                                                                                        })}
+                                                                                        defaultValue={item.quantity}
+                                                                                        className="border px-2 py-1 w-20 text-center"
+                                                                                    />
+                                                                                </td>
 
-                                                                            {/* HS CODE */}
-                                                                            <td className="px-3 py-2 border">
-                                                                                <input
-                                                                                    type="text"
-                                                                                    placeholder="HS Code"
-                                                                                    {...register(`products.${index}.hs_code`)}
-                                                                                    className="border rounded px-2 py-1 text-xs w-full"
-                                                                                />
-                                                                                {(errors.products as any)?.[index]?.hs_code && (
-                                                                                    <p className="text-red-500 text-xs mt-1">
-                                                                                        {(errors.products as any)[index].hs_code.message}
-                                                                                    </p>
-                                                                                )}
-                                                                            </td>
+                                                                                {/* PRICE */}
+                                                                                <td className="px-4 py-2 border">
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        {...register(`products.${index}.price`, {
+                                                                                            valueAsNumber: true,
+                                                                                        })}
+                                                                                        defaultValue={item.price}
+                                                                                        className="border px-2 py-1 w-24 text-center"
+                                                                                    />
+                                                                                </td>
 
-                                                                            {/* ORIGIN */}
-                                                                            <td className="px-3 py-2 border">
-                                                                                <input
-                                                                                    type="text"
-                                                                                    placeholder="Country"
-                                                                                    {...register(`products.${index}.origin_country`)}
-                                                                                    className="border rounded px-2 py-1 text-xs w-full"
-                                                                                />
-                                                                            </td>
+                                                                                {/* WEIGHT */}
+                                                                                <td className="px-4 py-2 border">
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        {...register(`products.${index}.weight`, {
+                                                                                            valueAsNumber: true,
+                                                                                        })}
+                                                                                        defaultValue={item.weight}
+                                                                                        className="border px-2 py-1 w-24 text-center"
+                                                                                    />
+                                                                                </td>
 
-                                                                        </tr>
-                                                                    );
-                                                                })}
-                                                            </tbody>
+                                                                                {/* ROW TOTAL */}
+                                                                                <td className="px-4 py-2 border">
+                                                                                    ${rowTotal}
+                                                                                </td>
 
-                                                            {/* 🔥 FOOTER */}
-                                                            <tfoot>
-                                                                <tr className="bg-gray-50 font-semibold">
-                                                                    <td colSpan={3} className="px-4 py-2 border text-right">
-                                                                        Total:
-                                                                    </td>
+                                                                                {/* HS CODE */}
+                                                                                <td className="px-4 py-2 border">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        {...register(`products.${index}.hs_code`)}
+                                                                                        className="border px-2 py-1 w-full text-xs"
+                                                                                    />
+                                                                                </td>
 
-                                                                    {/* TOTAL WEIGHT */}
-                                                                    <td className="px-4 py-2 border">
-                                                                        {orderData.products.reduce(
-                                                                            (sum: number, item: any) =>
-                                                                                sum + (Number(item.weight || 0) * Number(item.quantity || 1)),
-                                                                            0
-                                                                        )}{" "}
-                                                                        g
-                                                                    </td>
+                                                                                {/* COUNTRY */}
+                                                                                <td className="px-4 py-2 border">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        {...register(`products.${index}.origin_country`)}
+                                                                                        className="border px-2 py-1 w-full text-xs"
+                                                                                    />
+                                                                                </td>
 
-                                                                    {/* TOTAL VALUE */}
-                                                                    <td className="px-4 py-2 border">
-                                                                        $
-                                                                        {orderData.products.reduce(
-                                                                            (sum: number, item: any) =>
-                                                                                sum + Number(item.price) * Number(item.quantity),
-                                                                            0
-                                                                        )}
-                                                                    </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
 
-                                                                    <td className="border"></td>
-                                                                    <td className="border"></td>
-                                                                </tr>
-                                                            </tfoot>
-                                                        </table>
-                                                    </div>
-                                                ) : (
-                                                    <p className="text-gray-500">No product details found.</p>
-                                                )}
-                                            </div>
-                                        )}
+                                                                {/* FOOTER */}
+                                                                <tfoot>
+                                                                    <tr className="bg-gray-50 font-semibold">
+
+                                                                        <td colSpan={3} className="text-right px-4 py-2 border">
+                                                                            Total:
+                                                                        </td>
+
+                                                                        {/* TOTAL WEIGHT */}
+                                                                        <td className="px-4 py-2 border">
+                                                                            {totalWeight} g
+                                                                        </td>
+
+                                                                        {/* GRAND TOTAL */}
+                                                                        <td className="px-4 py-2 border">
+                                                                            ${grandTotal}
+                                                                        </td>
+
+                                                                        <td className="border"></td>
+                                                                        <td className="border"></td>
+
+                                                                    </tr>
+                                                                </tfoot>
+
+                                                            </table>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-gray-500">
+                                                            No product details found.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
 
                                         {/* STEP 3 */}
                                         {step === 3 && (
@@ -1081,16 +1118,16 @@ export default function ShopperTrackOrder() {
             }
             {/* Payment Modal */}
             {isPaymentOpen && totalPayableAmount > 0 && orderData && (
-            <Elements stripe={stripePromise}>
-                <PaymentModal
-                    isOpen={isPaymentOpen}
-                    onClose={() => setIsPaymentOpen(false)}
-                    orderId={orderData?.id}
-                    shipperId={orderData.accepted_offer?.user_id ?? 0}
-                    amount={parseFloat(String(totalPayableAmount))}
-                    fetchOrderTracking={fetchOrderTracking}
-                />
-            </Elements>
+                <Elements stripe={stripePromise}>
+                    <PaymentModal
+                        isOpen={isPaymentOpen}
+                        onClose={() => setIsPaymentOpen(false)}
+                        orderId={orderData?.id}
+                        shipperId={orderData.accepted_offer?.user_id ?? 0}
+                        amount={parseFloat(String(totalPayableAmount))}
+                        fetchOrderTracking={fetchOrderTracking}
+                    />
+                </Elements>
             )}
         </>
     );

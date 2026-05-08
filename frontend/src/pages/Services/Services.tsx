@@ -22,7 +22,7 @@ import { PencilIcon, TrashBinIcon } from "../../icons";
 import Select from "../../components/ui/dropdown/Select";
 
 interface ServiceFormData {
-  id: number;
+  id: any;
   title: string;
   shipping_type: string;
   description?: string | null;
@@ -54,7 +54,7 @@ export default function Services() {
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState('');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
@@ -138,7 +138,7 @@ export default function Services() {
   const onClose = () => {
     reset();
     setEditMode(false);
-    setSelectedServiceId(null);
+    setSelectedServiceId('');
     closeModal();
   };
 
@@ -146,8 +146,9 @@ export default function Services() {
     setLoading(true);
     try {
       const endpoint = editMode
-        ? `/service/update/${selectedServiceId}`
+        ? `/service/${selectedServiceId}/update`
         : "/service/store";
+
       const method = editMode ? "PUT" : "POST";
 
       const res = await ApiHelper(method, endpoint, data);
@@ -158,24 +159,29 @@ export default function Services() {
           res.data.message ||
           (editMode ? "Service updated successfully!" : "Service added successfully!")
         );
+
         dispatch(fetchServices());
+
+        // ✅ reset only on success
+        setEditMode(false);
+        setSelectedServiceId('');
       } else {
-        toast.error(res.data.message || "Failed to save service ❌");
+        toast.error(res.data.error || res.data.message || "Failed to save service ❌");
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Something went wrong!", {
-        style: { background: "#f44336", color: "#fff" },
-      });
+      toast.error(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Something went wrong!"
+      );
     } finally {
       setLoading(false);
-      setEditMode(false);
-      setSelectedServiceId(null);
     }
   };
 
   // Open modal with existing service data for editing
-  const editService = (id: number) => {
-    const service = services.find((s: ServiceFormData) => s.id === id);
+  const editService = (id: string) => {
+    const service = services.find((s: ServiceFormData) => s.id == id);
     if (service) {
       reset({
         title: service.title,
