@@ -48,8 +48,8 @@ interface OrderDetail {
 
 interface LocationRef {
   country: string;
-  state: string;
-  city: string;
+  city?: string;
+  address?: string;
 }
 
 interface OrderPayment {
@@ -215,15 +215,12 @@ export default function ShopperRequests() {
           <div className="text-sm space-y-1">
             <div>
               <span className="font-semibold text-gray-700">From: </span>
-              {record.order?.ship_from?.country} {", "}
-              {record.order?.ship_from?.state} {", "}
-              {record.order?.ship_from?.city}
+              {record.order?.ship_from?.country ?? "-"}
             </div>
             <div>
               <span className="font-semibold text-gray-700">To: </span>
-              {record.order?.ship_to?.country} {", "}
-              {record.order?.ship_to?.state} {", "}
-              {record.order?.ship_to?.city}
+              {record.order?.ship_to?.country ?? "-"}
+              {record.order?.ship_to?.city ? `, ${record.order.ship_to.city}` : ""}
             </div>
           </div>
         ),

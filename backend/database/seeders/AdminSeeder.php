@@ -39,8 +39,8 @@ class AdminSeeder extends Seeder
                     'is_verified' => true,
 
                     // reset fields cleared
-                    'reset_password_token' => null,
-                    'reset_password_expires_at' => null,
+                    'reset_token' => null,
+                    'reset_token_expires_at' => null,
 
                     'remember_token' => Str::random(60),
                 ]

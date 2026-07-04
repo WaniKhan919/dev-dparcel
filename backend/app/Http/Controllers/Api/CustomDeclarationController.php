@@ -76,6 +76,9 @@ class CustomDeclarationController extends Controller
             'products.*.id'             => 'required|exists:products,id',
             'products.*.hs_code'        => 'required|string',
             'products.*.origin_country' => 'nullable|string',
+            'products.*.quantity'       => 'nullable|integer|min:1',
+            'products.*.price'          => 'nullable|numeric|min:0',
+            'products.*.weight'         => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -86,15 +89,26 @@ class CustomDeclarationController extends Controller
 
             $products = $request->input('products', []);
 
+            // Auto-calculate totals from product rows
+            $validated['total_declared_value'] = collect($products)->sum(
+                fn($p) => ($p['price'] ?? 0) * ($p['quantity'] ?? 1)
+            );
+            $validated['total_weight'] = collect($products)->sum(
+                fn($p) => ($p['weight'] ?? 0) * ($p['quantity'] ?? 1)
+            );
+
             $declaration = CustomDeclaration::create(
                 collect($validated)->except('products')->toArray()
             );
 
-           foreach ($products as $index => $product) {
+            foreach ($products as $product) {
                 $declaration->products()->create([
                     'product_id'     => $product['id'] ?? null,
                     'hs_code'        => $product['hs_code'],
                     'origin_country' => $product['origin_country'] ?? null,
+                    'quantity'       => $product['quantity'] ?? 1,
+                    'price'          => $product['price'] ?? 0,
+                    'weight'         => $product['weight'] ?? 0,
                 ]);
             }
 

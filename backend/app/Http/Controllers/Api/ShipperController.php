@@ -80,26 +80,39 @@ class ShipperController extends Controller
             }
 
             // Order tracking
-            $order = Order::with('user')->findOrFail($orderId);
+            $order = Order::with(['user', 'shippingType'])->findOrFail($orderId);
+            $shipper = Auth::user();
 
             OrderTracking::create([
                 'order_id'  => $orderId,
                 'status_id' => 2, // Offer Placed
             ]);
 
-            // Email
-            $emailData = [
+            // Notify admin about new offer awaiting approval
+            $additionalPrices = $orderOffer->additionalPrices;
+            $totalOfferPrice = (float) $orderOffer->offer_price + $additionalPrices->sum(fn($p) => (float) $p->price);
+
+            $adminEmailData = [
+                'shipper_name'   => $shipper->name,
                 'user_name'      => $order->user->name,
                 'request_number' => $order->request_number,
+                'service_type'   => $order->shippingType?->title ?? '-',
                 'offer_price'    => $orderOffer->offer_price,
-                'dashboard_url'  => env('REACT_APP') . '/shopper/view/request',
+                'additional_prices' => $additionalPrices->map(fn($p) => [
+                    'title' => $p->title ?? $p->service?->title ?? 'Service',
+                    'price' => $p->price,
+                ])->toArray(),
+                'total_offer_price' => $totalOfferPrice,
+                'dashboard_url'  => env('REACT_APP') . '/admin/offers',
+                'offer_id'       => encrypt($orderOffer->id),
             ];
 
+            $adminEmail = env('ADMIN_EMAIL', 'admin@dparcel.com');
             sendEmail(
-                $order->user->email,
-                'An Offer is placed against your order!',
-                'emails.shopper.orders.offer-send',
-                $emailData
+                $adminEmail,
+                'New Offer Placed — Awaiting Your Approval',
+                'emails.admin.new-offer',
+                $adminEmailData
             );
 
             DB::commit();
@@ -131,11 +144,7 @@ class ShipperController extends Controller
                 'order.shippingType:id,title,slug',
                 'order.orderDetails.product',
                 'order.shipFromCountry:id,name',
-                'order.shipFromState:id,name',
-                'order.shipFromCity:id,name',
                 'order.shipToCountry:id,name',
-                'order.shipToState:id,name',
-                'order.shipToCity:id,name',
             ])
                 ->where('user_id', $userId)
                 ->orderBy('id', 'desc')
@@ -202,11 +211,7 @@ class ShipperController extends Controller
                 'orderDetails.product',
                 'user',
                 'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
                 'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name',
                 'orderStatus:id,name',
                 'offers' => function ($q) use ($user) {
                     $q->where('user_id', $user->id)
@@ -244,11 +249,9 @@ class ShipperController extends Controller
 
                     // Location
                     'ship_from_country'  => $order->shipFromCountry?->name,
-                    'ship_from_state'    => $order->shipFromState?->name,
-                    'ship_from_city'     => $order->shipFromCity?->name,
                     'ship_to_country'    => $order->shipToCountry?->name,
-                    'ship_to_state'      => $order->shipToState?->name,
-                    'ship_to_city'       => $order->shipToCity?->name,
+                    'ship_to_city'       => $order->ship_to_city,
+                    'ship_to_address'    => $order->ship_to_address,
 
                     // Price breakdown
                     'price_breakdown'    => [
@@ -263,9 +266,10 @@ class ShipperController extends Controller
 
                     // My offer detail
                     'my_offer'           => $myOffer ? [
-                        'id'              => $myOffer->id,
-                        'status'          => $myOffer->status,
-                        'offer_price'     => (float) $myOffer->offer_price,
+                        'id'                    => $myOffer->id,
+                        'status'                => $myOffer->status,
+                        'admin_approval_status' => $myOffer->admin_approval_status,
+                        'offer_price'           => (float) $myOffer->offer_price,
                         'services'        => $myOffer->additionalPrices->map(fn($p) => [
                             'id'         => $p->id,
                             'service_id' => $p->service_id,

@@ -47,6 +47,9 @@ import ShipperSignUp from "./pages/AuthPages/ShipperSignUp";
 import Shippers from "./pages/Admin/Users/Shippers";
 import Shoppers from "./pages/Admin/Users/Shoppers";
 import SendOffer from "./pages/Shipper/SendOffer";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
+import ResetPassword from "./pages/AuthPages/ResetPassword";
+import RoleRoute from "./context/RoleRoute";
 
 export default function App() {
   return (
@@ -59,6 +62,8 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/shipper/signup" element={<ShipperSignUp />} />
           <Route path="/verify" element={<VerifyOtp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* Dashboard Layout */}
 
@@ -77,52 +82,53 @@ export default function App() {
             }
           >
             {/* Admin Routes */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <Home />
-              }
-            />
-            <Route index path="/roles" element={<Roles />} />
-            <Route index path="/permissions" element={<Permissions />} />
-            <Route index path="/shoppers" element={<Shoppers />} />
-            <Route index path="/shippers" element={<Shippers />} />
-            <Route path="/view/requests" element={<ViewAllRequests />} />
-            <Route path="/admin/track-order" element={<TrackOrder />} />
-            <Route path="/payments" element={<AllPayments />} />
-            <Route path="/admin/wallet" element={<AdminWallet />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/shipper/levels" element={<ShipperLevels />} />
-            <Route path="/payment/setting" element={<PaymentsSettings />} />
-            <Route path="/blogs" element={<Blogs />} />
-            <Route path="/blogs/create" element={<CreateBlogs />} />
-            <Route path="/blogs/edit" element={<EditBlogs />} />
+            <Route element={<RoleRoute roles={["admin"]} />}>
+              <Route path="/admin/dashboard" element={<Home />} />
+              <Route path="/roles" element={<Roles />} />
+              <Route path="/permissions" element={<Permissions />} />
+              <Route path="/shoppers" element={<Shoppers />} />
+              <Route path="/shippers" element={<Shippers />} />
+              <Route path="/view/requests" element={<ViewAllRequests />} />
+              <Route path="/admin/track-order" element={<TrackOrder />} />
+              <Route path="/payments" element={<AllPayments />} />
+              <Route path="/admin/wallet" element={<AdminWallet />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/shipper/levels" element={<ShipperLevels />} />
+              <Route path="/payment/setting" element={<PaymentsSettings />} />
+              <Route path="/blogs" element={<Blogs />} />
+              <Route path="/blogs/create" element={<CreateBlogs />} />
+              <Route path="/blogs/edit" element={<EditBlogs />} />
+            </Route>
 
             {/* Shopper Routes */}
-            <Route index path="/shopper/dashboard" element={<ShopperDashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/shopper/request" element={<Order />} />
-            <Route path="/shopper/messages" element={<ShopperMessages />} />
-            <Route path="/shopper/view/request" element={<ViewOrder />} />
-            <Route path="/shopper/track/order" element={<ShopperTrackOrder />} />
-            <Route path="/shopper/payment" element={<ShopperPayments />} />
-            <Route path="/shopper/guideline" element={<ShopperGuideLine />} />
-            <Route path="/custom/declaration" element={<CustomDeclaration />} />
+            <Route element={<RoleRoute roles={["shopper"]} />}>
+              <Route path="/shopper/dashboard" element={<ShopperDashboard />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/shopper/request" element={<Order />} />
+              <Route path="/shopper/messages" element={<ShopperMessages />} />
+              <Route path="/shopper/view/request" element={<ViewOrder />} />
+              <Route path="/shopper/track/order" element={<ShopperTrackOrder />} />
+              <Route path="/shopper/payment" element={<ShopperPayments />} />
+              <Route path="/shopper/guideline" element={<ShopperGuideLine />} />
+              <Route path="/custom/declaration" element={<CustomDeclaration />} />
+            </Route>
 
             {/* Shipper Routes */}
-            <Route index path="/shipper/dashboard" element={<ShipperDashboard />} />
-            <Route index path="/shipper/send-offer" element={<SendOffer />} />
-            <Route path="/shipper/requests" element={<ShopperRequests />} />
-            <Route path="shipper/manage-request" element={<ManageRequest />} />
-            <Route path="/shipper/messages" element={<ShipperMessages />} />
-            <Route path="/shipper/guideline" element={<ShipperGuideLine />} />
-            <Route path="/shipper/all/custom-declarations" element={<ShopperAllCustomDeclaration />} />
-            <Route path="/custom-declaration" element={<ShopperCustomDeclaration />} />
-            <Route path="/shipper/subscription" element={<Subscription />} />
-            <Route path="/shipper/service-areas" element={<ManageMultipleLocations />} />
-            <Route path="/shipper/payment" element={<ShipperPayments />} />
-            <Route path="shipper/wallet" element={<ShipperWallet />} />
-            <Route path="/shipper/stripe-connect" element={<StripeConnect />} />
+            <Route element={<RoleRoute roles={["shipper"]} />}>
+              <Route path="/shipper/dashboard" element={<ShipperDashboard />} />
+              <Route path="/shipper/send-offer" element={<SendOffer />} />
+              <Route path="/shipper/requests" element={<ShopperRequests />} />
+              <Route path="/shipper/manage-request" element={<ManageRequest />} />
+              <Route path="/shipper/messages" element={<ShipperMessages />} />
+              <Route path="/shipper/guideline" element={<ShipperGuideLine />} />
+              <Route path="/shipper/all/custom-declarations" element={<ShopperAllCustomDeclaration />} />
+              <Route path="/custom-declaration" element={<ShopperCustomDeclaration />} />
+              <Route path="/shipper/subscription" element={<Subscription />} />
+              <Route path="/shipper/service-areas" element={<ManageMultipleLocations />} />
+              <Route path="/shipper/payment" element={<ShipperPayments />} />
+              <Route path="/shipper/wallet" element={<ShipperWallet />} />
+              <Route path="/shipper/stripe-connect" element={<StripeConnect />} />
+            </Route>
 
             {/* Common Routes */}
             <Route path="/profile" element={<UserProfiles />} />

@@ -125,7 +125,7 @@ function PaginationBar({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function DParcelTable<T extends { id: number }>({
+export default function DParcelTable<T extends { id: number | string }>({
   columns,
   data,
   loading = false,

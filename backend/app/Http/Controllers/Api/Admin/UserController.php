@@ -125,7 +125,7 @@ class UserController extends Controller
             $user->status = 'active';
             $user->is_verified =  1;
             $user->save();
-            Mail::to($user->email)->send(
+            Mail::to($user->email)->queue(
                 new ShipperStatusMail($user, $request->approval_status)
             );
 

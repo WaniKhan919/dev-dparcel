@@ -24,11 +24,7 @@ class ShopperOrderController extends Controller
                 'acceptedOffer.additionalPrices',
                 'acceptedOffer.shipper',
                 'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
                 'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name'
             ])->findOrFail($id);
 
             return response()->json([

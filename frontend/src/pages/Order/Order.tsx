@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import Label from "../../components/form/Label";
@@ -17,8 +17,6 @@ import Button from "../../components/ui/button/Button";
 import { fetchServices } from "../../slices/servicesSlice";
 import { fetchPaymentPlan } from "../../slices/getPaymentSettingForRolesSlice";
 import { fetchCountries } from "../../slices/countriesSlice";
-import { fetchStates } from "../../slices/statesSlice";
-import { fetchCities } from "../../slices/citiesSlice";
 import { fetchShippingType } from "../../slices/shippingTypeSlice";
 import Select from "../../components/ui/dropdown/Select";
 import Spin from "../../components/ui/spin/Spin";
@@ -51,22 +49,6 @@ const stepSchemas = [
       )
       .required("Country is required"),
 
-    ship_from_state_id: yup
-      .number()
-      .typeError("State is required")
-      .transform((value, originalValue) =>
-        String(originalValue).trim() === "" ? undefined : value
-      )
-      .required("State is required"),
-
-    ship_from_city_id: yup
-      .number()
-      .typeError("City is required")
-      .transform((value, originalValue) =>
-        String(originalValue).trim() === "" ? undefined : value
-      )
-      .required("City is required"),
-
     ship_to_country_id: yup
       .number()
       .typeError("Country is required")
@@ -75,21 +57,13 @@ const stepSchemas = [
       )
       .required("Country is required"),
 
-    ship_to_state_id: yup
-      .number()
-      .typeError("State is required")
-      .transform((value, originalValue) =>
-        String(originalValue).trim() === "" ? undefined : value
-      )
-      .required("State is required"),
-
-    ship_to_city_id: yup
-      .number()
-      .typeError("City is required")
-      .transform((value, originalValue) =>
-        String(originalValue).trim() === "" ? undefined : value
-      )
+    ship_to_city: yup
+      .string()
       .required("City is required"),
+
+    ship_to_address: yup
+      .string()
+      .required("Address is required"),
   }),
 
   // Step 3: Product Validation (handled separately)
@@ -149,13 +123,6 @@ export default function Order() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
   const { data: countries } = useSelector((state: any) => state.countries);
-  const { data: states } = useSelector((state: any) => state.states);
-  const { data: cities } = useSelector((state: any) => state.cities);
-  const activeSection = useRef<"from" | "to" | null>(null);
-  const [shipFromStates, setShipFromStates] = useState<any[]>([]);
-  const [shipToStates, setShipToStates] = useState<any[]>([]);
-  const [shipFromCity, setShipFromCity] = useState<any[]>([]);
-  const [shipToCity, setShipToCity] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const countryOptions = countries?.map((s: any) => ({
@@ -286,11 +253,9 @@ export default function Order() {
       const payload = {
         shipping_type_id: data.serviceType,
         ship_from_country_id: data.ship_from_country_id,
-        ship_from_state_id: data.ship_from_state_id,
-        ship_from_city_id: data.ship_from_city_id,
         ship_to_country_id: data.ship_to_country_id,
-        ship_to_state_id: data.ship_to_state_id,
-        ship_to_city_id: data.ship_to_city_id,
+        ship_to_city: data.ship_to_city,
+        ship_to_address: data.ship_to_address,
         products, // from your products state
         services: servicePayload, // selected service IDs
       };
@@ -327,37 +292,6 @@ export default function Order() {
     dispatch(fetchShippingType());
     dispatch(fetchCountries());
   }, [dispatch]);
-
-  useEffect(() => {
-    if (!states) return;
-    const stateOptions = states?.map((s: any) => ({
-      value: s.id,
-      label: s.name,
-    })) || [];
-    if (activeSection.current === "from") {
-      setShipFromStates(stateOptions);
-    }
-
-    if (activeSection.current === "to") {
-      setShipToStates(stateOptions);
-    }
-  }, [states]);
-
-  useEffect(() => {
-    if (!cities) return;
-
-    const cityOptions = cities?.map((s: any) => ({
-      value: s.id,
-      label: s.name,
-    })) || [];
-    if (activeSection.current === "from") {
-      setShipFromCity(cityOptions);
-    }
-
-    if (activeSection.current === "to") {
-      setShipToCity(cityOptions);
-    }
-  }, [cities]);
 
   return (
     <>
@@ -442,168 +376,77 @@ export default function Order() {
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800">Shipping Address</h2>
 
-              {/* SHIP FROM SECTION */}
-              <div className="border p-4 rounded-xl bg-gray-50">
-                <h3 className="font-semibold mb-2">Ship From</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  {/* Country */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <Controller
                       name="ship_from_country_id"
                       control={control}
                       render={({ field }) => (
                         <Select<number>
-                          label="Country"
+                          label="Ship From Country *"
                           options={countryOptions}
                           value={field.value || null}
                           onChange={(val) => {
-                            activeSection.current = "from";
                             field.onChange(val);
                             setValue("ship_from_country_id", val);
-                            setValue("ship_from_state_id", "");
-                            setValue("ship_from_city_id", "");
-                            if (val) {
-                              dispatch(fetchStates(val));
-                            }
                           }}
-                          placeholder="Select Country"
+                          placeholder="Select country"
                           clearable
                         />
                       )}
                     />
-                    {errors.ship_from_country_id && <p className="text-red-500 text-sm">{errors.ship_from_country_id.message as string}</p>}
+                    {errors.ship_from_country_id && (
+                      <p className="text-red-500 text-sm mt-1">{errors.ship_from_country_id.message as string}</p>
+                    )}
                   </div>
 
-                  {/* State */}
-                  <div>
-                    <Controller
-                      name="ship_from_state_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select<number>
-                          label="State"
-                          options={shipFromStates}
-                          value={field.value || null}
-                          onChange={(val) => {
-                            field.onChange(val);
-                            // reset city
-                            setValue("ship_from_city_id", null);
-                            if (val) {
-                              dispatch(fetchCities(val));
-                            }
-                          }}
-                          placeholder="Select State"
-                          clearable
-                        />
-                      )}
-                    />
-
-                    {errors.ship_from_state_id && <p className="text-red-500 text-sm">{errors.ship_from_state_id.message as string}</p>}
-                  </div>
-
-                  {/* City */}
-                  <div>
-                    <Controller
-                      name="ship_from_city_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select<number>
-                          label="City"
-                          options={shipFromCity}
-                          value={field.value || null}
-                          onChange={(val) => {
-                            field.onChange(val);
-                            setValue("ship_from_city_id", val);
-                          }}
-                          placeholder="Select City"
-                          clearable
-                        />
-                      )}
-                    />
-                    {errors.ship_from_city_id && <p className="text-red-500 text-sm">{errors.ship_from_city_id.message as string}</p>}
-                  </div>
-                </div>
-              </div>
-
-              {/* SHIP TO SECTION */}
-              <div className="border p-4 rounded-xl bg-gray-50">
-                <h3 className="font-semibold mb-2">Ship To</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  {/* Country */}
                   <div>
                     <Controller
                       name="ship_to_country_id"
                       control={control}
                       render={({ field }) => (
                         <Select<number>
-                          label="Country"
+                          label="Ship To Country *"
                           options={countryOptions}
                           value={field.value || null}
                           onChange={(val) => {
-                            activeSection.current = "to";
                             field.onChange(val);
                             setValue("ship_to_country_id", val);
-                            setValue("ship_to_state_id", "");
-                            setValue("ship_to_city_id", "");
-                            if (val) {
-                              dispatch(fetchStates(val));
-                            }
                           }}
-                          placeholder="Select Country"
+                          placeholder="Select country"
                           clearable
                         />
                       )}
                     />
-                    {errors.ship_to_country_id && <p className="text-red-500 text-sm">{errors.ship_to_country_id.message as string}</p>}
+                    {errors.ship_to_country_id && (
+                      <p className="text-red-500 text-sm mt-1">{errors.ship_to_country_id.message as string}</p>
+                    )}
                   </div>
 
-                  {/* State */}
                   <div>
-                    <Controller
-                      name="ship_to_state_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select<number>
-                          label="State"
-                          options={shipToStates}
-                          value={field.value || null}
-                          onChange={(val) => {
-                            field.onChange(val);
-                            setValue("ship_to_state_id", val);
-                            setValue("ship_to_city_id", "");
-                            if (val) {
-                              dispatch(fetchCities(val));
-                            }
-                          }}
-                          placeholder="Select State"
-                          clearable
-                        />
-                      )}
+                    <Label>Ship To City *</Label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. London"
+                      {...register("ship_to_city")}
                     />
-                    {errors.ship_to_state_id && <p className="text-red-500 text-sm">{errors.ship_to_state_id.message as string}</p>}
+                    {errors.ship_to_city && (
+                      <p className="text-red-500 text-sm mt-1">{errors.ship_to_city.message as string}</p>
+                    )}
                   </div>
+                </div>
 
-                  {/* City */}
-                  <div>
-                    <Controller
-                      name="ship_to_city_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select<number>
-                          label="City"
-                          options={shipToCity}
-                          value={field.value || null}
-                          onChange={(val) => {
-                            field.onChange(val);
-                            setValue("ship_to_city_id", val);
-                          }}
-                          placeholder="Select City"
-                          clearable
-                        />
-                      )}
-                    />
-                    {errors.ship_to_city_id && <p className="text-red-500 text-sm">{errors.ship_to_city_id.message as string}</p>}
-                  </div>
+                <div>
+                  <Label>Ship To Address *</Label>
+                  <Input
+                    type="text"
+                    placeholder="Street, building, apartment, postal code..."
+                    {...register("ship_to_address")}
+                  />
+                  {errors.ship_to_address && (
+                    <p className="text-red-500 text-sm mt-1">{errors.ship_to_address.message as string}</p>
+                  )}
                 </div>
               </div>
             </div>

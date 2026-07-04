@@ -79,6 +79,7 @@ export default function ShopperTrackOrder() {
     const orderId = location.state?.orderId;
     const { order: orderData, loading, error } = useOrderDetail(orderId);
     const [orderTracking, setOrderTracking] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'track' | 'declaration'>('track');
 
     const steps = ["Order Detail", "Offer", "Products", "Order Tracking"];
     const [currentStep, setCurrentStep] = useState(0);
@@ -192,11 +193,11 @@ export default function ShopperTrackOrder() {
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span>Services Fee</span>
-                                                    <span>{orderData.price_breakdown?.selected_services} %</span>
+                                                    <span>${orderData.price_breakdown?.selected_services}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span>Stripe Fee</span>
-                                                    <span>{orderData.price_breakdown?.stripe_fee} %</span>
+                                                    <span>${orderData.price_breakdown?.stripe_fee}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span>Selected Services Fee</span>
@@ -539,17 +540,23 @@ export default function ShopperTrackOrder() {
         if (stepRef.current < 3) return;
         if (step < 3) return;
         try {
+            const mappedProducts = orderData?.products?.map((item: any, index: number) => {
+                const formProduct = data.products?.[index];
+                return {
+                    id: item.product_id ?? item.id,
+                    hs_code: formProduct?.hs_code ?? "",
+                    origin_country: formProduct?.origin_country ?? "",
+                    quantity: Number(formProduct?.quantity ?? item.quantity ?? 1),
+                    price: Number(formProduct?.price ?? item.price ?? 0),
+                    weight: Number(formProduct?.weight ?? item.weight ?? 0),
+                };
+            }) ?? [];
+
             const payload = {
                 ...data,
                 order_id: orderId,
                 shipping_type_id: orderData?.service_type === "buy_for_me" ? 1 : 2,
-
-                // ✅ orderData products se id map karo
-                products: orderData?.products?.map((item: any, index: number) => ({
-                    id: item.product_id ?? item.id,
-                    hs_code: data.products?.[index]?.hs_code ?? "",
-                    origin_country: data.products?.[index]?.origin_country ?? "",
-                })),
+                products: mappedProducts,
             };
             const res = await ApiHelper("POST", "/custom-declaration/store", payload);
             if (res.status === 200 && res.data.success) {
@@ -634,488 +641,357 @@ export default function ShopperTrackOrder() {
             <PageMeta title="Delivering Parcel | Track Order" description="Track Order" />
             <PageBreadcrumb pageTitle="Track Order" />
 
-            <div className="bg-white p-6 rounded-xl shadow-md">
+            <div className="bg-white p-6 rounded-xl shadow-md overflow-hidden">
 
-                {/* Stepper */}
-                <div className="flex items-center justify-between mb-8">
-                    {steps.map((step, index) => (
-                        <div key={index} className="flex-1 flex flex-col items-center relative">
-
-                            {/* Circle */}
-                            <div
-                                className={`w-10 h-10 flex items-center justify-center rounded-full border-2 
-                                ${index <= currentStep
-                                        ? "bg-blue-600 text-white border-blue-600"
-                                        : "border-gray-300 text-gray-400"
-                                    }`}
-                            >
-                                {index + 1}
-                            </div>
-
-                            {/* Label */}
-                            <span className="text-sm mt-2">{step}</span>
-
-                            {/* Line */}
-                            {index !== steps.length - 1 && (
-                                <div className="absolute top-5 left-1/2 w-full h-[2px] bg-gray-200 -z-10"></div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Step Content */}
-                <div className="min-h-[200px] mb-6">
-                    {renderStepContent()}
-                </div>
-
-                {/* Buttons */}
-                <div className="flex justify-between">
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 mb-6">
                     <button
-                        type="button"
-                        onClick={prevStep}
-                        disabled={currentStep === 0}
-                        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                        onClick={() => setActiveTab('track')}
+                        className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'track'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
                     >
-                        Previous
+                        Track Order
                     </button>
-
-                    <button
-                        type="button"
-                        onClick={nextStep}
-                        disabled={currentStep === steps.length - 1}
-                        className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-                    >
-                        Next
-                    </button>
+                    {orderData && orderData.status > 5 && (
+                        <button
+                            onClick={() => setActiveTab('declaration')}
+                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'declaration'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            Custom Declaration
+                        </button>
+                    )}
                 </div>
-            </div>
-            {
-                orderData?.customDeclaration && !showForm ? (
-                    <CustomDeclarationView
-                        data={orderData.customDeclaration}
-                        orderData={orderData}
-                    />
-                ) :
-                    (
 
-                        orderData && orderData?.status > 5 ?
-                            (
-                                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 mt-6">
-
-                                    {/* 🔥 HEADER */}
-                                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900">
-                                                Custom Declaration
-                                            </h2>
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                Fill the required details for customs processing
-                                            </p>
-                                        </div>
-
-                                        <span className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
-                                            CN22 / CN23
-                                        </span>
+                {/* ── TAB 1: Track Order ── */}
+                {activeTab === 'track' && (
+                    <>
+                        {/* Stepper */}
+                        <div className="flex items-center justify-between mb-8">
+                            {steps.map((step, index) => (
+                                <div key={index} className="flex-1 flex flex-col items-center relative">
+                                    <div
+                                        className={`w-10 h-10 flex items-center justify-center rounded-full border-2
+                                        ${index <= currentStep
+                                                ? "bg-blue-600 text-white border-blue-600"
+                                                : "border-gray-300 text-gray-400"
+                                            }`}
+                                    >
+                                        {index + 1}
                                     </div>
-                                    {/* Stepper */}
-                                    <div className="flex justify-between items-center mb-10 relative">
-                                        {["To", "Products", "Declaration"].map((label, index) => (
-                                            <div key={index} className="flex-1 flex flex-col items-center relative">
+                                    <span className="text-sm mt-2">{step}</span>
+                                    {index !== steps.length - 1 && (
+                                        <div className="absolute top-5 left-1/2 w-full h-[2px] bg-gray-200 -z-10"></div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
 
-                                                {index !== 4 && (
-                                                    <div
-                                                        className={`absolute top-5 left-1/2 w-full h-[2px] -z-10 transition-all  ${step > index + 1 ? "bg-blue-600" : "bg-gray-200"}`}
-                                                    />
-                                                )}
+                        {/* Step Content */}
+                        <div className="min-h-[200px] mb-6">
+                            {renderStepContent()}
+                        </div>
 
-                                                <div
-                                                    className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-sm font-medium transition-all ${step > index + 1
+                        {/* Buttons */}
+                        <div className="flex justify-between">
+                            <button
+                                type="button"
+                                onClick={prevStep}
+                                disabled={currentStep === 0}
+                                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                type="button"
+                                onClick={nextStep}
+                                disabled={currentStep === steps.length - 1}
+                                className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {/* ── TAB 2: Custom Declaration ── */}
+                {activeTab === 'declaration' && orderData && orderData.status > 5 && (
+                    <>
+                        {orderData?.customDeclaration ? (
+                            <CustomDeclarationView
+                                data={orderData.customDeclaration}
+                                orderData={orderData}
+                            />
+                        ) : (
+                            <div>
+                                {/* Header */}
+                                <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+                                    <div>
+                                        <h2 className="text-xl font-semibold text-gray-900">Custom Declaration</h2>
+                                        <p className="text-sm text-gray-500 mt-1">Fill the required details for customs processing</p>
+                                    </div>
+                                    <span className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
+                                        CN22 / CN23
+                                    </span>
+                                </div>
+
+                                {/* Declaration Stepper */}
+                                <div className="flex justify-between items-center mb-10 relative">
+                                    {["To", "Products", "Declaration"].map((label, index) => (
+                                        <div key={index} className="flex-1 flex flex-col items-center relative">
+                                            {index !== 4 && (
+                                                <div className={`absolute top-5 left-1/2 w-full h-[2px] -z-10 transition-all ${step > index + 1 ? "bg-blue-600" : "bg-gray-200"}`} />
+                                            )}
+                                            <div
+                                                className={`w-10 h-10 flex items-center justify-center rounded-full border-2 text-sm font-medium transition-all ${
+                                                    step > index + 1
                                                         ? "bg-blue-600 border-blue-600 text-white"
                                                         : step === index + 1
                                                             ? "border-blue-600 text-blue-600 bg-white"
                                                             : "border-gray-300 text-gray-400"
-                                                        }`}
-                                                >
-                                                    {step > index + 1 ? "✓" : index + 1}
-                                                </div>
-
-                                                <span
-                                                    className={`mt-2 text-xs font-medium text-center  ${step >= index + 1 ? "text-blue-600" : "text-gray-400"}`}
-                                                >
-                                                    {label}
-                                                </span>
+                                                }`}
+                                            >
+                                                {step > index + 1 ? "✓" : index + 1}
                                             </div>
-                                        ))}
-                                    </div>
-
-                                    <form onSubmit={step === 3 ? handleSubmit(onSubmit) : (e) => e.preventDefault()} className="space-y-10">
-                                        {/* STEP 1 */}
-                                        {step === 1 && (
-                                            <>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                    <div>
-                                                        <Label>Name</Label>
-                                                        <Input type="text" {...register("to_name")} />
-                                                        <p className="text-red-500 text-sm">
-                                                            {errors.to_name?.message}
-                                                        </p>
-                                                    </div>
-
-                                                    <div>
-                                                        <Label>Business</Label>
-                                                        <Input type="text" {...register("to_business")} />
-                                                        <p className="text-red-500 text-sm">
-                                                            {errors.to_business?.message}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                    <div>
-                                                        <Label>Address</Label>
-                                                        <Input type="text" {...register("to_street")} />
-                                                        <p className="text-red-500 text-sm">
-                                                            {errors.to_street?.message}
-                                                        </p>
-                                                    </div>
-
-                                                    <div>
-                                                        <Label>Postcode</Label>
-                                                        <Input type="text" {...register("to_postcode")} />
-                                                        <p className="text-red-500 text-sm">
-                                                            {errors.to_postcode?.message}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-
-                                                    {/* COUNTRY */}
-                                                    <div>
-                                                        <Controller
-                                                            name="to_country"
-                                                            control={control}
-                                                            render={({ field }) => (
-                                                                <Select<number>
-                                                                    label="Country"
-                                                                    options={countries?.map((c: any) => ({
-                                                                        value: c.id,
-                                                                        label: c.name,
-                                                                    })) || []}
-                                                                    value={field.value ? Number(field.value) : null}
-                                                                    onChange={(val: any) => {
-                                                                        field.onChange(val);
-                                                                        setValue("to_country", val);
-                                                                        setValue("to_state", 0);
-                                                                        setValue("to_city", 0);
-
-                                                                        if (val) {
-                                                                            dispatch(fetchStates(val));
-                                                                        }
-                                                                    }}
-                                                                    placeholder="Country"
-                                                                    error={errors.to_country?.message as string}
-                                                                    clearable
-                                                                />
-                                                            )}
-                                                        />
-                                                    </div>
-
-                                                    {/* STATE */}
-                                                    <div>
-                                                        <Controller
-                                                            name="to_state"
-                                                            control={control}
-                                                            render={({ field }) => (
-                                                                <Select<number>
-                                                                    label="State"
-                                                                    options={states?.map((s: any) => ({
-                                                                        value: s.id,
-                                                                        label: s.name,
-                                                                    })) || []}
-                                                                    value={field.value ? Number(field.value) : null}
-                                                                    onChange={(val: any) => {
-                                                                        field.onChange(val);
-                                                                        setValue("to_state", val);
-                                                                        setValue("to_city", 0);
-
-                                                                        if (val) {
-                                                                            dispatch(fetchCities(val));
-                                                                        }
-                                                                    }}
-                                                                    placeholder="State"
-                                                                    error={errors.to_state?.message as string}
-                                                                    clearable
-                                                                />
-                                                            )}
-                                                        />
-                                                    </div>
-
-                                                    {/* CITY */}
-                                                    <div>
-                                                        <Controller
-                                                            name="to_city"
-                                                            control={control}
-                                                            render={({ field }) => (
-                                                                <Select<number>
-                                                                    label="City"
-                                                                    options={cities?.map((city: any) => ({
-                                                                        value: city.id,
-                                                                        label: city.name,
-                                                                    })) || []}
-                                                                    value={field.value ? Number(field.value) : null}
-                                                                    onChange={(val: any) => {
-                                                                        field.onChange(val);
-                                                                        setValue("to_city", val);
-                                                                    }}
-                                                                    placeholder="City"
-                                                                    error={errors.to_city?.message as string}
-                                                                    clearable
-                                                                />
-                                                            )}
-                                                        />
-                                                    </div>
-
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {/* STEP 2 */}
-                                        {step === 2 && (() => {
-
-                                            // ✅ WATCH OUTSIDE MAP (IMPORTANT)
-                                            const watchedProducts = watch("products") || [];
-
-                                            // ✅ TOTAL WEIGHT
-                                            const totalWeight = watchedProducts.reduce(
-                                                (sum: number, item: any) =>
-                                                    sum + (Number(item.weight) || 0) * (Number(item.quantity) || 0),
-                                                0
-                                            );
-
-                                            // ✅ GRAND TOTAL PRICE
-                                            const grandTotal = watchedProducts.reduce(
-                                                (sum: number, item: any) =>
-                                                    sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
-                                                0
-                                            );
-
-                                            return (
-                                                <div>
-                                                    <h3 className="text-lg font-semibold mb-4">
-                                                        Product Details
-                                                    </h3>
-
-                                                    {orderData && orderData.products.length > 0 ? (
-                                                        <div className="overflow-x-auto">
-                                                            <table className="min-w-full border border-gray-300 rounded-lg">
-
-                                                                {/* HEADER */}
-                                                                <thead className="bg-gray-100">
-                                                                    <tr>
-                                                                        <th className="px-4 py-2 border">Product Name</th>
-                                                                        <th className="px-4 py-2 border">Quantity</th>
-                                                                        <th className="px-4 py-2 border">Price</th>
-                                                                        <th className="px-4 py-2 border">Weight</th>
-                                                                        <th className="px-4 py-2 border">Total Price</th>
-                                                                        <th className="px-4 py-2 border">HS Code</th>
-                                                                        <th className="px-4 py-2 border">Country</th>
-                                                                    </tr>
-                                                                </thead>
-
-                                                                {/* BODY */}
-                                                                <tbody>
-                                                                    {orderData.products.map((item: any, index: number) => {
-
-                                                                        // ✅ ROW TOTAL
-                                                                        const rowTotal =
-                                                                            (Number(watchedProducts[index]?.price) || 0) *
-                                                                            (Number(watchedProducts[index]?.quantity) || 0);
-
-                                                                        return (
-                                                                            <tr key={item.id} className="text-center">
-
-                                                                                {/* PRODUCT NAME */}
-                                                                                <td className="px-4 py-2 border">
-                                                                                    {item.product?.title}
-                                                                                </td>
-
-                                                                                {/* QUANTITY */}
-                                                                                <td className="px-4 py-2 border">
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        {...register(`products.${index}.quantity`, {
-                                                                                            valueAsNumber: true,
-                                                                                        })}
-                                                                                        defaultValue={item.quantity}
-                                                                                        className="border px-2 py-1 w-20 text-center"
-                                                                                    />
-                                                                                </td>
-
-                                                                                {/* PRICE */}
-                                                                                <td className="px-4 py-2 border">
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        {...register(`products.${index}.price`, {
-                                                                                            valueAsNumber: true,
-                                                                                        })}
-                                                                                        defaultValue={item.price}
-                                                                                        className="border px-2 py-1 w-24 text-center"
-                                                                                    />
-                                                                                </td>
-
-                                                                                {/* WEIGHT */}
-                                                                                <td className="px-4 py-2 border">
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        {...register(`products.${index}.weight`, {
-                                                                                            valueAsNumber: true,
-                                                                                        })}
-                                                                                        defaultValue={item.weight}
-                                                                                        className="border px-2 py-1 w-24 text-center"
-                                                                                    />
-                                                                                </td>
-
-                                                                                {/* ROW TOTAL */}
-                                                                                <td className="px-4 py-2 border">
-                                                                                    ${rowTotal}
-                                                                                </td>
-
-                                                                                {/* HS CODE */}
-                                                                                <td className="px-4 py-2 border">
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        {...register(`products.${index}.hs_code`)}
-                                                                                        className="border px-2 py-1 w-full text-xs"
-                                                                                    />
-                                                                                </td>
-
-                                                                                {/* COUNTRY */}
-                                                                                <td className="px-4 py-2 border">
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        {...register(`products.${index}.origin_country`)}
-                                                                                        className="border px-2 py-1 w-full text-xs"
-                                                                                    />
-                                                                                </td>
-
-                                                                            </tr>
-                                                                        );
-                                                                    })}
-                                                                </tbody>
-
-                                                                {/* FOOTER */}
-                                                                <tfoot>
-                                                                    <tr className="bg-gray-50 font-semibold">
-
-                                                                        <td colSpan={3} className="text-right px-4 py-2 border">
-                                                                            Total:
-                                                                        </td>
-
-                                                                        {/* TOTAL WEIGHT */}
-                                                                        <td className="px-4 py-2 border">
-                                                                            {totalWeight} g
-                                                                        </td>
-
-                                                                        {/* GRAND TOTAL */}
-                                                                        <td className="px-4 py-2 border">
-                                                                            ${grandTotal}
-                                                                        </td>
-
-                                                                        <td className="border"></td>
-                                                                        <td className="border"></td>
-
-                                                                    </tr>
-                                                                </tfoot>
-
-                                                            </table>
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-gray-500">
-                                                            No product details found.
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* STEP 3 */}
-                                        {step === 3 && (
-                                            <div className="space-y-6">
-
-                                                {/* Category */}
-                                                <div>
-                                                    <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                                                        Category of item
-                                                    </h3>
-
-                                                    <div className="flex flex-wrap gap-3">
-                                                        {[
-                                                            { label: "Commercial Sample", name: "category_commercial_sample" },
-                                                            { label: "Gift", name: "category_gift" },
-                                                            { label: "Returned Goods", name: "category_returned_goods" },
-                                                            { label: "Documents", name: "category_documents" },
-                                                            { label: "Other", name: "category_other" },
-                                                        ].map((item) => (
-                                                            <label key={item.name} className="flex items-center gap-2 px-3 py-2 border rounded-lg">
-                                                                <input type="checkbox" {...register(item.name as any)} />
-                                                                <span className="text-sm">{item.label}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Explanation */}
-                                                <div>
-                                                    <Label>Explanation</Label>
-                                                    <textarea {...register("explanation")} rows={3} className="w-full border p-3 rounded-lg" />
-                                                </div>
-
-                                                {/* Comments */}
-                                                <div>
-                                                    <Label>Comments</Label>
-                                                    <textarea {...register("comments")} rows={3} className="w-full border p-3 rounded-lg" />
-                                                </div>
-
-                                            </div>
-                                        )}
-                                        {/* Buttons */}
-                                        <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
-
-                                            {step > 1 ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={customDeclerationPrevStep}
-                                                    className="px-6 py-2.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 transition"
-                                                >
-                                                    Previous
-                                                </button>
-                                            ) : <div />}
-
-                                            {step < 3 ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={customDeclerationNextStep}
-                                                    className="px-6 py-2.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition"
-                                                >
-                                                    Next
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="submit"
-                                                    disabled={isSubmitting}
-                                                    className="px-6 py-2.5 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition"
-                                                >
-                                                    {isSubmitting ? "Submitting..." : "Submit"}
-                                                </button>
-                                            )}
+                                            <span className={`mt-2 text-xs font-medium text-center ${step >= index + 1 ? "text-blue-600" : "text-gray-400"}`}>
+                                                {label}
+                                            </span>
                                         </div>
-                                    </form>
+                                    ))}
                                 </div>
 
-                            ) : (
-                                ''
-                            )
-                    )
-            }
+                                <form onSubmit={step === 3 ? handleSubmit(onSubmit) : (e) => e.preventDefault()} className="space-y-10">
+                                    {/* STEP 1 */}
+                                    {step === 1 && (
+                                        <>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <div>
+                                                    <Label>Name</Label>
+                                                    <Input type="text" {...register("to_name")} />
+                                                    <p className="text-red-500 text-sm">{errors.to_name?.message}</p>
+                                                </div>
+                                                <div>
+                                                    <Label>Business</Label>
+                                                    <Input type="text" {...register("to_business")} />
+                                                    <p className="text-red-500 text-sm">{errors.to_business?.message}</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <div>
+                                                    <Label>Address</Label>
+                                                    <Input type="text" {...register("to_street")} />
+                                                    <p className="text-red-500 text-sm">{errors.to_street?.message}</p>
+                                                </div>
+                                                <div>
+                                                    <Label>Postcode</Label>
+                                                    <Input type="text" {...register("to_postcode")} />
+                                                    <p className="text-red-500 text-sm">{errors.to_postcode?.message}</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                <div>
+                                                    <Controller
+                                                        name="to_country"
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <Select<number>
+                                                                label="Country"
+                                                                options={countries?.map((c: any) => ({ value: c.id, label: c.name })) || []}
+                                                                value={field.value ? Number(field.value) : null}
+                                                                onChange={(val: any) => {
+                                                                    field.onChange(val);
+                                                                    setValue("to_country", val);
+                                                                    setValue("to_state", 0);
+                                                                    setValue("to_city", 0);
+                                                                    if (val) dispatch(fetchStates(val));
+                                                                }}
+                                                                placeholder="Country"
+                                                                error={errors.to_country?.message as string}
+                                                                clearable
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Controller
+                                                        name="to_state"
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <Select<number>
+                                                                label="State"
+                                                                options={states?.map((s: any) => ({ value: s.id, label: s.name })) || []}
+                                                                value={field.value ? Number(field.value) : null}
+                                                                onChange={(val: any) => {
+                                                                    field.onChange(val);
+                                                                    setValue("to_state", val);
+                                                                    setValue("to_city", 0);
+                                                                    if (val) dispatch(fetchCities(val));
+                                                                }}
+                                                                placeholder="State"
+                                                                error={errors.to_state?.message as string}
+                                                                clearable
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Controller
+                                                        name="to_city"
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <Select<number>
+                                                                label="City"
+                                                                options={cities?.map((city: any) => ({ value: city.id, label: city.name })) || []}
+                                                                value={field.value ? Number(field.value) : null}
+                                                                onChange={(val: any) => {
+                                                                    field.onChange(val);
+                                                                    setValue("to_city", val);
+                                                                }}
+                                                                placeholder="City"
+                                                                error={errors.to_city?.message as string}
+                                                                clearable
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* STEP 2 */}
+                                    {step === 2 && (() => {
+                                        const watchedProducts = watch("products") || [];
+                                        const totalWeight = watchedProducts.reduce(
+                                            (sum: number, item: any) => sum + (Number(item.weight) || 0) * (Number(item.quantity) || 0), 0
+                                        );
+                                        const grandTotal = watchedProducts.reduce(
+                                            (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0
+                                        );
+                                        return (
+                                            <div>
+                                                <h3 className="text-lg font-semibold mb-4">Product Details</h3>
+                                                {orderData && orderData.products.length > 0 ? (
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full border border-gray-300 rounded-lg">
+                                                            <thead className="bg-gray-100">
+                                                                <tr>
+                                                                    <th className="px-4 py-2 border">Product Name</th>
+                                                                    <th className="px-4 py-2 border">Quantity</th>
+                                                                    <th className="px-4 py-2 border">Price</th>
+                                                                    <th className="px-4 py-2 border">Weight</th>
+                                                                    <th className="px-4 py-2 border">Total Price</th>
+                                                                    <th className="px-4 py-2 border">HS Code</th>
+                                                                    <th className="px-4 py-2 border">Country</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {orderData.products.map((item: any, index: number) => {
+                                                                    const rowTotal =
+                                                                        (Number(watchedProducts[index]?.price) || 0) *
+                                                                        (Number(watchedProducts[index]?.quantity) || 0);
+                                                                    return (
+                                                                        <tr key={item.id} className="text-center">
+                                                                            <td className="px-4 py-2 border">{item.product?.title}</td>
+                                                                            <td className="px-4 py-2 border">
+                                                                                <input type="number" {...register(`products.${index}.quantity`, { valueAsNumber: true })} defaultValue={item.quantity} className="border px-2 py-1 w-20 text-center" />
+                                                                            </td>
+                                                                            <td className="px-4 py-2 border">
+                                                                                <input type="number" {...register(`products.${index}.price`, { valueAsNumber: true })} defaultValue={item.price} className="border px-2 py-1 w-24 text-center" />
+                                                                            </td>
+                                                                            <td className="px-4 py-2 border">
+                                                                                <input type="number" {...register(`products.${index}.weight`, { valueAsNumber: true })} defaultValue={item.weight} className="border px-2 py-1 w-24 text-center" />
+                                                                            </td>
+                                                                            <td className="px-4 py-2 border">${rowTotal}</td>
+                                                                            <td className="px-4 py-2 border">
+                                                                                <input type="text" {...register(`products.${index}.hs_code`)} className="border px-2 py-1 w-full text-xs" />
+                                                                            </td>
+                                                                            <td className="px-4 py-2 border">
+                                                                                <input type="text" {...register(`products.${index}.origin_country`)} className="border px-2 py-1 w-full text-xs" />
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                            <tfoot>
+                                                                <tr className="bg-gray-50 font-semibold">
+                                                                    <td colSpan={3} className="text-right px-4 py-2 border">Total:</td>
+                                                                    <td className="px-4 py-2 border">{totalWeight} g</td>
+                                                                    <td className="px-4 py-2 border">${grandTotal}</td>
+                                                                    <td className="border"></td>
+                                                                    <td className="border"></td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-gray-500">No product details found.</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* STEP 3 */}
+                                    {step === 3 && (
+                                        <div className="space-y-6">
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Category of item</h3>
+                                                <div className="flex flex-wrap gap-3">
+                                                    {[
+                                                        { label: "Commercial Sample", name: "category_commercial_sample" },
+                                                        { label: "Gift", name: "category_gift" },
+                                                        { label: "Returned Goods", name: "category_returned_goods" },
+                                                        { label: "Documents", name: "category_documents" },
+                                                        { label: "Other", name: "category_other" },
+                                                    ].map((item) => (
+                                                        <label key={item.name} className="flex items-center gap-2 px-3 py-2 border rounded-lg">
+                                                            <input type="checkbox" {...register(item.name as any)} />
+                                                            <span className="text-sm">{item.label}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <Label>Explanation</Label>
+                                                <textarea {...register("explanation")} rows={3} className="w-full border p-3 rounded-lg" />
+                                            </div>
+                                            <div>
+                                                <Label>Comments</Label>
+                                                <textarea {...register("comments")} rows={3} className="w-full border p-3 rounded-lg" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Form Buttons */}
+                                    <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
+                                        {step > 1 ? (
+                                            <button type="button" onClick={customDeclerationPrevStep} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 transition">
+                                                Previous
+                                            </button>
+                                        ) : <div />}
+                                        {step < 3 ? (
+                                            <button type="button" onClick={customDeclerationNextStep} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition">
+                                                Next
+                                            </button>
+                                        ) : (
+                                            <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition">
+                                                {isSubmitting ? "Submitting..." : "Submit"}
+                                            </button>
+                                        )}
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+                    </>
+                )}
+
+            </div>
+
             {/* Payment Modal */}
             {isPaymentOpen && totalPayableAmount > 0 && orderData && (
                 <Elements stripe={stripePromise}>

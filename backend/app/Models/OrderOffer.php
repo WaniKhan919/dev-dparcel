@@ -12,6 +12,7 @@ class OrderOffer extends Model
         'message',
         'status',
         'offer_price',
+        'admin_approval_status',
     ];
 
     // Relationships

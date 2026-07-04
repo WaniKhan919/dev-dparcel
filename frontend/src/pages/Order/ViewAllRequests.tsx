@@ -11,9 +11,11 @@ import OrdedrSearchFilter from "../../utils/Drawers/Order/OrdedrSearchFilter";
 import { ChatBubbleLeftIcon, EyeIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import { Modal } from "../../components/ui/modal";
 import { useNavigate } from "react-router";
+import OrderApprovalModal from "../../components/admin/OrderApprovalModal";
+import AdminOfferApprovalModal from "../../components/admin/AdminOfferApprovalModal";
 
 interface Request {
-  id: number;
+  id: string;
   service_type: string;
   status_title: string;
   request_number: string;
@@ -33,16 +35,15 @@ interface Request {
   }[];
   offers: any;
   order_status: { name: string } | null;
-  user: { id: number; name: string };
+  admin_approval_status: 'pending' | 'approved' | 'rejected';
+  user: { id: number; name: string; email?: string };
   ship_from: {
     country: string;
-    state: string;
-    city: string;
   };
   ship_to: {
     country: string;
-    state: string;
     city: string;
+    address: string;
   };
   price_breakdown: {
     initial_price: number;
@@ -61,11 +62,21 @@ interface Request {
     weight: string;
     product: { id: number; title: string };
   }[];
+  all_offers?: {
+    id: string;
+    offer_price: string;
+    admin_approval_status: 'pending' | 'approved' | 'rejected';
+    status: string;
+    shipper?: { id: number; name: string } | null;
+    additional_prices?: { id: number; title: string; price: string }[];
+    order?: { request_number?: string };
+  }[];
   accepted_offer?: {
-    id: number;
+    id: string; // encrypted
     order_id: number;
     user_id: number;
     status: string;
+    admin_approval_status: 'pending' | 'approved' | 'rejected';
     offer_price: string;
     message?: string | null;
 
@@ -102,6 +113,8 @@ export default function ViewAllRequests() {
   const [openMessageDrawer, setOpenMessageDrawer] = useState(false);
   const [openDetailModal, setOpenDetailModal] = useState(false);
   const [orderData, setOrderData] = useState<Request | null>(null);
+  const [approvalRecord, setApprovalRecord] = useState<Request | null>(null);
+  const [offerApprovalRecord, setOfferApprovalRecord] = useState<(NonNullable<Request['all_offers']>[number] & { order?: { request_number?: string } }) | null>(null);
 
   useEffect(() => {
     dispatch(fetchAllOrders({ page, per_page: 12, ...filters }));
@@ -161,8 +174,8 @@ export default function ViewAllRequests() {
       header: "Ship From / To",
       render: (record: Request) => (
         <div className="text-sm">
-          <div><strong>From:</strong> {record.ship_from?.country ?? "-"}, {record.ship_from?.state ?? "-"}, {record.ship_from?.city ?? "-"}</div>
-          <div><strong>To:</strong> {record.ship_to?.country ?? "-"}, {record.ship_to?.state ?? "-"}, {record.ship_to?.city ?? "-"}</div>
+          <div><strong>From:</strong> {record.ship_from?.country ?? "-"}</div>
+          <div><strong>To:</strong> {record.ship_to?.country ?? "-"}, {record.ship_to?.city ?? "-"}</div>
         </div>
       ),
     },
@@ -196,6 +209,23 @@ export default function ViewAllRequests() {
       },
     },
     {
+      key: "admin_approval",
+      header: "Approval",
+      render: (record: Request) => {
+        const s = record.admin_approval_status;
+        if (s === 'approved') return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>;
+        if (s === 'rejected') return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>;
+        return (
+          <button
+            onClick={() => setApprovalRecord(record)}
+            className="px-3 py-1 rounded-lg text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300"
+          >
+            Review
+          </button>
+        );
+      }
+    },
+    {
       key: "actions",
       header: "Actions",
       render: (record: Request) => (
@@ -227,6 +257,24 @@ export default function ViewAllRequests() {
 
       {/* Messages Drawer */}
       {openMessageDrawer && <AdminOrderMessages isOpen={openMessageDrawer} onClose={() => setOpenMessageDrawer(false)} orderData={orderData} />}
+
+      {/* Order Approval Modal */}
+      {approvalRecord && (
+        <OrderApprovalModal
+          record={approvalRecord}
+          onClose={() => setApprovalRecord(null)}
+          onSuccess={() => dispatch(fetchAllOrders({ page, per_page: 12, ...filters }))}
+        />
+      )}
+
+      {/* Offer Approval Modal */}
+      {offerApprovalRecord && (
+        <AdminOfferApprovalModal
+          offer={offerApprovalRecord}
+          onClose={() => setOfferApprovalRecord(null)}
+          onSuccess={() => dispatch(fetchAllOrders({ page, per_page: 12, ...filters }))}
+        />
+      )}
 
       {/* Order Detail Modal */}
       {openDetailModal && orderData && (
@@ -263,15 +311,12 @@ export default function ViewAllRequests() {
 
               <div>
                 <strong>From:</strong>{" "}
-                {orderData.ship_from?.country},{" "}
-                {orderData.ship_from?.state},{" "}
-                {orderData.ship_from?.city}
+                {orderData.ship_from?.country}
               </div>
 
               <div>
                 <strong>To:</strong>{" "}
                 {orderData.ship_to?.country},{" "}
-                {orderData.ship_to?.state},{" "}
                 {orderData.ship_to?.city}
               </div>
 
@@ -315,6 +360,39 @@ export default function ViewAllRequests() {
               </table>
             </div>
           </div>
+
+          {/* All Offers — Admin Approval */}
+          {(orderData.all_offers?.length ?? 0) > 0 && (
+            <div className="border rounded-2xl p-5 bg-white shadow-sm">
+              <h3 className="font-semibold text-lg text-gray-800 mb-4">Shipper Offers</h3>
+              <div className="space-y-3">
+                {orderData.all_offers!.map((offer) => (
+                  <div key={offer.id} className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-xl">
+                    <div className="text-sm">
+                      <p className="font-medium text-gray-800">{offer.shipper?.name ?? "Unknown Shipper"}</p>
+                      <p className="text-gray-500">Offer: <span className="font-semibold text-gray-700">${offer.offer_price}</span></p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {offer.admin_approval_status === 'approved' && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Approved</span>
+                      )}
+                      {offer.admin_approval_status === 'rejected' && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">Rejected</span>
+                      )}
+                      {offer.admin_approval_status === 'pending' && (
+                        <button
+                          onClick={() => setOfferApprovalRecord({ ...offer, order: { request_number: orderData.request_number } })}
+                          className="px-3 py-1 rounded-lg text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300"
+                        >
+                          Review
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Accepted Offer Detail */}
           {orderData.accepted_offer && (

@@ -8,11 +8,9 @@ interface Notification {
   id: number;
   name: string;
   ship_from_country: string;
-  ship_from_state: string;
-  ship_from_city: string;
   ship_to_country: string;
-  ship_to_state: string;
   ship_to_city: string;
+  ship_to_address: string;
   service_type: string;
   total_aprox_weight: number;
   total_price: number;
@@ -126,15 +124,12 @@ export default function CardToast({ notifications }: CardToastProps) {
               <div className="p-4">
                 <div className="mb-2">
                   <b>From:</b>{" "}
-                  {notification.ship_from_country || "N/A"},{" "}
-                  {notification.ship_from_state || "N/A"},{" "}
-                  {notification.ship_from_city || "N/A"}
+                  {notification.ship_from_country || "N/A"}
                 </div>
 
                 <div>
                   <b>To:</b>{" "}
                   {notification.ship_to_country || "N/A"},{" "}
-                  {notification.ship_to_state || "N/A"},{" "}
                   {notification.ship_to_city || "N/A"}
                 </div>
               </div>
@@ -267,11 +262,16 @@ export default function CardToast({ notifications }: CardToastProps) {
             <div className="border rounded-xl p-4 bg-gray-50">
               <p className="font-medium text-gray-700 mb-1">Route</p>
               <p className="text-sm text-gray-600">
-                <strong>From:</strong> {selectedOrder.ship_from_country}, {selectedOrder.ship_from_state}, {selectedOrder.ship_from_city}
+                <strong>From:</strong> {selectedOrder.ship_from_country}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>To:</strong> {selectedOrder.ship_to_country}, {selectedOrder.ship_to_state}, {selectedOrder.ship_to_city}
+                <strong>To:</strong> {selectedOrder.ship_to_country}, {selectedOrder.ship_to_city}
               </p>
+              {selectedOrder.ship_to_address && (
+                <p className="text-sm text-gray-500">
+                  <strong>Address:</strong> {selectedOrder.ship_to_address}
+                </p>
+              )}
             </div>
 
             {/* Service Info */}

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             ShippingTypeSeeder::class,
             ServiceSeeder::class,
             PermissionSeeder::class,
+            RolePermissionSeeder::class,
         ]);
     }
 }

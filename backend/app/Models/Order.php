@@ -11,20 +11,18 @@ class Order extends Model
         'user_id',
         'shipping_type_id',
         'ship_from_country_id',
-        'ship_from_state_id',
-        'ship_from_city_id',
         'ship_to_country_id',
-        'ship_to_state_id',
-        'ship_to_city_id',
+        'ship_to_city',
+        'ship_to_address',
         'total_aprox_weight',
         'total_price',
         'stripe_fee',
         'service_fee',
         'grand_total',
-        'tracking_number',
         'request_number',
         'tracking_link',
         'status',
+        'admin_approval_status',
     ];
 
     protected static function boot()
@@ -78,29 +76,9 @@ class Order extends Model
         return $this->belongsTo(Country::class, 'ship_from_country_id');
     }
 
-    public function shipFromState()
-    {
-        return $this->belongsTo(State::class, 'ship_from_state_id');
-    }
-
-    public function shipFromCity()
-    {
-        return $this->belongsTo(City::class, 'ship_from_city_id');
-    }
-
     public function shipToCountry()
     {
         return $this->belongsTo(Country::class, 'ship_to_country_id');
-    }
-
-    public function shipToState()
-    {
-        return $this->belongsTo(State::class, 'ship_to_state_id');
-    }
-
-    public function shipToCity()
-    {
-        return $this->belongsTo(City::class, 'ship_to_city_id');
     }
 
     public function customDeclaration()

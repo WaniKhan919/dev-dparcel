@@ -14,8 +14,8 @@ export interface PriceBreakdown {
 
 export interface Location {
   country: string;
-  state: string;
-  city: string;
+  city?: string;
+  address?: string;
 }
 
 export interface ProductDetail {

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan *)",
+      "Bash(npx tsc *)",
+      "Bash(Select-String \"ShopperTrackOrder\")",
+      "Bash(Get-ChildItem -Recurse \"d:\\\\Projects\\\\My Projects\\\\dev-dparcel\\\\frontend\\\\src\\\\components\\\\ui\" -Filter \"*.tsx\")",
+      "Bash(Select-Object Name)",
+      "Bash(dir \"d:\\\\Projects\\\\My Projects\\\\dev-dparcel\\\\frontend\\\\src\\\\utils\" /b)"
+    ]
+  }
+}

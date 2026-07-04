@@ -8,7 +8,6 @@ use Exception;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderDetail;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -51,11 +50,7 @@ class OrderController extends Controller
                 'orderPayment',
                 'orderStatus',
                 'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
                 'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name'
             ])
                 ->where('user_id', $userId)
                 ->orderBy('id', 'desc')
@@ -117,15 +112,11 @@ class OrderController extends Controller
             $query = Order::with([
                 'orderDetails.product',
                 'offers.shipper',
-                'offers.additionalPrices',
+                'offers.additionalPrices.service',
                 'user',
                 'orderStatus',
                 'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
                 'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name'
             ])
                 ->orderBy('id', 'desc');
 
@@ -182,11 +173,9 @@ class OrderController extends Controller
             $validated = $request->validate([
                 'shipping_type_id' => 'required',
                 'ship_from_country_id' => 'required|exists:countries,id',
-                'ship_from_state_id' => 'required|exists:states,id',
-                'ship_from_city_id' => 'required|exists:cities,id',
                 'ship_to_country_id' => 'required|exists:countries,id',
-                'ship_to_state_id' => 'required|exists:states,id',
-                'ship_to_city_id' => 'required|exists:cities,id',
+                'ship_to_city' => 'required|string|max:100',
+                'ship_to_address' => 'required|string|max:255',
                 'products' => 'required|array|min:1',
                 'products.*.title' => 'required|string|max:255',
                 'products.*.product_url' => 'required|string',
@@ -198,28 +187,19 @@ class OrderController extends Controller
             ]);
             $shippingTypeId = decrypt($request->shipping_type_id);
 
-            // Generate unique tracking number
-            do {
-                $trackingNumber = 'TRK-' . strtoupper(Str::random(10));
-            } while (Order::where('tracking_number', $trackingNumber)->exists());
-
-
             // Create Order
             $order = Order::create([
                 'user_id' => $userId,
                 'shipping_type_id' => $shippingTypeId,
                 'ship_from_country_id' => $validated['ship_from_country_id'],
-                'ship_from_state_id' => $validated['ship_from_state_id'],
-                'ship_from_city_id' => $validated['ship_from_city_id'],
                 'ship_to_country_id' => $validated['ship_to_country_id'],
-                'ship_to_state_id' => $validated['ship_to_state_id'],
-                'ship_to_city_id' => $validated['ship_to_city_id'],
+                'ship_to_city' => $validated['ship_to_city'],
+                'ship_to_address' => $validated['ship_to_address'],
                 'total_aprox_weight' => 0,
                 'total_price' => 0,
                 'stripe_fee' => 0,
                 'service_fee' => 0,
                 'grand_total' => 0,
-                'tracking_number' => $trackingNumber,
             ]);
             $shippingType = ShippingType::findOrFail($shippingTypeId);
             $type = $shippingType->slug;
@@ -272,7 +252,6 @@ class OrderController extends Controller
             OrderTracking::create([
                 'order_id' => $order->id,
                 'status_id' => 1, // Pending
-                'tracking_number' => $trackingNumber,
             ]);
 
             // Payment logic
@@ -338,7 +317,6 @@ class OrderController extends Controller
             $emailData = [
                 'user_name' => $user->name,
                 'order_request_number' => $order->request_number,
-                'tracking_number' => $order->tracking_number,
                 'total_price' => $order->total_price,
                 'total_weight' => $order->total_aprox_weight,
                 'service_type' => $order->service_type,
@@ -374,16 +352,15 @@ class OrderController extends Controller
                 'acceptedOffer.additionalPrices.service',
                 'orderStatus',
                 'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
                 'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name'
             ])
                 ->where('id', $orderId)
                 ->firstOrFail();
 
             $initialPrice = (float) $order->total_price;
+
+            // Only show admin-approved offers to shopper
+            $order->setRelation('offers', $order->offers->where('admin_approval_status', 'approved')->values());
 
             // =========================
             // OFFERS BREAKDOWN
@@ -575,7 +552,6 @@ class OrderController extends Controller
             $emailData = [
                 'shipper_name' => $shipper->name,
                 'order_number' => $offer->order->request_number,
-                'tracking_number' => $offer->order->tracking_number,
                 'offer_price' => $offer->offer_price,
                 'status' => $request->status,
                 'dashboard_url' => env('REACT_APP') . '/shipper/requests'
@@ -736,11 +712,7 @@ class OrderController extends Controller
                 'customDeclaration.products.product',
 
                 'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
                 'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name'
             ])->findOrFail($id);
 
             return response()->json([

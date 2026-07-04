@@ -17,12 +17,10 @@ interface OrderData {
   shipping_type_slug: string;
 
   ship_from_country: string;
-  ship_from_state: string;
-  ship_from_city: string;
 
   ship_to_country: string;
-  ship_to_state: string;
   ship_to_city: string;
+  ship_to_address: string;
 
   price_breakdown: {
     initial_price: number;
@@ -148,18 +146,15 @@ export default function ShipperViewOrderDetailDrawer({
 
                   <div>
                     <p className="opacity-80 text-xs">Ship From</p>
-                    <p>
-                      {orderData.ship_from_city}, {orderData.ship_from_state},{" "}
-                      {orderData.ship_from_country}
-                    </p>
+                    <p>{orderData.ship_from_country}</p>
                   </div>
 
                   <div>
                     <p className="opacity-80 text-xs">Ship To</p>
-                    <p>
-                      {orderData.ship_to_city}, {orderData.ship_to_state},{" "}
-                      {orderData.ship_to_country}
-                    </p>
+                    <p>{orderData.ship_to_country}, {orderData.ship_to_city}</p>
+                    {orderData.ship_to_address && (
+                      <p className="text-xs opacity-70">{orderData.ship_to_address}</p>
+                    )}
                   </div>
 
                   <div>

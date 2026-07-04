@@ -93,7 +93,8 @@ class ServiceController extends Controller
                 'is_required' => 'required|boolean',
                 'status'       => 'nullable|numeric',
             ]);
-            $validated['shipping_type'] = $shippingTypeId;
+            $validated['shipping_type_id'] = $shippingTypeId;
+            unset($validated['shipping_type']);
             $service->update($validated);
 
             return response()->json([

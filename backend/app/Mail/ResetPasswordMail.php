@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ResetPasswordMail extends Mailable
+class ResetPasswordMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
     
@@ -39,13 +39,14 @@ class ResetPasswordMail extends Mailable
      */
     public function content(): Content
     {
-         return $this->subject('Reset Your Password')
-                    ->view('emails.reset-password')
-                    ->with([
-                        'name' => $this->name,
-                        'token' => $this->token,
-                        'url' => url('/reset-password/' . $this->token), // frontend reset link
-                    ]);
+        return new Content(
+            view: 'emails.reset-password',
+            with: [
+                'name'  => $this->name,
+                'token' => $this->token,
+                'url'   => env('REACT_APP') . '/reset-password/' . $this->token,
+            ],
+        );
     }
 
     /**

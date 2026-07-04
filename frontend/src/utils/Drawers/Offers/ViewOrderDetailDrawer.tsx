@@ -98,8 +98,6 @@ export default function ViewOrderDetailDrawer({
                   <div>
                     <p className="opacity-80 text-xs">Ship From</p>
                     <p>
-                      {orderData.ship_from?.city},{" "}
-                      {orderData.ship_from?.state},{" "}
                       {orderData.ship_from?.country}
                     </p>
                   </div>
@@ -108,7 +106,6 @@ export default function ViewOrderDetailDrawer({
                     <p className="opacity-80 text-xs">Ship To</p>
                     <p>
                       {orderData.ship_to?.city},{" "}
-                      {orderData.ship_to?.state},{" "}
                       {orderData.ship_to?.country}
                     </p>
                   </div>

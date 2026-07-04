@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\GenericMail;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -9,11 +10,7 @@ if (!function_exists('sendEmail')) {
     function sendEmail($to, $subject, $template, $data = [])
     {
         try {
-            Mail::send($template, $data, function ($message) use ($to, $subject) {
-                $message->to($to)
-                        ->subject($subject);
-            });
-
+            Mail::to($to)->queue(new GenericMail($template, $data, $subject));
             return true;
         } catch (\Exception $e) {
             Log::error('Email sending failed: ' . $e->getMessage());

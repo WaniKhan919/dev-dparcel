@@ -196,14 +196,14 @@ export default function ViewOffersDrawer({
               <div>
                 <p className="text-gray-500 text-xs">From</p>
                 <p className="font-medium text-sm">
-                  {offersData.ship_from_city?.name}, {offersData.ship_from_state?.name}
+                  {offersData.ship_from_country?.name}
                 </p>
               </div>
               <div className="text-gray-400 text-lg font-bold mx-2">→</div>
               <div className="text-right">
                 <p className="text-gray-500 text-xs">To</p>
                 <p className="font-medium text-sm">
-                  {offersData.ship_to_city?.name}, {offersData.ship_to_state?.name}
+                  {offersData.ship_to_country?.name}, {offersData.ship_to_city}
                 </p>
               </div>
             </div>

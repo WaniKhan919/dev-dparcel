@@ -13,7 +13,7 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('permissions')->insert([
+        DB::table('permissions')->insertOrIgnore([
             [
                 'name' => 'Shopper Dashboard',
                 'code' => 'shopper_dashboard',
@@ -45,6 +45,10 @@ class PermissionSeeder extends Seeder
             [
                 'name' => 'Subscription',
                 'code' => 'subscription',
+            ],
+            [
+                'name' => 'Stripe Connect',
+                'code' => 'stripe_connect',
             ],
         ]);
     }

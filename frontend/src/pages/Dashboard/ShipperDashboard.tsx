@@ -24,11 +24,9 @@ interface Notification {
   };
 
   ship_from_country: string;
-  ship_from_state: string;
-  ship_from_city: string;
   ship_to_country: string;
-  ship_to_state: string;
   ship_to_city: string;
+  ship_to_address: string;
 
   shipping_type_id: number;
   shipping_type: string;
@@ -39,7 +37,6 @@ interface Notification {
   service_fee: number;
   grand_total: number;
 
-  tracking_number: string;
   request_number: string;
   status: number;
   order_details: any[];
@@ -282,8 +279,8 @@ export default function ShipperDashboard() {
       ship_from_state: item.ship_from_state,
       ship_from_city: item.ship_from_city,
       ship_to_country: item.ship_to_country,
-      ship_to_state: item.ship_to_state,
       ship_to_city: item.ship_to_city,
+      ship_to_address: item.ship_to_address,
 
       // ✅ shipping_type updated fields
       shipping_type_id: item.shipping_type_id,
@@ -703,12 +700,12 @@ export default function ShipperDashboard() {
                 <div className="mt-3 text-sm text-gray-600 flex justify-between">
                   <div>
                     <p className="text-xs text-gray-400">From</p>
-                    <p className="font-medium">{order.ship_from_city}, {order.ship_from_country}</p>
+                    <p className="font-medium">{order.ship_from_country}</p>
                   </div>
                   <div className="text-gray-400 text-lg font-bold">→</div>
                   <div className="text-right">
                     <p className="text-xs text-gray-400">To</p>
-                    <p className="font-medium">{order.ship_to_city}, {order.ship_to_country}</p>
+                    <p className="font-medium">{order.ship_to_country}, {order.ship_to_city}</p>
                   </div>
                 </div>
 
@@ -792,6 +789,7 @@ export default function ShipperDashboard() {
                 <th className="px-5 py-4 text-left">Weight</th>
                 <th className="px-5 py-4 text-left">Price</th>
                 <th className="px-5 py-4 text-left">Status</th>
+                <th className="px-5 py-4 text-left">Offer Approval</th>
                 <th className="px-5 py-4 text-center">Details</th>
               </tr>
             </thead>
@@ -828,10 +826,10 @@ export default function ShipperDashboard() {
                       <td className="px-5 py-4 text-gray-600">
                         <div className="leading-tight">
                           <p className="font-medium">
-                            {order.ship_from_city} → {order.ship_to_city}
+                            {order.ship_from_country} → {order.ship_to_country}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {order.ship_from_state}, {order.ship_to_state}
+                            {order.ship_to_city}
                           </p>
                         </div>
                       </td>
@@ -878,6 +876,16 @@ export default function ShipperDashboard() {
                         })()}
                       </td>
 
+                      {/* Offer Approval */}
+                      <td className="px-5 py-4">
+                        {(() => {
+                          const approval = order?.my_offer?.admin_approval_status;
+                          if (approval === 'approved') return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Approved</span>;
+                          if (approval === 'rejected') return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">Rejected</span>;
+                          return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Pending Review</span>;
+                        })()}
+                      </td>
+
                       {/* View */}
                       <td className="px-5 py-4 text-center">
                         <button
@@ -891,7 +899,7 @@ export default function ShipperDashboard() {
                   ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-10 text-gray-500">
+                  <td colSpan={8} className="text-center py-10 text-gray-500">
                     No new requests available
                   </td>
                 </tr>
@@ -1218,12 +1226,15 @@ export default function ShipperDashboard() {
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <div>
                     <p className="font-medium text-gray-800">From</p>
-                    <p>{selectedOrder.ship_from_city}, {selectedOrder.ship_from_state}, {selectedOrder.ship_from_country}</p>
+                    <p>{selectedOrder.ship_from_country}</p>
                   </div>
                   <div className="text-gray-400 text-xl">→</div>
                   <div className="text-right">
                     <p className="font-medium text-gray-800">To</p>
-                    <p>{selectedOrder.ship_to_city}, {selectedOrder.ship_to_state}, {selectedOrder.ship_to_country}</p>
+                    <p>{selectedOrder.ship_to_country}, {selectedOrder.ship_to_city}</p>
+                    {selectedOrder.ship_to_address && (
+                      <p className="text-xs text-gray-500 mt-1">{selectedOrder.ship_to_address}</p>
+                    )}
                   </div>
                 </div>
               </div>

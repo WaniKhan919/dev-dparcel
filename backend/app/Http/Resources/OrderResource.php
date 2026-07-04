@@ -11,10 +11,11 @@ class OrderResource extends JsonResource
     {
 
         return [
-            'id'             => encrypt($this->id),
-            'request_number' => $this->request_number,
-            'status'         => $this->status,
-            'status_title'   => $this->orderStatus?->name,
+            'id'                     => encrypt($this->id),
+            'request_number'         => $this->request_number,
+            'status'                 => $this->status,
+            'status_title'           => $this->orderStatus?->name,
+            'admin_approval_status'  => $this->admin_approval_status,
             'total_aprox_weight' => $this->total_aprox_weight,
 
             // ✅ shipping_type relation
@@ -77,13 +78,11 @@ class OrderResource extends JsonResource
             // Location
             'ship_from' => [
                 'country' => $this->shipFromCountry?->name,
-                'state'   => $this->shipFromState?->name,
-                'city'    => $this->shipFromCity?->name,
             ],
             'ship_to' => [
                 'country' => $this->shipToCountry?->name,
-                'state'   => $this->shipToState?->name,
-                'city'    => $this->shipToCity?->name,
+                'city'    => $this->ship_to_city,
+                'address' => $this->ship_to_address,
             ],
 
             // Relations
@@ -91,6 +90,18 @@ class OrderResource extends JsonResource
             // 'services'          => OrderServiceResource::collection($this->whenLoaded('orderServices')),
             'trackings'         => OrderTrackingResource::collection($this->whenLoaded('orderTrackings')),
             'accepted_offer'    => $this->acceptedOffer,
+            'all_offers'        => $this->offers->map(fn($o) => [
+                'id'                    => encrypt($o->id),
+                'offer_price'           => $o->offer_price,
+                'admin_approval_status' => $o->admin_approval_status,
+                'status'                => $o->status,
+                'shipper'               => $o->shipper ? ['id' => $o->shipper->id, 'name' => $o->shipper->name] : null,
+                'additional_prices'     => $o->additionalPrices->map(fn($p) => [
+                    'id'    => $p->id,
+                    'title' => $p->title ?? $p->service?->title ?? 'Service',
+                    'price' => $p->price,
+                ]),
+            ]),
             'order_payment'     => $this->orderPayment,
             'custom_declaration' => $this->customDeclaration,
             'services' => $this->mergeServices(),

@@ -8,9 +8,11 @@ import { AppDispatch } from "../../store";
 import { fetchAllOrders } from "../../slices/allOrderSlice";
 import DParcelTable from "../../components/tables/DParcelTable";
 import { EyeIcon } from "lucide-react";
+import OrderApprovalModal from "../../components/admin/OrderApprovalModal";
+import AdminOfferApprovalModal from "../../components/admin/AdminOfferApprovalModal";
 
 interface Request {
-  id: any;
+  id: string | number;
   service_type: string;
   request_number: string;
   total_aprox_weight: string;
@@ -34,16 +36,15 @@ interface Request {
   }[];
   order_offer: any;
   order_status: { name: string } | null;
-  user: { id: number; name: string };
+  admin_approval_status: 'pending' | 'approved' | 'rejected';
+  user: { id: number; name: string; email: string };
   ship_from:{
     country: string;
-    state: string;
-    city: string;
   };
   ship_to:{
     country: string;
-    state: string;
     city: string;
+    address: string;
   };
 }
 
@@ -66,6 +67,11 @@ export default function Home() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [approvalRecord, setApprovalRecord] = useState<Request | null>(null);
+
+  const [pendingOffers, setPendingOffers] = useState<any[]>([]);
+  const [pendingOffersLoading, setPendingOffersLoading] = useState(false);
+  const [offerApprovalRecord, setOfferApprovalRecord] = useState<any | null>(null);
 
   const dispatch = useDispatch<AppDispatch>();
   const { data, meta } = useSelector((state: any) => state.allOrder);
@@ -75,7 +81,21 @@ export default function Home() {
   useEffect(() => {
     fetchOrdersStats();
     fetchBalance();
+    fetchPendingOffers();
   }, []);
+
+  const fetchPendingOffers = async () => {
+    setPendingOffersLoading(true);
+    try {
+      const res = await ApiHelper("GET", "/admin/dashboard/pending-offers?per_page=10");
+      if (res.status === 200 && res.data.success) {
+        setPendingOffers(res.data.data);
+      }
+    } catch {
+    } finally {
+      setPendingOffersLoading(false);
+    }
+  };
 
   const fetchOrdersStats = async () => {
     setLoading(true);
@@ -135,8 +155,8 @@ export default function Home() {
       header: "Ship From / To",
       render: (record: Request) => (
         <div className="text-sm">
-          <div><strong>From:</strong> {record.ship_from?.country ?? "-"}, {record.ship_from?.state ?? "-"}, {record.ship_from?.city ?? "-"}</div>
-          <div><strong>To:</strong> {record.ship_to?.country ?? "-"}, {record.ship_to?.state ?? "-"}, {record.ship_to?.city ?? "-"}</div>
+          <div><strong>From:</strong> {record.ship_from?.country ?? "-"}</div>
+          <div><strong>To:</strong> {record.ship_to?.country ?? "-"}, {record.ship_to?.city ?? "-"}</div>
         </div>
       ),
     },
@@ -180,16 +200,29 @@ export default function Home() {
       },
     },
     {
+      key: "admin_approval",
+      header: "Approval",
+      render: (record: Request) => {
+        const s = record.admin_approval_status;
+        if (s === 'approved') return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>;
+        if (s === 'rejected') return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>;
+        return (
+          <button
+            onClick={() => setApprovalRecord(record)}
+            className="px-3 py-1 rounded-lg text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300"
+          >
+            Review
+          </button>
+        );
+      }
+    },
+    {
       key: "action",
       header: "Action",
       render: (record: Request) => (
         <button
           title="View Details"
-          onClick={() =>
-            navigate("/admin/track-order", {
-              state: { orderId: record.id }
-            })
-          }
+          onClick={() => navigate("/admin/track-order", { state: { orderId: record.id } })}
           className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
         >
           <EyeIcon className="h-5 w-5 text-gray-800 stroke-2" />
@@ -340,6 +373,89 @@ export default function Home() {
           </div>
         </div>
       </div>
+      {/* Pending Offers Section */}
+      <div className="grid grid-cols-12 gap-4 md:gap-6 mt-5">
+        <div className="col-span-12">
+          <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                Pending Offer Approvals
+              </h2>
+              {pendingOffers.length > 0 && (
+                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                  {pendingOffers.length} pending
+                </span>
+              )}
+            </div>
+
+            {pendingOffersLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : pendingOffers.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8">No pending offers</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+                      <th className="px-4 py-3 text-left">Request #</th>
+                      <th className="px-4 py-3 text-left">Shipper</th>
+                      <th className="px-4 py-3 text-left">Route</th>
+                      <th className="px-4 py-3 text-left">Offer Price</th>
+                      <th className="px-4 py-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingOffers.map((offer: any) => (
+                      <tr key={offer.id} className="border-t hover:bg-gray-50 transition">
+                        <td className="px-4 py-3 font-medium text-gray-800">
+                          {offer.order?.request_number ?? "-"}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">
+                          {offer.shipper?.name ?? "-"}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          <span>{offer.order?.ship_from ?? "-"}</span>
+                          <span className="mx-1 text-gray-400">→</span>
+                          <span>{offer.order?.ship_to ?? "-"}{offer.order?.ship_to_city ? `, ${offer.order.ship_to_city}` : ""}</span>
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-blue-600">
+                          ${offer.total_offer_price}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => setOfferApprovalRecord(offer)}
+                            className="px-3 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300"
+                          >
+                            View Detail
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {approvalRecord && (
+        <OrderApprovalModal
+          record={approvalRecord}
+          onClose={() => setApprovalRecord(null)}
+          onSuccess={() => dispatch(fetchAllOrders({ page, per_page: 12 }))}
+        />
+      )}
+
+      {offerApprovalRecord && (
+        <AdminOfferApprovalModal
+          offer={offerApprovalRecord}
+          onClose={() => setOfferApprovalRecord(null)}
+          onSuccess={() => fetchPendingOffers()}
+        />
+      )}
     </>
   );
 }

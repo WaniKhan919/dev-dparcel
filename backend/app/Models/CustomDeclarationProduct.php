@@ -9,6 +9,9 @@ class CustomDeclarationProduct extends Model
     protected $fillable = [
         'custom_declaration_id',
         'product_id',
+        'quantity',
+        'price',
+        'weight',
         'hs_code',
         'origin_country',
     ];

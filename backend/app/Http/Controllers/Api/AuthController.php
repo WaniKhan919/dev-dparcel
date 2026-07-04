@@ -145,7 +145,7 @@ class AuthController extends Controller
             }
 
             // send code (email/SMS placeholder)
-            Mail::to($user->email)->send(new VerifyUserMail($user->name, $verificationCode));
+            Mail::to($user->email)->queue(new VerifyUserMail($user->name, $verificationCode));
             DB::commit();
             return response()->json([
                 'message' => 'User registered successfully. Please verify your account using the code sent.',
@@ -216,7 +216,7 @@ class AuthController extends Controller
                     ]);
                 }
                 // Send pending approval email
-                Mail::to($user->email)->send(new ShipperPendingApprovalMail($user->name));
+                Mail::to($user->email)->queue(new ShipperPendingApprovalMail($user->name));
 
   
             }
@@ -261,7 +261,7 @@ class AuthController extends Controller
             ]);
 
             // TODO: Send new code via email/SMS
-            Mail::to($user->email)->send(new VerifyUserMail($user->name, $newCode));
+            Mail::to($user->email)->queue(new VerifyUserMail($user->name, $newCode));
 
             return response()->json([
                 'message' => 'New verification code sent.',
@@ -289,16 +289,14 @@ class AuthController extends Controller
             $token = Str::random(64);
 
             $user->update([
-                'reset_token' => $token,
+                'reset_token' => hash('sha256', $token),
                 'reset_token_expires_at' => Carbon::now()->addMinutes(15),
             ]);
 
-            // send mail (stub)
-            Mail::to($user->email)->send(new ResetPasswordMail($user->name, $token));
+            Mail::to($user->email)->queue(new ResetPasswordMail($user->name, $token));
 
             return response()->json([
                 'message' => 'Password reset link sent to your email.',
-                'reset_token' => $token, // For testing only
             ]);
 
         } catch (Exception $e) {
@@ -318,7 +316,7 @@ class AuthController extends Controller
                 'password' => 'required|confirmed|min:8',
             ]);
 
-            $user = User::where('reset_token', $request->token)
+            $user = User::where('reset_token', hash('sha256', $request->token))
                         ->where('reset_token_expires_at', '>', Carbon::now())
                         ->first();
 

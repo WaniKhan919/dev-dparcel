@@ -37,12 +37,12 @@ use App\Http\Controllers\Api\Shopper\ShopperDashboardController;
 use App\Http\Controllers\Api\Shopper\ShopperOrderController;
 
 // Public routes
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/signup', [AuthController::class, 'signup']);
-Route::post('/verify', [AuthController::class, 'verify']);
-Route::post('/resend-code', [AuthController::class, 'resendCode']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::middleware('throttle:login')->post('/login', [AuthController::class, 'login']);
+Route::middleware('throttle:signup')->post('/signup', [AuthController::class, 'signup']);
+Route::middleware('throttle:otp-verify')->post('/verify', [AuthController::class, 'verify']);
+Route::middleware('throttle:resend-otp')->post('/resend-code', [AuthController::class, 'resendCode']);
+Route::middleware('throttle:forgot-password')->post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::middleware('throttle:reset-password')->post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Protected routes (require Sanctum token)
 Route::middleware('auth:sanctum')->group(function () {
@@ -50,11 +50,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Admin api routes
-    Route::prefix('admin')->group(function () {
+    Route::prefix('admin')->middleware('admin')->group(function () {
         // Admin Dashboard routes
         Route::prefix('/dashboard')->controller(AdminDashboardController::class)->group(function () {
             Route::get('/orders', 'recordCount');
             Route::get('/balance', 'currentBalance');
+            Route::get('/pending-offers', 'pendingOffers');
         });
         
         Route::controller(MessageController::class)->group(function () {
@@ -91,6 +92,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('/order')->group(function () {
             Route::post('/approve/product', [AdminOrderController::class, 'approveProduct']);
             Route::post('/custom-decleration', [AdminOrderController::class, 'approveCustomDecleration']);
+            Route::post('/{id}/approve', [AdminOrderController::class, 'approveOrder']);
+        });
+        Route::prefix('/offer')->group(function () {
+            Route::post('/{id}/approve', [AdminOrderController::class, 'approveOffer']);
         });
         Route::prefix('/users')->group(function () {
             Route::get('/shippers', [AdminUserController::class, 'getShippers']);

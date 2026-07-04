@@ -223,7 +223,7 @@ const navItems: NavItem[] = [
     icon: <LinkIcon className="w-4 h-4" />,
     path: "/shipper/stripe-connect",
     roles: ["shipper"],
-    permissions: ["shipper_payment"],
+    permissions: ["stripe_connect"],
   },
 ];
 

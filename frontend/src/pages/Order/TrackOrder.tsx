@@ -176,14 +176,14 @@ export default function TrackOrder() {
                                         <div className="border-l-4 border-blue-500 bg-blue-50 rounded-md p-4 shadow-sm">
                                             <p className="text-sm text-gray-500 uppercase">Ship From</p>
                                             <p className="font-medium text-blue-700 mt-1">
-                                                {orderData.ship_from.city}, {orderData.ship_from.state}, {orderData.ship_from.country}
+                                                {orderData.ship_from.city}, {orderData.ship_from.country}
                                             </p>
                                         </div>
 
                                         <div className="border-l-4 border-pink-500 bg-pink-50 rounded-md p-4 shadow-sm">
                                             <p className="text-sm text-gray-500 uppercase">Ship To</p>
                                             <p className="font-medium text-pink-700 mt-1">
-                                                {orderData.ship_to.city}, {orderData.ship_to.state}, {orderData.ship_to.country}
+                                                {orderData.ship_to.city}, {orderData.ship_to.country}
                                             </p>
                                         </div>
                                     </div>

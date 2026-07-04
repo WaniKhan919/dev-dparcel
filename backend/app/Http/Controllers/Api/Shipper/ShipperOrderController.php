@@ -78,11 +78,7 @@ class ShipperOrderController extends Controller
             'orderDetails.product',
             'orderServices.service',
             'shipFromCountry:id,name',
-            'shipFromState:id,name',
-            'shipFromCity:id,name',
             'shipToCountry:id,name',
-            'shipToState:id,name',
-            'shipToCity:id,name',
             'offers' => function ($q) use ($userId) {
                 $q->where('user_id', $userId)
                     ->with('additionalPrices.service');
@@ -136,11 +132,9 @@ class ShipperOrderController extends Controller
                 'shipping_type_slug' => $order->shippingType?->slug,
 
                 'ship_from_country'  => $order->shipFromCountry?->name,
-                'ship_from_state'    => $order->shipFromState?->name,
-                'ship_from_city'     => $order->shipFromCity?->name,
                 'ship_to_country'    => $order->shipToCountry?->name,
-                'ship_to_state'      => $order->shipToState?->name,
-                'ship_to_city'       => $order->shipToCity?->name,
+                'ship_to_city'       => $order->ship_to_city,
+                'ship_to_address'    => $order->ship_to_address,
 
                 'price_breakdown' => [
                     'initial_price' => $initialPrice,

@@ -29,7 +29,9 @@ class User extends Authenticatable
         'verification_code',
         'verification_code_expires_at',
         'is_verified',
-        'city_id'
+        'city_id',
+        'reset_token',
+        'reset_token_expires_at',
     ];
 
     /**
@@ -108,18 +110,12 @@ class User extends Authenticatable
                 'orderDetails.product',
                 'user',
                 'shipFromCountry:id,name',
-                'shipFromState:id,name',
-                'shipFromCity:id,name',
                 'shipToCountry:id,name',
-                'shipToState:id,name',
-                'shipToCity:id,name'
             ])
                 ->whereNotIn('id', $excludedOrders)
                 ->whereIn('shipping_type_id', $allowedShippingTypeIds)
-                ->where(function ($query) use ($serviceCountryIds) {
-                    $query->whereIn('ship_from_country_id', $serviceCountryIds)
-                        ->orWhereIn('ship_to_country_id', $serviceCountryIds);
-                })
+                ->whereIn('ship_from_country_id', $serviceCountryIds)
+                ->where('admin_approval_status', 'approved')
                 ->orderBy('id', 'desc')
                 ->get();
 
@@ -154,16 +150,13 @@ class User extends Authenticatable
                     'stripe_fee'         => (float) $order->stripe_fee,
                     'service_fee'        => (float) $order->service_fee,
                     'grand_total'        => (float) $order->grand_total,
-                    'tracking_number'    => $order->tracking_number,
                     'request_number'     => $order->request_number,
                     'status'             => $order->status,
                     'created_at'         => $order->created_at,
                     'ship_from_country'  => $order->shipFromCountry?->name,
-                    'ship_from_state'    => $order->shipFromState?->name,
-                    'ship_from_city'     => $order->shipFromCity?->name,
                     'ship_to_country'    => $order->shipToCountry?->name,
-                    'ship_to_state'      => $order->shipToState?->name,
-                    'ship_to_city'       => $order->shipToCity?->name,
+                    'ship_to_city'       => $order->ship_to_city,
+                    'ship_to_address'    => $order->ship_to_address,
                     'order_details'      => $order->orderDetails,
                     'order_services'     => $order->orderServices,
                     'user'               => $order->user,
